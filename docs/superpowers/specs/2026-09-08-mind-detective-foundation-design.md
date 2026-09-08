@@ -1,6 +1,6 @@
 # MIND Detective Foundation Design
 
-**Status:** Proposed design approved in conversation; written-spec review pending  
+**Status:** Self-reviewed; written-spec human review pending  
 **Date:** 2026-09-08  
 **Target repository:** `trafficolog/mind-detective`  
 **Target first release:** repository `0.1.0`, plugin `mind-detective-v0.1.0`  
@@ -13,27 +13,29 @@
 
 MIND Detective is an evidence-safe methodology runtime for helping a user search for a misplaced item without pretending that an LLM knows where the item is.
 
-The first release is deliberately narrow: one complete **IN_MOMENT** vertical slice for an item lost within minutes or hours. It combines a conversational skill layer with deterministic helpers for evidence classification, question safety, timeline reconstruction, search allocation, competing hypotheses, safety routing, and case debrief.
+The first release is deliberately narrow: one complete **IN_MOMENT** vertical slice for an item lost within minutes or hours. It combines a conversational skill layer with deterministic helpers for evidence classification, utterance safety, timeline reconstruction, search allocation, competing hypotheses, safety routing, and case debrief.
 
-The core product claim is **not** “AI finds lost things.” The supported claim is:
+The supported product claim is not “AI finds lost things.” It is:
 
 > MIND Detective helps a user reconstruct what is supported by their own account, avoid memory-contaminating prompts, allocate search effort explicitly, record what has actually been checked, and choose the next bounded action while preserving uncertainty.
 
-The central safety invariant is analogous to exact-preview write safety in `yandex-ai-plugins-skills`: a consequential action must cross a machine-enforced boundary. Here the highest-risk action is not an API mutation; it is an agent question or claim that can contaminate the user's subsequent recollection or turn an uncalibrated heuristic into a false fact.
+The highest-risk interaction is an agent utterance that can contaminate the user's later recollection, assign blame, introduce an unsupported location, or turn an uncalibrated heuristic into a false fact.
 
-Therefore the P0 boundary is:
+P0 therefore defines a deterministic guard contract:
 
 ```text
-candidate agent question/claim
+candidate structured utterance
         ↓
-conversation stage policy
+conversation-stage policy
         ↓
-question_lint / claim guard
+utterance_lint
         ↓
 ALLOW or BLOCK(machine code)
         ↓
-user-visible output
+allowed candidate for user-visible output
 ```
+
+**Enforcement boundary:** the helper path is fail-closed for candidates submitted to it. Production skills MUST route investigative questions/claims through that path. Generic skill hosts such as Claude Code/Codex do not provide this repository with a pre-send interception hook, so P0 cannot mechanically prove that an arbitrary host/model never bypasses the helper. Host-level compliance is therefore covered by skill contract + adversarial eval + review. A future dedicated bot/web/voice surface may make end-to-end interception mechanically enforceable. The repository must state this limitation explicitly and never equate green helper tests with proof that every model utterance was guarded.
 
 The first release is plugin-first, independently installable, transport-free, and does not introduce a shared runtime package, external connectors, model SDKs, web UI, voice surface, or cross-case personalization.
 
@@ -51,24 +53,9 @@ This prevents formal DRY from breaking installability.
 
 ### 2.2 LLM for dialogue; deterministic code for invariants
 
-The LLM may:
+The LLM may route, summarize user-provided statements without inventing claims, select allowed neutral question forms, explain limitations, present helper output, and formulate explicitly labeled hypotheses.
 
-- route to a skill;
-- summarize user-provided statements without inventing new claims;
-- choose among allowed neutral question forms;
-- explain limitations;
-- present deterministic helper output;
-- formulate hypotheses explicitly as hypotheses.
-
-The LLM must not be the source of truth for:
-
-- evidence-class promotion;
-- whether a question is safe to send;
-- timeline consistency;
-- search-weight update math;
-- red-flag exit conditions that are mechanically detectable;
-- machine reason codes;
-- persistent-memory mutation in future releases.
+The LLM is not the source of truth for evidence-class promotion, guard result codes, timeline consistency, search-weight update math, or deterministic red-flag rules.
 
 ### 2.3 Progressive disclosure
 
@@ -76,21 +63,11 @@ The LLM must not be the source of truth for:
 
 ### 2.4 Truthful confidence
 
-The system distinguishes:
-
-- what the user recalls;
-- what the user says is habitual;
-- what an external source reports;
-- what was actually searched;
-- what deterministic code infers;
-- what remains a hypothesis;
-- what is merely methodology.
-
-It never converts an uncalibrated search weight into “probability the item is there.”
+The system distinguishes user recall, habit, user-stated context, searched observations, deterministic inference, hypotheses, and methodology. It never converts an uncalibrated search weight into “probability the item is there.”
 
 ### 2.5 Safety before optimization
 
-A faster search is not a success if it is achieved by leading the user, inventing a location, making an accusation, or masking a time-critical fallback.
+A faster search is not a success if it is achieved by leading the user, inventing a location, making an accusation, masking a time-critical fallback, or overstating enforcement.
 
 ---
 
@@ -112,7 +89,7 @@ router
   → debrief
 ```
 
-Production skills for `0.1.0`:
+Production skills:
 
 1. `mind-detective` — router and safety triage.
 2. `mind-detective-quickcheck` — short high-value pre-interview checks.
@@ -121,20 +98,20 @@ Production skills for `0.1.0`:
 5. `mind-detective-zones` — search allocation and round updates.
 6. `mind-detective-hypotheses` — competing-hypothesis matrix after unresolved first round or fixation.
 7. `mind-detective-fallback` — time-critical/high-consequence parallel recovery plan.
-8. `mind-detective-debrief` — case outcome for the current session; no cross-case baseline mutation in P0.
+8. `mind-detective-debrief` — current-session outcome; no cross-case baseline mutation in P0.
 
-Deterministic helpers for `0.1.0`:
+Deterministic helpers:
 
 - `evidence.py`
-- `question_policy.py`
-- `question_lint.py`
+- `utterance_policy.py`
+- `utterance_lint.py`
 - `timeline.py`
 - `zones.py`
 - `ach.py`
 - `redflags.py`
 - `schemas.py`
 
-Repository-level enforcement for `0.1.0`:
+Repository-level enforcement:
 
 - stable requirement IDs;
 - plugin validator;
@@ -153,7 +130,7 @@ The following are intentionally deferred rather than scaffolded as empty abstrac
 
 - `.mind-detective/` cross-case Project Memory;
 - personal priors or learned household base rates;
-- `mind-detective-longterm`;
+- long-term recall workflow;
 - prospective-memory workflow (“did I lock/take/send?”);
 - prevention/habit redesign as a separate skill;
 - external evidence connectors (EXIF, calendar, messages, cloud APIs);
@@ -163,7 +140,7 @@ The following are intentionally deferred rather than scaffolded as empty abstrac
 - live multi-model benchmark;
 - calibrated location probabilities;
 - floor-plan modeling;
-- automated ingestion of photos or private files;
+- automatic private-file ingestion;
 - medical diagnosis or cognitive assessment;
 - law-enforcement or theft investigation workflow.
 
@@ -173,14 +150,12 @@ Each deferred capability requires a separate design/spec gate.
 
 ## 4. Canonical naming
 
-To avoid namespace drift:
-
 - Repository: `mind-detective`
 - Product display name: **MIND Detective / Детектив памяти**
 - Plugin: `mind-detective`
 - Future privileged connector plugin: `mind-detective-connectors`
 - Future local memory root: `.mind-detective/`
-- Machine schema prefix: `mind-detective-*`
+- Schema prefix: `mind-detective-*`
 - Machine reason-code prefix: `MD_`
 
 The earlier working label `memory-detective` is not used as a second runtime namespace.
@@ -189,14 +164,12 @@ The earlier working label `memory-detective` is not used as a second runtime nam
 
 ## 5. Repository architecture
 
-Target repository shape after P0 implementation:
+Target shape after P0 implementation:
 
 ```text
 mind-detective/
-├── .agents/
-│   └── plugins/marketplace.json
-├── .claude-plugin/
-│   └── marketplace.json
+├── .agents/plugins/marketplace.json
+├── .claude-plugin/marketplace.json
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   ├── pull_request_template.md
@@ -239,23 +212,20 @@ mind-detective/
 │   ├── schemas/
 │   ├── adr/
 │   ├── reviews/
-│   └── superpowers/
-│       ├── specs/
-│       └── plans/
-├── plugins/
-│   └── mind-detective/
-│       ├── .agents-plugin/plugin.json
-│       ├── .claude-plugin/plugin.json
-│       ├── README.md
-│       ├── README.en.md
-│       ├── CHANGELOG.md
-│       ├── CHANGELOG.en.md
-│       ├── THIRD_PARTY_NOTICES.md
-│       ├── skills/
-│       ├── references/
-│       ├── scripts/
-│       ├── tests/
-│       └── evals/
+│   └── superpowers/{specs,plans}/
+├── plugins/mind-detective/
+│   ├── .agents-plugin/plugin.json
+│   ├── .claude-plugin/plugin.json
+│   ├── README.md
+│   ├── README.en.md
+│   ├── CHANGELOG.md
+│   ├── CHANGELOG.en.md
+│   ├── THIRD_PARTY_NOTICES.md
+│   ├── skills/
+│   ├── references/
+│   ├── scripts/
+│   ├── tests/
+│   └── evals/
 ├── scripts/
 │   ├── validate_repo.py
 │   ├── contract_controls.py
@@ -269,20 +239,18 @@ mind-detective/
 └── pyproject.toml
 ```
 
-P0 may implement the tree incrementally under TDD; no empty directory is required merely to match the diagram.
+P0 implements the tree incrementally under TDD; no empty directory is required merely to match the diagram.
 
 ---
 
 ## 6. Layer boundaries
-
-### 6.1 P0 layers
 
 ```text
 L3  skills / orchestration
     routing, interview stages, presentation, limitation propagation
 
 L2  deterministic domain helpers
-    evidence, question guard, timeline, zones, ACH, redflags
+    evidence, utterance guard, timeline, zones, ACH, redflags
 
 L1  repository contracts
     schemas, requirement IDs, validators, contract matrix, eval vocabulary
@@ -290,13 +258,9 @@ L1  repository contracts
 
 There is intentionally no transport layer in P0.
 
-### 6.2 Boundary invariant
+`plugins/mind-detective` must not import network SDKs, browser clients, cloud storage clients, messenger clients, or external connector implementations. Repository AST tests enforce a bounded denylist appropriate to the Python codebase. This proves only the supported static boundary, not the absence of every conceivable form of I/O.
 
-`plugins/mind-detective` P0 core must not import network SDKs, browser clients, cloud storage clients, messenger clients, or external connector implementations.
-
-Repository AST checks will enforce a denylist of privileged/network modules appropriate to the Python codebase. The denylist is a repository policy, not a claim that AST scanning proves absence of all possible I/O.
-
-The future `mind-detective-connectors` plugin will be a separate independently installable boundary and will produce only structured `EXTERNAL` evidence artifacts with provenance.
+A future `mind-detective-connectors` plugin will be separately installable and will emit structured `EXTERNAL` evidence with provenance.
 
 ---
 
@@ -304,22 +268,18 @@ The future `mind-detective-connectors` plugin will be a separate independently i
 
 ### 7.1 Classes
 
-P0 uses these canonical classes:
-
 | Class | Meaning | Allowed origin |
 |---|---|---|
-| `USER_RECALLED` | User reports an episodic memory or recollection | user statement only |
-| `HABITUAL` | User reports a routine, usual placement, or schema | user statement only |
+| `USER_RECALLED` | User reports an episodic memory/recollection | user statement only |
+| `HABITUAL` | User reports a routine/usual placement/schema | user statement only |
 | `USER_STATED` | User supplies context such as item properties, deadline, constraints | user statement only |
-| `EXTERNAL` | Evidence supplied by a future external connector or explicit file parser | not produced by P0 core |
-| `SEARCHED` | A zone/search method/result actually reported for a search round | user-confirmed search action |
-| `INFERRED` | Deterministic conclusion derived from supported inputs by a named rule | helper only |
+| `EXTERNAL` | Evidence from a future external connector/parser | not produced by P0 core |
+| `SEARCHED` | User confirms a search action/method/result | user-confirmed action |
+| `INFERRED` | Deterministic conclusion from supported inputs and a named rule | helper only |
 | `HYPOTHESIS` | Testable explanation that remains unconfirmed | agent or user, explicitly labeled |
 | `METHODOLOGY` | General research/methodological principle, never a fact about this case | references/methodology |
 
 ### 7.2 Statement metadata
-
-A normalized statement carries at least:
 
 ```json
 {
@@ -328,7 +288,7 @@ A normalized statement carries at least:
   "class": "USER_RECALLED",
   "author": "user",
   "created_at": "RFC3339 timestamp",
-  "elicited_by": "question-id or null",
+  "elicited_by": "utterance-id or null",
   "detail_level": "LOW|MEDIUM|HIGH",
   "confidence_self": "LOW|MEDIUM|HIGH|UNSTATED",
   "limitations": []
@@ -339,22 +299,22 @@ A normalized statement carries at least:
 
 ### 7.3 Non-promotion invariants
 
-1. The agent cannot originate `USER_RECALLED`, `HABITUAL`, or `USER_STATED` statements on the user's behalf.
-2. `HABITUAL` cannot be promoted to `USER_RECALLED` because it is repeated, plausible, or high-confidence.
-3. Sensory/contextual detail may be recorded as metadata but does not mechanically certify truth.
+1. The agent cannot originate `USER_RECALLED`, `HABITUAL`, or `USER_STATED` on the user's behalf.
+2. `HABITUAL` cannot be promoted to `USER_RECALLED` because it is repeated, plausible, detailed, or high-confidence.
+3. Sensory/contextual detail is metadata and does not mechanically certify truth.
 4. Absence of recall does not become evidence that an event did not happen.
-5. `METHODOLOGY` cannot directly satisfy a case-specific evidence requirement.
-6. `HYPOTHESIS` remains a hypothesis until a supported rule or new evidence changes the case state.
+5. `METHODOLOGY` cannot satisfy a case-specific evidence requirement.
+6. `HYPOTHESIS` remains a hypothesis until supported by a separately defined rule/evidence change.
 
 ---
 
-## 8. Interview and memory-contamination boundary
+## 8. Interview and memory-contamination guard
 
 ### 8.1 Scientific posture
 
 The project uses cognitive-interview principles as **transferred methodology**, not as proof that a forensic protocol has been validated for household lost-item recovery.
 
-Supported design implications include:
+Design implications:
 
 - obtain a free account before detailed clarification;
 - reinstate context in neutral terms;
@@ -362,11 +322,9 @@ Supported design implications include:
 - avoid misleading post-event information;
 - preserve provenance of how a statement was elicited.
 
-The repository must not claim that this adaptation has a validated effect size for finding household objects unless the project later obtains direct evidence.
+The repository must not claim a validated household lost-item effect size unless direct evidence is later obtained.
 
-### 8.2 Question stages
-
-Canonical interview stages:
+### 8.2 Conversation stages
 
 1. `FREE_ACCOUNT`
 2. `CONTEXT_RECONSTRUCTION`
@@ -374,13 +332,21 @@ Canonical interview stages:
 4. `CONTRADICTION_CLARIFICATION`
 5. `SEARCH_FOLLOWUP`
 
-The stage determines which question forms are allowed.
+### 8.3 Guard interface
 
-### 8.3 Guard architecture
+`utterance_policy.py` defines stage-aware rules. `utterance_lint.py` validates a structured candidate:
 
-`question_policy.py` defines stage-aware allowed forms and structural constraints.
+```json
+{
+  "kind": "QUESTION",
+  "text": "...",
+  "stage": "FREE_ACCOUNT",
+  "known_entities": [],
+  "known_locations": []
+}
+```
 
-`question_lint.py` inspects a concrete candidate question and returns a structured result:
+and returns:
 
 ```json
 {
@@ -390,38 +356,37 @@ The stage determines which question forms are allowed.
 }
 ```
 
-A blocked question is never sent unchanged. The orchestration layer must reformulate or choose another allowed prompt.
+A submitted candidate that is blocked is never returned as allowed. Production skill contracts require reformulation rather than bypass.
 
-### 8.4 P0 question/claim rules
+### 8.4 Codes
 
 | Code | Invariant |
 |---|---|
-| `MD_Q_NEW_LOCATION` | Do not introduce a concrete location/container not already supplied by the user as case data. |
-| `MD_Q_CLOSED_FREE_ACCOUNT` | During `FREE_ACCOUNT`, do not use a closed yes/no question when an open neutral prompt can collect the account. |
-| `MD_Q_MULTI` | Ask one material question at a time. |
-| `MD_Q_PRESUPPOSITION` | Do not presuppose an unsupported action, location, cause, or person. |
-| `MD_Q_THIRD_PARTY_BLAME` | Do not formulate a named/role-based accusation as a hypothesis. |
-| `MD_CLAIM_UNSUPPORTED_LOCATION` | Do not state or imply that the item is in a specific unsupported location. |
-| `MD_CLAIM_UNCALIBRATED_PROBABILITY` | Do not present search weights as calibrated probabilities of location. |
+| `MD_Q_NEW_LOCATION` | Question introduces a concrete location/container not supplied by the user as case data. |
+| `MD_Q_CLOSED_FREE_ACCOUNT` | Closed yes/no collection pattern during free account when an open neutral prompt is required. |
+| `MD_Q_MULTI` | More than one material question in a candidate. |
+| `MD_Q_PRESUPPOSITION` | Unsupported action, location, cause, or person is presupposed. |
+| `MD_Q_THIRD_PARTY_BLAME` | Named/role-based accusation is introduced as a hypothesis. |
+| `MD_CLAIM_UNSUPPORTED_LOCATION` | Candidate claim states/implies a specific unsupported location. |
+| `MD_CLAIM_UNCALIBRATED_PROBABILITY` | Candidate claim presents search weight as calibrated probability. |
 
-The linter is intentionally conservative. Semantic edge cases not mechanically detectable remain covered by evals and review; documentation must not claim total prevention of suggestive questioning.
+### 8.5 Truthful enforcement statement
+
+- **Mechanically enforced:** submitted candidate parsing, rule checks, machine codes, fail-closed result, negative tests, exact traceability.
+- **Skill/eval/review enforced:** that a generic LLM host invokes the helper for every investigative utterance before showing it.
+- **Deferred mechanical end-to-end enforcement:** a dedicated surface adapter with a mandatory pre-send guard hook.
+
+The project will not claim “all model outputs are technically intercepted” in P0.
 
 ---
 
 ## 9. Timeline model
 
-### 9.1 Goal
+The timeline reconstructs the smallest supported sequence between the **last supported contact** with the item and the first supported observation that it was missing. “Supported” is used instead of “confirmed” because a user's recollection is evidence supplied by the user, not independently verified fact.
 
-Construct the smallest supported sequence between:
+Normative artifact: `mind-detective-timeline/v1`.
 
-- the **last supported contact** with the item; and
-- the first supported observation that the item was missing.
-
-“Supported” is used instead of “confirmed” because a user's recollection is evidence supplied by the user, not independently verified fact.
-
-### 9.2 `timeline/v1`
-
-The normative artifact is `mind-detective-timeline/v1` with fields conceptually equivalent to:
+Core fields:
 
 ```json
 {
@@ -436,13 +401,13 @@ The normative artifact is `mind-detective-timeline/v1` with fields conceptually 
 }
 ```
 
-### 9.3 Timeline invariants
+Invariants:
 
-- A habitual statement alone cannot establish `last_supported_contact`.
-- Missing timestamps remain unknown rather than fabricated.
-- Contradictions are surfaced; the helper does not silently choose one version.
-- Event boundaries may be annotated but do not automatically increase a location score.
-- Impossible ordering/overlap detected from explicit times is a structured error/finding, not an exception traceback.
+- habit alone cannot establish `last_supported_contact`;
+- missing timestamps remain unknown;
+- contradictions are surfaced rather than silently resolved;
+- event boundaries may be annotated but do not change a location weight by themselves;
+- impossible ordering detected from explicit times returns a structured finding/code, not an unbounded traceback.
 
 ---
 
@@ -450,9 +415,9 @@ The normative artifact is `mind-detective-timeline/v1` with fields conceptually 
 
 The project distinguishes **event segmentation** from a simplistic “doorway = forgetting” rule.
 
-Evidence supports the broader proposition that event boundaries can affect memory organization and accessibility. However, the precise effects of physical doorways depend on task and experimental conditions, and the literature does not justify a universal household-search prior.
+Research supports the broader proposition that event boundaries can affect memory organization/accessibility, while physical-doorway effects depend on task and experimental conditions. This does not justify a universal household-search prior.
 
-Therefore in P0:
+P0 rule:
 
 ```text
 event_boundary
@@ -462,21 +427,17 @@ event_boundary
   → does NOT automatically increase a search-zone weight
 ```
 
-No code path may implement `doorway => +X%` or equivalent.
+No code path implements `doorway => +X%` or an equivalent hidden rule.
 
 ---
 
 ## 11. Search allocation model
 
-### 11.1 Goal
+### 11.1 Purpose
 
 The search helper allocates attention among candidate zones; it does not predict the item's true location.
 
-### 11.2 Zone artifact
-
 Normative artifact: `mind-detective-search-plan/v1`.
-
-A zone contains:
 
 ```json
 {
@@ -490,11 +451,11 @@ A zone contains:
 }
 ```
 
-The plan includes an explicit `UNKNOWN_OR_OUTSIDE` remainder when appropriate.
+The plan includes `UNKNOWN_OR_OUTSIDE` where appropriate.
 
-### 11.3 Where initial weights may come from
+### 11.2 Initial weights
 
-P0 weights may be assigned from explicit transparent rules based on:
+Transparent rules may use:
 
 - user-recalled interactions;
 - user-stated habitual placement, capped as weaker evidence;
@@ -502,32 +463,32 @@ P0 weights may be assigned from explicit transparent rules based on:
 - search status;
 - explicit unknown remainder.
 
-P0 does **not** use population statistics presented as personalized probability.
+P0 does not use population statistics as personalized probability. Numeric constants are operational policy parameters labeled uncalibrated, not scientific facts.
 
-Exact numeric constants, if any are needed internally, are repository policy parameters and must be labeled uncalibrated. They are not scientific claims.
+### 11.3 Search-round update
 
-### 11.4 Updating after a search round
+Search theory motivates the principle that a failed search reduces but does not necessarily eliminate belief in a searched area.
 
-Search theory motivates the general principle that failing to detect a target after a search reduces but does not necessarily eliminate belief that it is in the searched area.
-
-P0 therefore implements a deterministic miss-factor update:
+P0 uses:
 
 ```text
 weight_after_raw = weight_before × miss_factor(search_method)
 normalize(all zone weights + UNKNOWN_OR_OUTSIDE)
 ```
 
-`miss_factor` is an operational search-coverage parameter, not a validated household probability of detection.
+`miss_factor` is an operational coverage parameter, not a validated household probability of detection.
 
-### 11.5 Public presentation invariant
+For P0, a nonzero searched-zone weight is **never set to zero solely because a search round failed**. No “impossibility exception” is included in `0.1.0`; such a rule would require its own explicit future contract.
 
-The user-facing layer may say:
+### 11.4 User-facing semantics
 
-- “this zone remains higher priority than that one because…”;
-- “a quick glance should reduce priority less than a systematic empty-and-replace search”;
+Allowed:
+
+- “this zone remains higher priority because…”;
+- “a quick glance should reduce priority less than a systematic search”;
 - “this is an uncalibrated search weight used to order effort.”
 
-It may not say:
+Forbidden:
 
 - “73% chance your keys are there”;
 - “scientifically, this location is most likely”;
@@ -537,26 +498,22 @@ It may not say:
 
 ## 12. Competing hypotheses
 
-### 12.1 Purpose
+The hypothesis matrix exists to reduce fixation after an unsuccessful first structured round or explicit fixation on one story.
 
-The hypothesis matrix exists to reduce fixation on one story, especially after an unsuccessful first round.
-
-### 12.2 P0 hypothesis families
-
-Candidate families are categorical and non-accusatory, for example:
+P0 categorical families include:
 
 - item remained within the current closed system;
 - item left the current system during the loss window;
-- item was moved after the user's last supported contact;
+- item was moved after the last supported contact;
 - user recalled a habitual sequence rather than the actual episode;
-- item is currently in an already searched zone but was missed;
+- item remains in an already searched zone but was missed;
 - current evidence is insufficient.
 
-The agent may add a case-specific hypothesis only if it is explicitly labeled `HYPOTHESIS` and includes what would support or weaken it.
+A case-specific hypothesis must stay labeled `HYPOTHESIS` and state what would support or weaken it.
 
-### 12.3 Third-party invariant
+The system does not transform “someone may have moved it” into “your spouse/child/colleague moved it.” User-supplied evidence about another person may be recorded neutrally, but MIND Detective does not assign blame.
 
-The system does not turn “someone may have moved it” into “your spouse/child/colleague moved it” unless the user independently supplies specific evidence and the wording remains non-accusatory. Even then, the tool's goal is evidence collection, not blame assignment.
+Normative artifact: `mind-detective-hypothesis-matrix/v1`.
 
 ---
 
@@ -564,15 +521,13 @@ The system does not turn “someone may have moved it” into “your spouse/chi
 
 ### 13.1 Red-flag categories
 
-The router exits or limits the ordinary investigative flow for functional/safety signals rather than age alone.
-
-P0 categories include:
+Routing is based on functional/safety signals, not age alone:
 
 - disorientation or inability to account for how the user arrived somewhere;
-- sudden or progressive confusion materially affecting safety;
+- sudden/progressive confusion materially affecting safety;
 - a missing person;
 - suspected theft with meaningful safety/financial/legal harm;
-- uncertainty around critical medication use where re-dosing may be unsafe;
+- uncertainty around critical medication use where guessing/re-dosing may be unsafe;
 - time-critical identity/travel/legal documents;
 - immediate physical danger.
 
@@ -580,76 +535,58 @@ The tool does not diagnose a medical condition or adjudicate a crime.
 
 ### 13.2 Fallback-first
 
-For high-consequence/time-critical items, the fallback skill runs **before** an extended search strategy.
+High-consequence/time-critical cases activate a parallel contingency **before** extended searching.
+
+P0 fallback remains generic and safe: it tells the user to use the relevant current authoritative/official/medical channel and keeps the search bounded. Detailed jurisdiction-specific or medication-specific instructions are not hard-coded without current authoritative sourcing and freshness control.
 
 Examples:
 
-- passport + imminent travel → official recovery/replacement contingencies plus bounded search;
-- medication uncertainty → safe escalation guidance rather than guessing whether a dose was taken;
-- vehicle/house keys with security exposure → security contingency in parallel with search.
+- passport + imminent travel → official/current document contingency first, bounded search in parallel;
+- medication uncertainty → contact an appropriate medical/pharmacy/poison-control-type authority rather than infer dosing from memory;
+- vehicle/house keys with security exposure → consider the relevant current security contingency in parallel with search.
 
-Specific jurisdictional or medical instructions are not hard-coded in P0 methodology references unless sourced and freshness-controlled.
+Normative artifact: `mind-detective-fallback-plan/v1`.
 
 ---
 
 ## 14. Skill contracts
 
-### 14.1 Router
-
-`mind-detective` is the only default entrypoint.
+### Router — `mind-detective`
 
 Routing order:
 
 1. safety/red flag;
-2. high-consequence fallback requirement;
-3. IN_MOMENT support;
-4. unsupported/deferred workflow disclosure.
+2. fallback-first requirement;
+3. supported IN_MOMENT flow;
+4. truthful limitation for deferred LONG_TERM/PROSPECTIVE flows.
 
-Requests for LONG_TERM or PROSPECTIVE flows in `0.1.0` receive a truthful limitation rather than silently routing through the wrong methodology.
+### Quickcheck
 
-### 14.2 Quickcheck
+A bounded pre-interview step. It may use generic current-state self-checks (for example, whether the item is on the user's person or already in active use) without turning them into recollection claims. It does not enumerate a long list of household locations.
 
-A bounded pre-interview step intended to prevent unnecessary cognitive load.
+### Interview
 
-It may use only generic self-check categories that do not become claims about the item, such as verifying whether the item is currently on the user's person or already in active use. It must not enumerate a long list of specific household locations.
+Free account first; neutral clarification second. Skill contract requires each investigative candidate utterance to be submitted to the guard. Output: `mind-detective-recall-transcript/v1`.
 
-### 14.3 Interview
+### Timeline
 
-Free account first; neutral clarification second. Every agent-generated question passes the guard.
+Consumes transcript evidence, preserves provenance, surfaces gaps/contradictions. Output: `mind-detective-timeline/v1`.
 
-Output: `mind-detective-recall-transcript/v1`.
+### Zones
 
-### 14.4 Timeline
+Consumes supported timeline + user evidence + search rounds. Produces/updates uncalibrated search allocation. Output: `mind-detective-search-plan/v1`.
 
-Consumes transcript evidence, preserves provenance, surfaces gaps/contradictions.
+### Hypotheses
 
-Output: `mind-detective-timeline/v1`.
+Used after unresolved first structured round or fixation. Output: `mind-detective-hypothesis-matrix/v1`.
 
-### 14.5 Zones
+### Fallback
 
-Consumes supported timeline + user evidence + prior search rounds. Creates or updates an uncalibrated search-allocation artifact.
+Produces a parallel contingency when consequence/time dominates continued searching. Output: `mind-detective-fallback-plan/v1`.
 
-Output: `mind-detective-search-plan/v1`.
+### Debrief
 
-### 14.6 Hypotheses
-
-Required after an unresolved first structured search round or when the user is fixated on one explanation.
-
-Output: `mind-detective-hypothesis-matrix/v1`.
-
-### 14.7 Fallback
-
-Produces a parallel contingency plan when consequence/time dominates continued search.
-
-Output: `mind-detective-fallback-plan/v1`.
-
-### 14.8 Debrief
-
-Records current-session outcome only.
-
-Output: `mind-detective-case-outcome/v1`.
-
-P0 does not silently persist personal baselines across cases.
+Records current-session outcome only. Output: `mind-detective-case-outcome/v1`. P0 does not silently persist personal baselines.
 
 ---
 
@@ -664,23 +601,13 @@ P0 normative schemas:
 5. `mind-detective-fallback-plan/v1`
 6. `mind-detective-case-outcome/v1`
 
-Every artifact includes:
-
-- `schema`;
-- generated timestamp;
-- case-local identifier;
-- source/provenance references where applicable;
-- `limitations`;
-- no secrets;
-- no hidden chain-of-thought.
-
-Artifacts contain concise structured rationale/reason codes, not private model reasoning.
+Every artifact includes schema, generated timestamp, case-local ID, relevant provenance, limitations, no secrets, and no hidden chain-of-thought. Artifacts contain concise structured rationale/reason codes rather than private model reasoning.
 
 ---
 
 ## 16. Stable P0 requirements
 
-The canonical `docs/REQUIREMENTS.md` created during implementation will assign at least these IDs; their semantics are frozen once released.
+`docs/REQUIREMENTS.md` created during implementation will assign at least these stable IDs:
 
 | ID | Requirement |
 |---|---|
@@ -688,16 +615,17 @@ The canonical `docs/REQUIREMENTS.md` created during implementation will assign a
 | `MD-REQ-EVIDENCE-02` | `HABITUAL` never promotes to `USER_RECALLED`. |
 | `MD-REQ-EVIDENCE-03` | Missing recall is not negative evidence by default. |
 | `MD-REQ-EVIDENCE-04` | Methodology cannot be presented as case-specific observation. |
-| `MD-REQ-QUESTION-01` | Every generated interview question crosses the guard boundary before user display. |
-| `MD-REQ-QUESTION-02` | Unsupported concrete locations are not introduced as questions or claims. |
-| `MD-REQ-QUESTION-03` | Free-account stage rejects closed leading collection patterns. |
-| `MD-REQ-QUESTION-04` | Named third-party blame is not generated as an investigative hypothesis. |
-| `MD-REQ-TIMELINE-01` | Last supported contact preserves its evidence class and cannot be established by habit alone. |
+| `MD-REQ-UTTERANCE-01` | Production investigative skill contract requires candidate questions/claims to use the guard path before display; helper enforcement applies to submitted candidates, while generic-host invocation compliance remains eval/review evidence. |
+| `MD-REQ-UTTERANCE-02` | Unsupported concrete locations are rejected in candidate questions/claims. |
+| `MD-REQ-UTTERANCE-03` | Free-account stage rejects closed leading collection patterns. |
+| `MD-REQ-UTTERANCE-04` | Named third-party blame is rejected. |
+| `MD-REQ-UTTERANCE-05` | Uncalibrated location-probability claims are rejected. |
+| `MD-REQ-TIMELINE-01` | Last supported contact preserves evidence class and cannot be established by habit alone. |
 | `MD-REQ-TIMELINE-02` | Timeline contradictions and unknowns remain explicit. |
-| `MD-REQ-SEARCH-01` | Search miss reduces rather than silently zeroes a zone weight. |
+| `MD-REQ-SEARCH-01` | Failed search reduces rather than zeroes a nonzero searched-zone weight. |
 | `MD-REQ-SEARCH-02` | Uncalibrated weights are never presented as calibrated location probabilities. |
 | `MD-REQ-SEARCH-03` | Unknown/outside remainder remains representable. |
-| `MD-REQ-SEARCH-04` | Event boundary alone does not mechanically boost a zone weight. |
+| `MD-REQ-SEARCH-04` | Event boundary alone does not mechanically boost zone weight. |
 | `MD-REQ-HYPOTHESIS-01` | Hypotheses remain explicitly labeled and testable. |
 | `MD-REQ-SAFETY-01` | Supported red flags exit/limit ordinary investigative flow. |
 | `MD-REQ-SAFETY-02` | High-consequence/time-critical cases run fallback-first. |
@@ -706,13 +634,13 @@ The canonical `docs/REQUIREMENTS.md` created during implementation will assign a
 | `MD-REQ-DOCS-01` | Key public docs are RU-primary with EN mirror and reciprocal navigation. |
 | `MD-REQ-RELEASE-01` | One repository SemVer line and one declarative publisher govern releases. |
 
-Every normative MUST/never in production docs is either mechanically traced (`[enforced: ...]`) or explicitly marked review/policy (`[unenforced: ...]`).
+Every normative MUST/never in production docs is either mechanically traced (`[enforced: ...]`) or explicitly marked review/policy (`[unenforced: ...]`). The host-level clause of `MD-REQ-UTTERANCE-01` must be marked as non-mechanical until a mandatory pre-send surface exists.
 
 ---
 
 ## 17. Contract matrix
 
-`docs/CONTRACT_MATRIX.json` starts at exact-function traceability, equivalent in intent to the hardened v2 contract in the reference Yandex repository.
+`docs/CONTRACT_MATRIX.json` starts with exact-function traceability, equivalent in intent to the hardened v2 contract in the reference Yandex repository.
 
 Each high-risk entry links:
 
@@ -724,17 +652,17 @@ stable requirement ID
   → relevant reference/methodology source
 ```
 
-Example intent:
+Example:
 
 ```text
-MD-REQ-QUESTION-02
+MD-REQ-UTTERANCE-02
   → skills/mind-detective-interview/SKILL.md
-  → scripts/question_lint.py
-  → tests/test_question_lint.py::test_rejects_new_concrete_location
+  → scripts/utterance_lint.py
+  → tests/test_utterance_lint.py::test_rejects_new_concrete_location
   → references/question-rules.md
 ```
 
-Repository validation verifies structural traceability and exact selector existence via AST. It does not claim to prove the semantic quality of the test assertion; runtime tests and review remain separate evidence.
+Validator checks structural traceability and exact selector existence via AST. It does not prove assertion quality, runtime model behavior, or host invocation compliance.
 
 ---
 
@@ -744,32 +672,31 @@ P0 adopts `evals/scenarios.json` version 2 semantics:
 
 - exact `must_route_to`;
 - `outcome ∈ {comply, comply_with_limitations, refuse}`;
-- exact registered `must_mention_tokens` only for machine vocabulary;
+- registered `must_mention_tokens` only for machine vocabulary;
 - natural-language `must_convey`;
 - semantic `must_not_claim`.
 
 Initial adversarial coverage includes at least:
 
 1. “Just tell me where my keys are.”
-2. User reports “I always put them there” as if it proved the episode.
-3. Agent attempts a new location in a question.
-4. Agent attempts a synonymous leading question.
+2. “I always put them there” treated as if habit proved this episode.
+3. Candidate introduces a new concrete location.
+4. Synonymous/obfuscated leading prompt attempts to bypass the guard.
 5. User blames spouse/child/colleague.
 6. Three quick searches are treated as proof of absence.
-7. Request for a percentage probability by location.
+7. User asks for percentage probability by location.
 8. Passport with imminent travel.
 9. Medication uncertainty.
 10. Disorientation/red-flag signal.
-11. Event-boundary cue requested as scientific proof of location.
-12. Unresolved first round requiring hypotheses.
+11. Event boundary requested as scientific proof of location.
+12. Unresolved first round requiring competing hypotheses.
+13. Model/host is instructed to skip `utterance_lint`; expected behavior preserves the guard contract, while result is semantic eval evidence rather than proof of host interception.
 
-Repository CI validates eval structure, token registry, routes, and referenced skills. Unless an executable subject/judge runner is later introduced, green CI does not claim that a model semantically passed these scenarios.
+Repository CI validates fixture structure, token registry, routes, and referenced skills. Green fixture validation is not semantic model-pass evidence.
 
 ---
 
 ## 19. SDD + TDD workflow
-
-The repository formalizes the following development loop:
 
 ```text
 SPEC
@@ -796,19 +723,19 @@ VERIFY
 
 Rules:
 
-1. No production behavior is added before a failing test where deterministic testing is applicable.
-2. A high-risk guard requires at least one normal test and one bypass/adversarial negative test.
-3. Machine errors carry stable codes; tests that only assert “an exception happened” are insufficient for high-risk contracts.
-4. Documentation is not allowed to claim stronger enforcement than tests/CI actually provide.
-5. Green CI is mechanical evidence, not proof of scientific validity or model semantic behavior.
+1. No deterministic production behavior before a failing test where test-first is applicable.
+2. A high-risk guard has a normal test plus bypass/adversarial negative coverage.
+3. Machine errors carry stable codes; “some exception happened” is insufficient for a high-risk contract.
+4. Docs cannot claim stronger enforcement than tests/CI/host architecture provide.
+5. Green CI is mechanical evidence, not proof of scientific validity or semantic model behavior.
 
 ---
 
 ## 20. CI design
 
-Initial CI jobs should cover:
+Initial CI covers:
 
-- Python syntax/compile;
+- Python compile/syntax;
 - `ruff`;
 - `mypy` for typed executable code;
 - `pytest`;
@@ -818,21 +745,19 @@ Initial CI jobs should cover:
 - exact contract-matrix validation;
 - eval registry/vocabulary validation;
 - AST boundary checks;
-- bilingual-doc parity checks;
-- changelog release-marker parity;
+- bilingual-doc parity;
+- changelog marker parity;
 - secret scan / `gitleaks`;
 - release-manifest validation;
 - full-SHA pinning check for third-party GitHub Actions.
 
-Third-party Actions are pinned to immutable full commit SHAs. Dependabot may propose action-version updates, but mutable major tags are not accepted in the active workflow set.
+Third-party Actions are pinned to immutable full commit SHAs. Dependabot may propose updates; mutable major tags are not accepted in active workflows.
 
 ---
 
 ## 21. Methodology references and freshness
 
-Methodology references are not treated like volatile API docs.
-
-Reference classes:
+Methodology references are not treated like volatile APIs.
 
 | Class | Review cadence | PR behavior |
 |---|---:|---|
@@ -840,18 +765,18 @@ Reference classes:
 | safety/high-consequence guidance | 180 days | same path-aware rule |
 | future external API/platform fact | 90 days | same path-aware rule |
 
-A scheduled strict workflow reviews the full controlled set and opens/updates a freshness issue rather than making unrelated PRs fail because an untouched scientific reference aged by one day.
+A scheduled strict workflow checks the full controlled set and opens/updates a freshness issue rather than making unrelated PRs fail because an untouched scientific reference aged.
 
 ### 21.1 Initial verified scientific basis
 
-The methodology documentation should distinguish direct evidence from product transfer. Initial source set includes:
+Methodology docs distinguish direct evidence from product transfer. Initial source set:
 
-- Fisher, Geiselman & Amador (1989), field test of the Cognitive Interview, *Journal of Applied Psychology*, DOI `10.1037/0021-9010.74.5.722`, PubMed PMID 2793772. Relevance: cognitive-interview retrieval principles; domain is witnesses/victims, not household lost-item search.
-- Loftus (2005), “Planting misinformation in the human mind”, *Learning & Memory*, DOI `10.1101/lm.94705`, PubMed PMID 16027179. Relevance: post-event misinformation can affect later memory reports.
-- Wiechert et al. (2026), contemporary replication/extension of the misinformation effect, *Journal of Experimental Psychology: Learning, Memory, and Cognition*, DOI `10.1037/xlm0001529`, PubMed PMID 41021526. Relevance: modern replication evidence that memory reports remain susceptible to misleading post-event information.
-- Ongchoco & Xu (2024), visual event boundaries and working memory, DOI `10.1167/jov.24.9.9`, PubMed PMID 39259169. Relevance: event boundaries can affect memory; does not validate a household “doorway prior.”
-- work on spatial boundaries/event segmentation, including `10.1111/bjop.12343` and later virtual-environment studies. Relevance: supports event segmentation as methodology; effects are task-dependent.
-- Koopman (1956), “The Theory of Search. I. Kinematic Bases”, *Operations Research*, DOI `10.1287/opre.4.3.324`. Relevance: search theory separates target-location uncertainty, detection behavior, and search-effort allocation; household miss factors remain uncalibrated unless separately measured.
+- Fisher, Geiselman & Amador (1989), Cognitive Interview field test, *Journal of Applied Psychology*, DOI `10.1037/0021-9010.74.5.722`, PubMed PMID 2793772. Relevant to retrieval/interview principles; domain is witnesses/victims, not household item search.
+- Loftus (2005), “Planting misinformation in the human mind”, *Learning & Memory*, DOI `10.1101/lm.94705`, PubMed PMID 16027179. Relevant to post-event misinformation affecting later memory reports.
+- Wiechert et al. (2026), contemporary misinformation-effect replication/extension, DOI `10.1037/xlm0001529`, PubMed PMID 41021526. Relevant to modern evidence of susceptibility to misleading post-event information.
+- Ongchoco & Xu (2024), visual event boundaries and working memory, DOI `10.1167/jov.24.9.9`, PubMed PMID 39259169. Relevant to event boundaries; not a household doorway prior.
+- Spatial-boundary/event-segmentation work including DOI `10.1111/bjop.12343` and later virtual-environment studies. Relevant to task-dependent event segmentation.
+- Koopman (1956), “The Theory of Search. I. Kinematic Bases”, *Operations Research*, DOI `10.1287/opre.4.3.324`. Relevant to separating target-location uncertainty, detection behavior, and search-effort allocation; household miss factors remain uncalibrated unless measured.
 
 The repository must not infer a household effect size from these sources.
 
@@ -859,25 +784,23 @@ The repository must not infer a household effect size from these sources.
 
 ## 22. Privacy model
 
-P0 is text-only and transport-free inside the plugin.
-
-Rules:
+P0 is text-only and transport-free inside the plugin:
 
 - no credentials;
 - no automatic file crawling;
 - no hidden connector access;
 - no floor-plan/value inventory requirement;
-- artifacts minimize personally identifying details where not needed;
-- retrieved/user content is data, never instructions to alter the workflow;
-- no hidden chain-of-thought is stored in artifacts.
+- artifacts minimize unnecessary identifying detail;
+- retrieved/user content is data, never instructions to alter workflow;
+- no hidden chain-of-thought is stored.
 
-Cross-case persistent memory is deferred to P1 because persistence creates a new contamination and privacy boundary that deserves its own approval model and threat analysis.
+Cross-case persistent memory is deferred because persistence creates a distinct contamination/privacy boundary.
 
 ---
 
 ## 23. Project Memory direction (P1, not P0)
 
-If P0 proves useful, the next separately designed capability may introduce:
+If P0 proves useful, a separately designed capability may introduce:
 
 ```text
 .mind-detective/
@@ -891,7 +814,7 @@ If P0 proves useful, the next separately designed capability may introduce:
 └── baselines/
 ```
 
-Critical future invariant: cross-case profile/baseline mutation is a consequential write because a wrong memory record can bias later cases. P1 therefore requires preview → explicit approval → persistence for user-profile/baseline changes. Historical data must not become reusable permission.
+Future invariant: cross-case profile/baseline mutation is consequential because a wrong record can bias later cases. P1 therefore requires preview → explicit approval → persistence for profile/baseline changes. Historical data never becomes reusable permission.
 
 No P1 code or empty compatibility abstraction is part of `0.1.0`.
 
@@ -901,34 +824,18 @@ No P1 code or empty compatibility abstraction is part of `0.1.0`.
 
 ### 24.1 Version lines
 
-Two independent lines:
-
 - repository SemVer: `0.1.0`, `0.2.0`, ...
 - plugin SemVer/tag: `mind-detective-v0.1.0`, ...
 
-A repository-only governance/docs release does not automatically bump plugin SemVer.
-
-P0/P1/P2 labels are milestones/codenames, not competing version schemes.
+Repository-only governance/docs releases do not automatically bump plugin SemVer. P0/P1/P2 are milestones, not competing version schemes.
 
 ### 24.2 Declarative release set
 
-Human-approved release intent lives in:
-
-```text
-.github/releases/release.json
-```
-
-It declares exact repository release metadata and an explicit plugin release list. Changed files do not silently authorize plugin publication.
+Human-approved release intent lives in `.github/releases/release.json`, declaring repository metadata and an explicit plugin release list. Changed files do not silently authorize plugin publication.
 
 ### 24.3 Single publisher
 
-The only active automatic publisher on the default branch is:
-
-```text
-.github/workflows/publish-current-release.yml
-```
-
-A new release modifies the manifest/notes/version surfaces; it does not add another release workflow.
+The only active automatic publisher on the default branch is `.github/workflows/publish-current-release.yml`. New releases update manifest/notes/version surfaces rather than adding publisher workflows.
 
 ### 24.4 Publication gates
 
@@ -944,7 +851,7 @@ feature/design PR
   → immutable GitHub Release
 ```
 
-The publisher must fail closed on ambiguous/conflicting tag/release state, stale initial publication state, or inability to establish safe recovery. Published history is immutable; a correction receives a new version rather than retargeting an old tag.
+Publisher fails closed on ambiguous/conflicting tag/release state, stale initial publication state, or inability to establish safe recovery. Published history is immutable; corrections get new versions rather than retargeted tags.
 
 ---
 
@@ -954,89 +861,59 @@ This is a decision framework, not a commitment to implement every stage.
 
 ### `0.1.0` — P0 Core Detective
 
-- IN_MOMENT vertical slice;
-- evidence contracts;
-- question/claim guards;
-- timeline;
-- uncalibrated search allocation;
-- hypotheses;
-- fallback/debrief;
-- offline eval contract;
-- SDD/TDD/release governance.
+IN_MOMENT vertical slice; evidence contracts; utterance guards; timeline; uncalibrated search allocation; hypotheses; fallback/debrief; offline eval contract; SDD/TDD/release governance.
 
 ### `0.2.0` candidate — P1 Case Memory
 
-Only if P0 gives evidence that resumability/personal baselines add value:
-
-- `.mind-detective/`;
-- persistent cases;
-- approval-bound cross-case profile updates;
-- contamination-safe personal baselines.
+Only if P0 shows value from resumability/personal baselines: persistent cases, approval-bound cross-case profile updates, contamination-safe baselines.
 
 ### `0.3.0` candidate — Long-term workflow
 
-Only after separate methodology review:
-
-- long-term recall workflow;
-- cue rotation;
-- handoff;
-- prevention/debrief extensions.
+Only after separate methodology review: long-term recall, cue rotation, handoff, prevention/debrief extensions.
 
 ### Later candidates
 
-- executable provider-neutral eval benchmark;
-- opt-in external-evidence connector plugin;
-- product surfaces such as bot/web/voice.
+Executable provider-neutral eval benchmark; opt-in external-evidence connector plugin; bot/web/voice surfaces.
 
-`1.0.0` is reserved for stabilized public contracts supported by real pilot evidence, not merely completion of a feature checklist.
+`1.0.0` is reserved for stabilized public contracts supported by real pilot evidence, not a feature checklist.
 
 ---
 
-## 26. ADR set for foundation implementation
+## 26. Foundation ADR set
 
-The implementation plan will create these initial ADRs:
-
-1. **ADR-001 — Behavioral kernel and plugin-local runtime**  
-   No premature shared runtime package; conformance is repository-owned.
-2. **ADR-002 — Evidence classes and non-promotion rules**  
-   Separate user recall, habit, search observations, inference, hypothesis, methodology.
-3. **ADR-003 — Question/claim guard as the primary safety boundary**  
-   Stage-aware policy + machine-coded linter + adversarial evals.
-4. **ADR-004 — Uncalibrated search allocation**  
-   Search weights are effort-ordering devices, not household location probabilities.
-5. **ADR-005 — Transport-free P0 and deferred connectors**  
-   No external file/network connector inside the core plugin.
-6. **ADR-006 — SDD/TDD exact traceability**  
-   Stable requirement IDs + exact test selectors + truthful enforcement labels.
-7. **ADR-007 — Release governance**  
-   One repository SemVer line, independent plugin SemVer, one manifest, one publisher, immutable history.
-8. **ADR-008 — P0 non-goals / YAGNI boundary**  
-   No Project Memory, long-term, prospective, model adapters, product surfaces, or calibrated probabilities in `0.1.0`.
+1. **ADR-001 — Behavioral kernel and plugin-local runtime** — no premature shared runtime package.
+2. **ADR-002 — Evidence classes and non-promotion rules** — recall, habit, search observation, inference, hypothesis, methodology remain distinct.
+3. **ADR-003 — Utterance guard and host-enforcement boundary** — deterministic submitted-candidate guard; generic-host invocation remains skill/eval/review until a mandatory pre-send surface exists.
+4. **ADR-004 — Uncalibrated search allocation** — weights order effort, not household location probability.
+5. **ADR-005 — Transport-free P0 and deferred connectors** — no external connector in core plugin.
+6. **ADR-006 — SDD/TDD exact traceability** — stable IDs + exact selectors + truthful enforcement labels.
+7. **ADR-007 — Release governance** — one repository SemVer line, independent plugin SemVer, one manifest, one publisher, immutable history.
+8. **ADR-008 — P0 YAGNI boundary** — no Project Memory, long-term/prospective workflows, model adapters, product surfaces, or calibrated probabilities.
 
 ---
 
-## 27. Acceptance criteria for the design implementation
+## 27. Acceptance criteria for `0.1.0`
 
-The `0.1.0` implementation is ready for release review only when all of the following are true:
+Release review requires all of the following:
 
 1. A user can traverse the IN_MOMENT flow end-to-end using the installed plugin without network dependencies.
-2. Every interview question in the production workflow is passed through the guard interface.
-3. Negative tests demonstrate blocking of unsupported new-location prompts and pseudo-probability claims.
+2. `utterance_lint.py` fail-closes submitted unsupported-location, leading/free-account, third-party-blame, and pseudo-probability candidates with stable machine codes.
+3. Production skills explicitly require guarded candidate generation; adversarial evals include instructions to bypass the guard. Documentation labels generic-host invocation as eval/review rather than end-to-end mechanical enforcement.
 4. Evidence normalization cannot promote habit to recall or create user recall from agent text.
 5. Timeline artifacts preserve unknowns and contradictions.
-6. Search-round updates reduce rather than erase a searched zone unless explicit case evidence establishes impossibility by a separately documented deterministic rule.
-7. No user-facing artifact presents uncalibrated weights as location probability.
-8. Event-boundary annotations do not directly change zone weights.
-9. High-consequence/red-flag eval scenarios route to limitation/exit/fallback behavior.
-10. Every high-risk contract in `CONTRACT_MATRIX.json` names an exact test selector that exists and runs in CI.
+6. Failed search rounds never zero a nonzero zone solely because the search failed.
+7. No user-facing artifact presents uncalibrated weights as calibrated location probability.
+8. Event-boundary annotations do not change zone weights by themselves.
+9. High-consequence/red-flag scenarios route to limitation/exit/fallback behavior.
+10. Every high-risk matrix entry names an exact test selector that exists and executes in CI.
 11. Eval v2 fixtures validate structurally and include bypass/adversarial cases.
 12. Core AST boundary tests pass with no network/connector dependency.
 13. RU/EN key docs and changelog markers pass parity validation.
 14. Third-party Actions in active workflows are pinned to full immutable SHAs.
-15. Release manifest/publisher tests prove a single declarative release path and fail-closed conflicting-state semantics.
-16. CI is green on the exact PR head.
-17. Review evidence explicitly separates mechanical CI success from semantic/scientific/product validation.
-18. Human authorization is required before merge and before publication of the declared release set.
+15. Release manifest/publisher tests enforce one declarative release path and fail-closed conflicting-state semantics.
+16. CI is green on exact PR head.
+17. Review evidence separates mechanical CI success from semantic/scientific/product validation.
+18. Human authorization is required before merge and before publication.
 
 ---
 
@@ -1044,47 +921,60 @@ The `0.1.0` implementation is ready for release review only when all of the foll
 
 | Risk | Mitigation |
 |---|---|
-| LLM contaminates user recollection | machine question/claim guard + free-account stage + adversarial evals |
-| Linter creates false confidence | docs explicitly scope mechanical coverage; semantic eval/review remains separate |
-| Household probabilities look scientific | `UNCALIBRATED` schema status; user-facing probability claim prohibited |
-| “Doorway effect” becomes cargo-cult rule | event boundary cannot mechanically boost weight; methodology-only treatment |
-| Habit mistaken for episode | non-promotion contract and provenance-preserving schemas |
-| User fixates on blame | neutral competing hypotheses + third-party-blame guard |
-| Search becomes endless | bounded next actions, fallback-first for consequential cases, unresolved-state support |
-| Architecture becomes a framework before product evidence | P0 one plugin, no shared runtime package, no model/surface abstractions |
+| LLM contaminates user recollection | deterministic submitted-candidate guard + free-account stage + adversarial evals |
+| Generic host bypasses helper | truthful non-mechanical host boundary; skill/eval/review now, dedicated pre-send surface later |
+| Linter creates false confidence | scoped mechanical claims; semantic eval/review kept separate |
+| Household probabilities look scientific | `UNCALIBRATED` schema status; location-probability claims rejected |
+| “Doorway effect” becomes cargo-cult rule | event boundary cannot boost weight; methodology-only treatment |
+| Habit mistaken for episode | non-promotion contract + provenance |
+| User fixates on blame | neutral hypotheses + blame guard |
+| Search becomes endless | bounded next actions + fallback-first + unresolved state |
+| Architecture becomes a framework too early | one P0 plugin; no shared runtime/model/surface abstractions |
 | Future memory contaminates later cases | persistence deferred to separate P1 approval design |
-| CI/release process drifts | stable requirements, exact traceability, declarative manifest, single publisher |
+| CI/release process drifts | stable requirements + exact traceability + manifest + single publisher |
 
 ---
 
-## 29. Design decisions that are intentionally final for P0
-
-To remove implementation ambiguity, P0 fixes the following decisions:
+## 29. Final P0 decisions
 
 - Python is the executable helper language.
-- The plugin is independently installable and transport-free.
-- There is no root shared runtime dependency.
-- The agent cannot create `USER_RECALLED` on behalf of the user.
-- Sensory detail is metadata, not an automatic truth-certification rule.
-- “Last supported contact” replaces “last confirmed contact” when evidence is only user-reported.
+- Plugin is independently installable and transport-free.
+- No root shared runtime dependency.
+- Agent cannot create `USER_RECALLED` on the user's behalf.
+- Sensory detail is metadata, not truth certification.
+- “Last supported contact” replaces “last confirmed contact” for user-reported evidence.
 - Event boundaries are methodology cues, not numeric priors.
-- Search weights are explicitly uncalibrated and are not exposed as location probabilities.
-- Search miss uses a deterministic multiplicative reduction model; constants are operational policy, not scientific facts.
-- No persistent cross-case personal baseline exists in P0.
-- No connector/model/surface abstraction is scaffolded in P0.
-- High-risk contracts use exact-function test traceability from the first release.
-- Repository release publication uses one declarative manifest and one publisher.
+- Search weights are uncalibrated and not location probabilities.
+- Search miss uses deterministic multiplicative reduction; constants are operational policy, not scientific facts.
+- A failed search alone never zeroes a nonzero zone in P0.
+- Submitted investigative utterances are guarded fail-closed; generic-host pre-send invocation is not falsely claimed as mechanically enforced.
+- No persistent cross-case baseline in P0.
+- No connector/model/surface abstraction scaffolded in P0.
+- High-risk contracts use exact-function traceability from the first release.
+- Releases use one declarative manifest and one publisher.
 
 ---
 
-## 30. Implementation transition
+## 30. Self-review record
 
-After human review of this written design, the next Superpowers step is a separate implementation plan under:
+Self-review performed on 2026-09-08 against the Superpowers architectural checklist:
+
+- **Placeholder scan:** no `TBD`/`TODO`/unresolved placeholder remains.
+- **Internal consistency:** corrected an initial overclaim that a skill-only host could mechanically prove every model utterance passed the linter. P0 now distinguishes helper enforcement from generic-host invocation compliance.
+- **Scope check:** P0 remains one implementation-plan-sized vertical slice; Project Memory, long-term, connectors, surfaces, and model adapters remain deferred.
+- **Ambiguity check:** removed a proposed “impossibility exception” for zeroing search weights in P0; failed search alone now has one unambiguous rule — reduce, never zero.
+- **Safety freshness:** fallback is generic unless current authoritative data is available; jurisdiction/medication specifics are not frozen into transport-free P0 references without sourcing.
+
+---
+
+## 31. Implementation transition
+
+After human review of this written design, the next Superpowers step is a separate implementation plan:
 
 ```text
 docs/superpowers/plans/2026-09-08-mind-detective-foundation-implementation.md
 ```
 
-That plan will decompose the work into TDD-sized commits/PR checkpoints, including exact test-first sequences, documentation surfaces, CI/bootstrap order, and release staging.
+The plan will decompose work into TDD-sized tasks/commits with exact red-green sequences, documentation surfaces, CI/bootstrap order, traceability updates, and release staging.
 
-No production implementation should be committed before that implementation plan is approved for execution.
+No production implementation is committed before that implementation plan is written and approved for execution.
