@@ -35,139 +35,39 @@
 
 ---
 
-## Locked file map
-
-Repository/governance: `AGENTS.md`, `CLAUDE.md`, `README.md`, `README.en.md`, `CHANGELOG.md`, `CHANGELOG.en.md`, `CONTRIBUTING.md`, `SECURITY.md`, `SECURITY.en.md`, `LICENSE`, `pyproject.toml`, `docs/REQUIREMENTS.md`, `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`, `docs/PLUGIN_STANDARD.md`, `docs/PLUGIN_STANDARD.en.md`, `docs/RELEASE_POLICY.md`, `docs/RELEASE_POLICY.en.md`, `docs/SDD_TDD_WORKFLOW.md`, `docs/METHODOLOGY.md`, `docs/METHODOLOGY.en.md`, `docs/PRIVACY.md`, `docs/RISK_REGISTER.md`, `docs/GLOSSARY.md`, `docs/GLOSSARY.en.md`, `docs/CONTRACT_MATRIX.json`, `docs/EVAL_TOKEN_REGISTRY.json`, `docs/adr/`.
-
-Installability: `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `plugins/mind-detective/.claude-plugin/plugin.json`, `plugins/mind-detective/.codex-plugin/plugin.json`, plugin README/CHANGELOG pairs and `THIRD_PARTY_NOTICES.md`.
-
-Runtime: `plugins/mind-detective/scripts/evidence.py`, `question_policy.py`, `question_lint.py`, `timeline.py`, `zones.py`, `ach.py`, `redflags.py`, `schemas.py`.
-
-Skills: `mind-detective`, `mind-detective-quickcheck`, `mind-detective-interview`, `mind-detective-timeline`, `mind-detective-zones`, `mind-detective-hypotheses`, `mind-detective-fallback`, `mind-detective-debrief` under `plugins/mind-detective/skills/<skill>/SKILL.md`.
-
-References: `safety.md`, `redflags.md`, `question-rules.md`, `interview.md`, `mechanisms.md`, `search-allocation.md`, `ach.md`, `fallback.md`, `sources.md` under `plugins/mind-detective/references/`.
-
-Schemas: six files under `docs/schemas/` for recall transcript, timeline, search plan, hypothesis matrix, fallback plan and case outcome v1.
-
-Repository validators/tests: `scripts/validate_repo.py`, `contract_controls.py`, `bilingual_docs.py`, `check_reference_freshness.py`, `release_manifest.py`; root tests for repository contracts, boundaries, contract matrix, eval contract, bilingual docs, freshness and release contract.
-
-CI/release: `.github/workflows/ci.yml`, `reference-freshness.yml`, `publish-current-release.yml`, Dependabot, PR/issue templates and `.github/releases/release.json` plus `0.1.0.md`.
-
----
-
 ## Task 1: Bootstrap installability and version SSOT
 
-**Files:** create `pyproject.toml`, both root marketplace files, both plugin descriptor files, `scripts/validate_repo.py`, `tests/test_repository_contracts.py`; modify the approved design spec only to replace `.agents-plugin/plugin.json` with `.codex-plugin/plugin.json`.
+**Files:** create `pyproject.toml`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `plugins/mind-detective/.claude-plugin/plugin.json`, `plugins/mind-detective/.codex-plugin/plugin.json`, `scripts/validate_repo.py`, `tests/test_repository_contracts.py`; modify the approved design spec only to replace `.agents-plugin/plugin.json` with `.codex-plugin/plugin.json`.
 
 **Produces:** `validate_repository(root: Path) -> list[str]`; plugin version SSOT in `plugins/mind-detective/.codex-plugin/plugin.json`.
 
-- [ ] **Step 1: Write the failing metadata test**
-
-```python
-import json
-import unittest
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-
-class RepositoryContractTests(unittest.TestCase):
-    def test_plugin_version_is_single_source_of_truth(self):
-        codex = json.loads((ROOT / "plugins/mind-detective/.codex-plugin/plugin.json").read_text())
-        claude = json.loads((ROOT / "plugins/mind-detective/.claude-plugin/plugin.json").read_text())
-        agents = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text())
-        marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
-        self.assertEqual(codex["version"], "0.1.0")
-        self.assertEqual(claude["version"], codex["version"])
-        self.assertEqual(agents["plugins"][0]["version"], codex["version"])
-        self.assertEqual(marketplace["plugins"][0]["version"], codex["version"])
-
-    def test_incorrect_agents_plugin_descriptor_is_absent(self):
-        self.assertFalse((ROOT / "plugins/mind-detective/.agents-plugin/plugin.json").exists())
-```
-
-- [ ] **Step 2: Run RED** — `python -m unittest tests.test_repository_contracts -v`; expect missing-file failures.
-
-- [ ] **Step 3: Create descriptors with exact core values**
-
-```json
-{"name":"mind-detective","version":"0.1.0","skills":"./skills/"}
-```
-
-The Codex descriptor additionally sets author `Trafficolog`, license `MIT`, display name `MIND Detective`, category `Productivity`, and capabilities `Research`, `Analysis`, `Productivity`. `.agents/plugins/marketplace.json` uses local source `./plugins/mind-detective`, `installation: AVAILABLE`, `authentication: ON_USE`, category `Productivity`. `ON_USE` is schema-compatible metadata, not credential ownership.
-
-- [ ] **Step 4: Implement the minimal validator**
-
-```python
-from pathlib import Path
-import json
-
-def validate_repository(root: Path) -> list[str]:
-    errors: list[str] = []
-    codex_path = root / "plugins/mind-detective/.codex-plugin/plugin.json"
-    claude_path = root / "plugins/mind-detective/.claude-plugin/plugin.json"
-    if not codex_path.exists() or not claude_path.exists():
-        return ["PLUGIN_DESCRIPTOR_MISSING"]
-    codex = json.loads(codex_path.read_text(encoding="utf-8"))
-    claude = json.loads(claude_path.read_text(encoding="utf-8"))
-    if codex.get("name") != "mind-detective" or claude.get("name") != "mind-detective":
-        errors.append("PLUGIN_NAME_MISMATCH")
-    if codex.get("version") != claude.get("version"):
-        errors.append("PLUGIN_VERSION_MISMATCH")
-    if (root / "plugins/mind-detective/.agents-plugin/plugin.json").exists():
-        errors.append("PLUGIN_DESCRIPTOR_PATH_INVALID")
-    return errors
-```
-
-Add `main()` that prints errors and returns exit `1` when nonempty. Configure Ruff `target-version = "py310"` and mypy `python_version = "3.10"` in `pyproject.toml`.
-
-- [ ] **Step 5: Correct the spec path** — replace exactly the incorrect descriptor path; no other semantic design change.
-- [ ] **Step 6: Run GREEN** — `python -m unittest tests.test_repository_contracts -v` and `python scripts/validate_repo.py`; expect PASS/0.
-- [ ] **Step 7: Commit** — `git commit -m "build: bootstrap mind-detective plugin contracts"` after staging only Task 1 files.
+- [ ] Write the failing metadata test that loads all four descriptors/marketplaces, requires version `0.1.0` parity, and asserts `plugins/mind-detective/.agents-plugin/plugin.json` does not exist.
+- [ ] Run `python -m unittest tests.test_repository_contracts -v`; expect missing-file failures.
+- [ ] Create Claude descriptor exactly `{"name":"mind-detective","version":"0.1.0","skills":"./skills/"}`.
+- [ ] Create Codex descriptor with `name=mind-detective`, `version=0.1.0`, author `Trafficolog`, license `MIT`, display name `MIND Detective`, category `Productivity`, capabilities `Research`, `Analysis`, `Productivity`.
+- [ ] Create `.agents/plugins/marketplace.json` with local source `./plugins/mind-detective`, `installation: AVAILABLE`, `authentication: ON_USE`, category `Productivity`; document that `ON_USE` is schema-compatible metadata, not credential ownership.
+- [ ] Implement `validate_repository(root)` to check required descriptors, canonical name, exact version parity, marketplace parity, and forbidden `.agents-plugin` path; `main()` prints errors and exits `1` when any exist.
+- [ ] Configure Ruff `target-version = "py310"` and mypy `python_version = "3.10"` in `pyproject.toml`.
+- [ ] Correct exactly one path in the design spec; no semantic rewrite.
+- [ ] Run repository contract test and `python scripts/validate_repo.py`; require PASS/0.
+- [ ] Commit `build: bootstrap mind-detective plugin contracts`.
 
 ---
 
 ## Task 2: Evidence model and recall-transcript contract
 
-**Files:** create `evidence.py`, `test_evidence.py`, recall-transcript JSON schema, `schemas.py`, `test_schemas.py`.
+**Files:** create `plugins/mind-detective/scripts/evidence.py`, `plugins/mind-detective/tests/test_evidence.py`, `docs/schemas/mind-detective-recall-transcript-v1.schema.json`, `plugins/mind-detective/scripts/schemas.py`, `plugins/mind-detective/tests/test_schemas.py`.
 
-**Produces:** `EvidenceClass`, frozen `Statement`, `EvidenceError(code)`, `normalize_statement(...)`, `validate_artifact(schema_name, artifact)`.
+**Produces:** `EvidenceClass`, frozen `Statement`, `EvidenceError` with `.code`, `normalize_statement(statement_id, text, evidence_class, author, created_at, elicited_by=None, detail_level="LOW", confidence_self="UNSTATED", limitations=())`, and `validate_artifact(schema_name, artifact)`.
 
-- [ ] **Step 1: Write RED origin/non-promotion tests**
-
-```python
-class EvidenceTests(unittest.TestCase):
-    def test_agent_cannot_originate_user_recalled(self):
-        with self.assertRaisesRegex(EvidenceError, "MD_E_AGENT_USER_EVIDENCE"):
-            normalize_statement("s1", "I remember it", EvidenceClass.USER_RECALLED, "agent", "2026-09-09T12:00:00Z")
-
-    def test_habit_marker_cannot_be_promoted_to_recall(self):
-        with self.assertRaisesRegex(EvidenceError, "MD_E_HABIT_PROMOTION"):
-            normalize_statement("s2", "Я обычно всегда кладу ключи сюда", EvidenceClass.USER_RECALLED, "user", "2026-09-09T12:01:00Z")
-```
-
-- [ ] **Step 2: Run RED** — plugin evidence test; expect import failure.
-- [ ] **Step 3: Implement concrete model**
-
-```python
-class EvidenceClass(str, Enum):
-    USER_RECALLED = "USER_RECALLED"
-    HABITUAL = "HABITUAL"
-    USER_STATED = "USER_STATED"
-    EXTERNAL = "EXTERNAL"
-    SEARCHED = "SEARCHED"
-    INFERRED = "INFERRED"
-    HYPOTHESIS = "HYPOTHESIS"
-    METHODOLOGY = "METHODOLOGY"
-
-USER_ONLY = {EvidenceClass.USER_RECALLED, EvidenceClass.HABITUAL, EvidenceClass.USER_STATED}
-HABIT_MARKERS = ("обычно", "всегда", "как правило", "usually", "always", "normally")
-```
-
-`normalize_statement(statement_id, text, evidence_class, author, created_at, elicited_by=None, detail_level="LOW", confidence_self="UNSTATED", limitations=())` rejects agent-originated `USER_ONLY`; when requested class is `USER_RECALLED` and a habit marker appears, raise `EvidenceError("MD_E_HABIT_PROMOTION", ...)`.
-
-- [ ] **Step 4: Add transcript schema** — top-level required fields `schema`, `generated_at`, `case_id`, `statements`, `limitations`; statement class enum exactly matches `EvidenceClass`.
-- [ ] **Step 5: Run GREEN** — evidence and schema tests.
-- [ ] **Step 6: Commit** — `feat: add evidence and transcript contracts`.
+- [ ] Write RED tests: agent-originated `USER_RECALLED` raises code `MD_E_AGENT_USER_EVIDENCE`; text `Я обычно всегда кладу ключи сюда` requested as `USER_RECALLED` raises `MD_E_HABIT_PROMOTION`.
+- [ ] Run only `test_evidence.py`; expect missing module.
+- [ ] Implement `EvidenceClass` values `USER_RECALLED`, `HABITUAL`, `USER_STATED`, `EXTERNAL`, `SEARCHED`, `INFERRED`, `HYPOTHESIS`, `METHODOLOGY`.
+- [ ] Implement `USER_ONLY` origin guard and conservative RU/EN habit markers `обычно`, `всегда`, `как правило`, `usually`, `always`, `normally`; do not claim exhaustive NLP classification.
+- [ ] Create recall-transcript schema requiring `schema`, `generated_at`, `case_id`, `statements`, `limitations`; statement class enum exactly matches `EvidenceClass`.
+- [ ] Implement lightweight schema-name/required-field validation with bounded `MD_SCHEMA_*` errors.
+- [ ] Run evidence/schema tests; require PASS.
+- [ ] Commit `feat: add evidence and transcript contracts`.
 
 ---
 
@@ -175,72 +75,33 @@ HABIT_MARKERS = ("обычно", "всегда", "как правило", "usual
 
 **Files:** create `question_policy.py`, `question_lint.py`, `test_question_lint.py`, `references/question-rules.md`.
 
-**Produces:** `ConversationStage`, frozen `GuardResult`, `lint_utterance(text, stage, known_locations, known_third_parties)` and stable codes `MD_Q_NEW_LOCATION`, `MD_Q_CLOSED_FREE_ACCOUNT`, `MD_Q_MULTI`, `MD_Q_PRESUPPOSITION`, `MD_Q_THIRD_PARTY_BLAME`, `MD_CLAIM_UNSUPPORTED_LOCATION`, `MD_CLAIM_UNCALIBRATED_PROBABILITY`.
+**Produces:** `ConversationStage` values `FREE_ACCOUNT`, `CONTEXT_RECONSTRUCTION`, `TIMELINE_CLARIFICATION`, `CONTRADICTION_CLARIFICATION`, `SEARCH_FOLLOWUP`; frozen `GuardResult(allowed, codes, details)`; `lint_utterance(text, stage, known_locations, known_third_parties)`; stable codes `MD_Q_NEW_LOCATION`, `MD_Q_CLOSED_FREE_ACCOUNT`, `MD_Q_MULTI`, `MD_Q_PRESUPPOSITION`, `MD_Q_THIRD_PARTY_BLAME`, `MD_CLAIM_UNSUPPORTED_LOCATION`, `MD_CLAIM_UNCALIBRATED_PROBABILITY`.
 
-- [ ] **Step 1: Write RED high-risk tests**
-
-```python
-def test_rejects_new_concrete_location(self):
-    result = lint_utterance(
-        "Вы не оставили ключи в машине?",
-        stage=ConversationStage.TIMELINE_CLARIFICATION,
-        known_locations={"кухня"},
-        known_third_parties=set(),
-    )
-    self.assertFalse(result.allowed)
-    self.assertIn("MD_Q_NEW_LOCATION", result.codes)
-
-def test_rejects_uncalibrated_probability_claim(self):
-    result = lint_utterance(
-        "Вероятность 73%, что ключи в машине.",
-        stage=ConversationStage.SEARCH_FOLLOWUP,
-        known_locations={"машина"},
-        known_third_parties=set(),
-    )
-    self.assertFalse(result.allowed)
-    self.assertIn("MD_CLAIM_UNCALIBRATED_PROBABILITY", result.codes)
-```
-
-Add explicit tests for synonym `автомобиль`, closed yes/no in `FREE_ACCOUNT`, two material questions, presupposition and named third-party blame.
-
-- [ ] **Step 2: Run RED** — expect missing module.
-- [ ] **Step 3: Implement stage policy** — `FREE_ACCOUNT` permits neutral open prompts and rejects yes/no-leading templates; other stages permit bounded clarification without introducing unsupported concrete locations.
-- [ ] **Step 4: Implement conservative linter** — use bounded RU/EN location/container lexicon, context-supplied third-party terms, question-count patterns, presupposition verb lexicon and probability patterns (`%`, `вероят`, `chance`, `probab`). Return all matched codes; normal block is data, not traceback.
-- [ ] **Step 5: Document limitation** — linter is not claimed to catch every semantic form of suggestion; generic host cannot prove invocation for arbitrary free-form output.
-- [ ] **Step 6: Run GREEN** — all guard tests pass.
-- [ ] **Step 7: Commit** — `feat: enforce guarded interview utterances`.
+- [ ] Write RED tests for unsupported `машина`, synonym `автомобиль`, closed yes/no in `FREE_ACCOUNT`, two material questions, presupposition, named third-party blame, and `Вероятность 73%, что ключи в машине`.
+- [ ] Run guard tests; expect missing module.
+- [ ] Implement stage policy: `FREE_ACCOUNT` permits neutral open prompts and rejects yes/no-leading templates.
+- [ ] Implement conservative linter with bounded RU/EN location/container lexicon, context-supplied third-party terms, multi-question patterns, presupposition lexicon, and probability patterns `%`, `вероят`, `chance`, `probab`.
+- [ ] Return all matched codes as data; normal blocks do not emit traceback.
+- [ ] Document that the linter does not prove all semantic suggestion is caught and generic host cannot prove invocation for arbitrary output.
+- [ ] Run GREEN guard suite.
+- [ ] Commit `feat: enforce guarded interview utterances`.
 
 ---
 
 ## Task 4: Timeline reconstruction
 
-**Files:** create `timeline.py`, `test_timeline.py`, timeline JSON schema.
+**Files:** create `timeline.py`, `test_timeline.py`, timeline schema.
 
-**Produces:** frozen `TimelineEvent`, `TimelineFinding`, `TimelineError`; `build_timeline(last_contact, first_missing, events, generated_at, case_id)`.
+**Produces:** frozen `TimelineEvent(id, time, label, statement_id, boundary, limitations)`, `TimelineFinding`, `TimelineError`; `build_timeline(last_contact, first_missing, events, generated_at, case_id)`.
 
-- [ ] **Step 1: Write RED tests with concrete fixtures**
-
-```python
-def test_habit_alone_cannot_establish_last_supported_contact(self):
-    habitual = normalize_statement("s1", "Я обычно кладу сюда", EvidenceClass.HABITUAL, "user", "2026-09-09T10:00:00Z")
-    missing = normalize_statement("s2", "Я заметил пропажу", EvidenceClass.USER_STATED, "user", "2026-09-09T10:20:00Z")
-    with self.assertRaisesRegex(TimelineError, "MD_T_HABIT_NOT_CONTACT"):
-        build_timeline(habitual, missing, [], "2026-09-09T10:21:00Z", "c1")
-
-def test_boundary_annotation_has_no_weight_field(self):
-    recalled = normalize_statement("s1", "Я держал ключи", EvidenceClass.USER_RECALLED, "user", "2026-09-09T10:00:00Z")
-    missing = normalize_statement("s2", "Я заметил пропажу", EvidenceClass.USER_STATED, "user", "2026-09-09T10:20:00Z")
-    event = TimelineEvent("e1", "2026-09-09T10:10:00Z", "смена контекста", "s1", True, ())
-    artifact = build_timeline(recalled, missing, [event], "2026-09-09T10:21:00Z", "c1")
-    self.assertTrue(artifact["events"][0]["boundary"])
-    self.assertNotIn("weight", artifact["events"][0])
-```
-
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement timeline logic** — supported last contact accepts `USER_RECALLED` and future `EXTERNAL`; habitual alone raises `MD_T_HABIT_NOT_CONTACT`; explicit reverse time order raises `MD_T_ORDER_INVALID`; missing time remains unknown with limitation.
-- [ ] **Step 4: Add schema** — required `last_supported_contact`, `first_noticed_missing`, `loss_window`, `events`, `gaps`, `contradictions`, `limitations`; precision enum includes `UNKNOWN`.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `feat: add supported-contact timeline reconstruction`.
+- [ ] Write RED test that a normalized `HABITUAL` statement cannot establish last supported contact and raises `MD_T_HABIT_NOT_CONTACT`.
+- [ ] Write RED test with one concrete boundary event and assert resulting event contains `boundary=true` but no `weight` key.
+- [ ] Write RED test that explicit `first_missing < last_contact` raises `MD_T_ORDER_INVALID`.
+- [ ] Run timeline tests; expect RED.
+- [ ] Implement supported-contact logic accepting `USER_RECALLED` and future `EXTERNAL`; preserve original evidence class; unknown time remains limitation/null rather than fabricated timestamp.
+- [ ] Create schema requiring `last_supported_contact`, `first_noticed_missing`, `loss_window`, `events`, `gaps`, `contradictions`, `limitations`; precision enum includes `UNKNOWN`.
+- [ ] Run GREEN.
+- [ ] Commit `feat: add supported-contact timeline reconstruction`.
 
 ---
 
@@ -248,30 +109,16 @@ def test_boundary_annotation_has_no_weight_field(self):
 
 **Files:** create `zones.py`, `test_zones.py`, search-plan schema, `references/search-allocation.md`.
 
-**Produces:** `SearchMethod`, frozen `Zone`, `SearchError`, `update_after_search`, `rank_zones`.
+**Produces:** `SearchMethod` values `GLANCE`, `SYSTEMATIC_VISUAL`, `EMPTY_AND_REPLACE`; operational miss factors `0.75`, `0.50`, `0.15`; frozen `Zone`; `SearchError`; `update_after_search`; `rank_zones`.
 
-Operational miss factors are repository policy: `GLANCE=0.75`, `SYSTEMATIC_VISUAL=0.50`, `EMPTY_AND_REPLACE=0.15`. They are not scientific POD claims.
-
-- [ ] **Step 1: Write RED update tests**
-
-```python
-def test_search_reduces_but_does_not_zero_zone(self):
-    zones = [Zone("desk", "desk", 0.6, ("USER_RECALLED",), "LOW", "UNCALIBRATED", ()),
-             Zone("unknown", "UNKNOWN_OR_OUTSIDE", 0.4, ("UNKNOWN",), "HIGH", "UNCALIBRATED", ())]
-    updated = update_after_search(zones, "desk", SearchMethod.EMPTY_AND_REPLACE, "2026-09-09T11:00:00Z")
-    desk = next(zone for zone in updated if zone.id == "desk")
-    self.assertGreater(desk.belief_weight, 0.0)
-    self.assertLess(desk.belief_weight, 0.6)
-    self.assertAlmostEqual(sum(zone.belief_weight for zone in updated), 1.0, places=9)
-```
-
-Add tests for invalid weight, unknown zone, preserved `UNCALIBRATED`, and absence of artifact keys named `probability` or `pod`.
-
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement deterministic update** — multiply selected raw weight by method miss factor; keep others unchanged; normalize to sum `1`; reject negative/out-of-range values; never zero due solely to search miss.
-- [ ] **Step 4: Add schema/reference** — explicit `UNKNOWN_OR_OUTSIDE` representability and `calibration_status: UNCALIBRATED`.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `feat: add uncalibrated search allocation`.
+- [ ] Write RED test with zones `desk=0.6` and `UNKNOWN_OR_OUTSIDE=0.4`; after `EMPTY_AND_REPLACE`, desk weight stays `>0`, becomes `<0.6`, and all normalized weights sum to `1`.
+- [ ] Add RED tests for invalid weight, unknown zone, persistent `UNCALIBRATED`, and absence of artifact keys named `probability` or `pod`.
+- [ ] Run RED.
+- [ ] Implement multiplicative selected-zone reduction, unchanged raw weights for other zones, normalization to sum `1`, and failure for invalid inputs.
+- [ ] State in schema/reference that miss factors are operational repository policy, not measured household POD.
+- [ ] Ensure failed search alone cannot zero a nonzero zone.
+- [ ] Run GREEN.
+- [ ] Commit `feat: add uncalibrated search allocation`.
 
 ---
 
@@ -281,11 +128,13 @@ Add tests for invalid weight, unknown zone, preserved `UNCALIBRATED`, and absenc
 
 **Produces:** frozen `Hypothesis`; families `WITHIN_SYSTEM`, `LEFT_SYSTEM`, `MOVED_AFTER_CONTACT`, `HABIT_FOR_EPISODE`, `MISSED_IN_SEARCHED_ZONE`, `INSUFFICIENT_EVIDENCE`; cells `CONSISTENT`, `INCONSISTENT`, `NEUTRAL`; `build_matrix`; `validate_hypothesis_text`.
 
-- [ ] **Step 1: Write RED tests** — neutral `MOVED_AFTER_CONTACT` passes; `Муж точно переложил ключи` with `known_third_parties={"муж"}` returns `MD_H_THIRD_PARTY_BLAME`; output contains no numeric truth probability.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement matrix** — preserve explicit cells; expose only transparent `inconsistency_count`; set `anchoring_warning` when one story is populated as consistent while competitors remain unexamined/neutral; never declare a winner from that warning.
-- [ ] **Step 4: Add schema/reference and run GREEN**.
-- [ ] **Step 5: Commit** — `feat: add competing hypothesis matrix`.
+- [ ] Write RED test that neutral moved-after-contact wording passes.
+- [ ] Write RED test that `Муж точно переложил ключи` with known third party `муж` returns `MD_H_THIRD_PARTY_BLAME`.
+- [ ] Write RED test that matrix output contains no numeric truth probability.
+- [ ] Run RED.
+- [ ] Implement explicit cells and transparent `inconsistency_count`; `anchoring_warning` flags underexamined alternatives but never declares a winner.
+- [ ] Create schema/reference and run GREEN.
+- [ ] Commit `feat: add competing hypothesis matrix`.
 
 ---
 
@@ -293,44 +142,29 @@ Add tests for invalid weight, unknown zone, preserved `UNCALIBRATED`, and absenc
 
 **Files:** create `redflags.py`, `test_redflags.py`, fallback-plan schema, `references/redflags.md`, `fallback.md`, `safety.md`.
 
-**Produces:** `RiskSignal` values `DISORIENTATION`, `CONFUSION_SAFETY`, `MISSING_PERSON`, `THEFT_MEANINGFUL_HARM`, `CRITICAL_MEDICATION_UNCERTAINTY`, `TIME_CRITICAL_DOCUMENT`, `IMMEDIATE_DANGER`; `Route` values `IN_MOMENT`, `FALLBACK_FIRST`, `EXIT_ROLE`; frozen `RouteDecision`; `route_case(signals)`.
+**Produces:** `RiskSignal` values `DISORIENTATION`, `CONFUSION_SAFETY`, `MISSING_PERSON`, `THEFT_MEANINGFUL_HARM`, `CRITICAL_MEDICATION_UNCERTAINTY`, `TIME_CRITICAL_DOCUMENT`, `IMMEDIATE_DANGER`; `Route` values `IN_MOMENT`, `FALLBACK_FIRST`, `EXIT_ROLE`; `RouteDecision`; `route_case(signals)`.
 
-- [ ] **Step 1: Write RED tests**
-
-```python
-def test_disorientation_exits_role(self):
-    decision = route_case({RiskSignal.DISORIENTATION})
-    self.assertEqual(decision.route, Route.EXIT_ROLE)
-    self.assertIn("MD_RED_FLAG_EXIT", decision.codes)
-
-def test_time_critical_document_is_fallback_first(self):
-    decision = route_case({RiskSignal.TIME_CRITICAL_DOCUMENT})
-    self.assertEqual(decision.route, Route.FALLBACK_FIRST)
-    self.assertIn("MD_FALLBACK_FIRST", decision.codes)
-```
-
-Also test there is no age parameter/age-only trigger.
-
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement precedence** — `EXIT_ROLE` overrides `FALLBACK_FIRST`; `FALLBACK_FIRST` overrides `IN_MOMENT`. Do not encode jurisdiction-specific passport or medical procedures in Python.
-- [ ] **Step 4: Add fallback schema/reference** — require reason codes, contingency categories, search timebox and limitations.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `feat: add safety and fallback routing`.
+- [ ] Write RED test: `DISORIENTATION` → `EXIT_ROLE` + `MD_RED_FLAG_EXIT`.
+- [ ] Write RED test: `TIME_CRITICAL_DOCUMENT` → `FALLBACK_FIRST` + `MD_FALLBACK_FIRST`.
+- [ ] Assert there is no age parameter or age-only trigger.
+- [ ] Run RED.
+- [ ] Implement precedence `EXIT_ROLE > FALLBACK_FIRST > IN_MOMENT`; do not encode jurisdiction-specific passport or medical procedure in Python.
+- [ ] Create fallback schema requiring reason codes, contingency categories, search timebox, limitations.
+- [ ] Run GREEN.
+- [ ] Commit `feat: add safety and fallback routing`.
 
 ---
 
 ## Task 8: Complete six artifact schemas
 
-**Files:** create case-outcome schema; modify `schemas.py` and `test_schemas.py`; verify all six schema files exist.
+**Files:** create case-outcome schema; modify `schemas.py` and `test_schemas.py`; verify all six schema files.
 
-**Produces:** `SCHEMA_REQUIRED_FIELDS`; `validate_artifact` returns bounded `MD_SCHEMA_*` errors and never mutates input.
-
-- [ ] **Step 1: Extend RED tests** for exact schema names: `mind-detective-recall-transcript/v1`, `mind-detective-timeline/v1`, `mind-detective-search-plan/v1`, `mind-detective-hypothesis-matrix/v1`, `mind-detective-fallback-plan/v1`, `mind-detective-case-outcome/v1`.
-- [ ] **Step 2: Test terminal unresolved case** — `found: false`, mechanism `UNKNOWN` validates.
-- [ ] **Step 3: Run RED**.
-- [ ] **Step 4: Implement concrete registry/required fields** and create case-outcome schema.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `feat: complete P0 artifact schema contracts`.
+- [ ] Add RED tests for exact schema names: recall transcript, timeline, search plan, hypothesis matrix, fallback plan, case outcome v1.
+- [ ] Add RED test that terminal unresolved case `found=false`, mechanism `UNKNOWN` is valid.
+- [ ] Run RED.
+- [ ] Implement `SCHEMA_REQUIRED_FIELDS` and case-outcome schema; validation returns bounded `MD_SCHEMA_*` errors and never mutates input.
+- [ ] Run GREEN.
+- [ ] Commit `feat: complete P0 artifact schema contracts`.
 
 ---
 
@@ -338,39 +172,28 @@ Also test there is no age parameter/age-only trigger.
 
 **Files:** create all eight SKILL.md files, `references/interview.md`, `references/mechanisms.md`, `test_end_to_end.py`, plugin README pair.
 
-**Produces:** discoverable skill frontmatter (`name` equals directory; `description` starts `Use when` and is 32–500 characters); router precedence safety → fallback → IN_MOMENT → limitation for deferred workflows.
-
-- [ ] **Step 1: Write RED structural test** — every expected skill path exists, frontmatter name matches directory, router mentions exact guard/search reason vocabulary, and deferred LONG_TERM/PROSPECTIVE are limitations rather than routes through P0 methods.
-- [ ] **Step 2: Write RED deterministic case test** — create user recalled statement, timeline, two zones including `UNKNOWN_OR_OUTSIDE`, apply one search update, then construct unresolved hypothesis matrix; assert no network import or probability claim is required for the flow.
-- [ ] **Step 3: Run RED**.
-- [ ] **Step 4: Write bounded skill contracts** with exact defaults:
-
-```text
-You do not know where the item is and never state an unsupported location.
-USER_RECALLED/HABITUAL/USER_STATED are user-origin evidence only.
-Search weights are UNCALIBRATED effort-ordering values, not probabilities.
-Event boundaries are methodology cues, not numeric priors.
-Red flags and fallback-first routes take precedence over ordinary search.
-LONG_TERM and PROSPECTIVE are unsupported in 0.1.0 and receive an explicit limitation.
-```
-
-`mind-detective-interview` requires candidate utterances to be submitted to `question_lint.py` and states generic-host enforcement limitations.
-
-- [ ] **Step 5: Run GREEN** — all plugin tests and validator pass.
-- [ ] **Step 6: Commit** — `feat: add P0 detective skill workflow`.
+- [ ] Write RED structural test for every expected skill path, matching frontmatter name, `description` starting `Use when` and length 32–500.
+- [ ] Write RED router test for precedence safety → fallback → IN_MOMENT → explicit limitation for LONG_TERM/PROSPECTIVE.
+- [ ] Write RED deterministic case test: user recalled statement → timeline → two zones including `UNKNOWN_OR_OUTSIDE` → one search update → unresolved hypothesis matrix; no network or probability claim required.
+- [ ] Run RED.
+- [ ] Write bounded skills with exact defaults: no unsupported location claim; user-only evidence origins; `UNCALIBRATED` search weights; event boundaries not priors; safety precedence; deferred flows disclosed.
+- [ ] `mind-detective-interview` requires candidate utterance submission to `question_lint.py` and states generic-host enforcement limitation.
+- [ ] Run all plugin tests + validator; require GREEN.
+- [ ] Commit `feat: add P0 detective skill workflow`.
 
 ---
 
 ## Task 10: Stable requirements, ADRs and SDD/TDD policy
 
-**Files:** create `docs/REQUIREMENTS.md`, `docs/SDD_TDD_WORKFLOW.md`, `AGENTS.md`, `CLAUDE.md`, ADR-001 through ADR-008; modify repository contract tests.
+**Files:** create `docs/REQUIREMENTS.md`, `docs/SDD_TDD_WORKFLOW.md`, `AGENTS.md`, `CLAUDE.md`, ADR-001 through ADR-008; extend repository contract tests.
 
-- [ ] **Step 1: Write RED requirement coverage test** — assert each `MD-REQ-*` ID from design §16 appears exactly once; `CLAUDE.md` must point to `AGENTS.md`.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Create requirements and ADRs** — ADR decisions exactly match design §26. During this task, mechanically supported requirements may reference selectors already created; requirements awaiting Task 12 traceability use `[unenforced: exact traceability added before release]` and Task 12 must eliminate that phrase.
-- [ ] **Step 4: Create AGENTS/CLAUDE policy** — enforce `SPEC → RED → GREEN → REFACTOR → TRACE → EVAL → VERIFY`; prohibit merge/release claims without exact current evidence.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `docs: define foundation requirements and ADRs`.
+- [ ] Write RED test that every `MD-REQ-*` from design §16 appears exactly once; `CLAUDE.md` references `AGENTS.md`.
+- [ ] Run RED.
+- [ ] Create ADR decisions exactly from design §26; ADR-004 records miss factors as uncalibrated policy; ADR-008 records P0 non-goals.
+- [ ] During this task, mechanically supported requirements may use existing selectors; requirements awaiting Task 12 use `[unenforced: exact traceability added before release]` and Task 12 must eliminate this phrase.
+- [ ] Create AGENTS/CLAUDE policy requiring `SPEC → RED → GREEN → REFACTOR → TRACE → EVAL → VERIFY` and prohibiting merge/release claims without current evidence.
+- [ ] Run GREEN.
+- [ ] Commit `docs: define foundation requirements and ADRs`.
 
 ---
 
@@ -378,15 +201,15 @@ LONG_TERM and PROSPECTIVE are unsupported in 0.1.0 and receive an explicit limit
 
 **Files:** create `docs/EVAL_TOKEN_REGISTRY.json`, plugin `evals/scenarios.json`, `scripts/contract_controls.py`, `tests/test_eval_contract.py`; extend validator.
 
-**Produces:** `validate_eval_file(path, token_registry, skill_root) -> list[str]`; version exactly `2`; outcomes `comply`, `comply_with_limitations`, `refuse`; exact `must_route_to`; machine-only registered `must_mention_tokens`; semantic `must_convey` and `must_not_claim`.
+**Produces:** `validate_eval_file(path, token_registry, skill_root) -> list[str]`; version `2`; outcomes `comply`, `comply_with_limitations`, `refuse`; exact `must_route_to`; registered machine tokens; semantic convey/not-claim fields.
 
-- [ ] **Step 1: Write RED validator fixtures** — reject legacy `must_refuse`, unknown token, route mismatch, nonexistent skill and invalid outcome.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement validator** without model execution claims.
-- [ ] **Step 4: Add at least 12 adversarial scenarios** covering direct location demand, habit-as-proof, new location question, synonym leading bypass, blame, repeated quick searches as proof of absence, percentage request, imminent passport, medication uncertainty, disorientation, doorway proof request, unresolved first round.
-- [ ] **Step 5: Register exact tokens** including `MD_Q_NEW_LOCATION`, `MD_CLAIM_UNCALIBRATED_PROBABILITY`, `MD_RED_FLAG_EXIT`, `MD_FALLBACK_FIRST`, `UNCALIBRATED` only where exact machine vocabulary is required.
-- [ ] **Step 6: Run GREEN**.
-- [ ] **Step 7: Commit** — `test: add adversarial eval contract v2`.
+- [ ] Write RED fixtures rejecting legacy `must_refuse`, unknown token, route mismatch, nonexistent skill and invalid outcome.
+- [ ] Run RED.
+- [ ] Implement structural validator with no live-model execution claim.
+- [ ] Add at least 12 adversarial scenarios: direct location demand, habit-as-proof, new location, synonym bypass, blame, repeated quick searches as proof of absence, percentage request, imminent passport, medication uncertainty, disorientation, doorway proof request, unresolved first round.
+- [ ] Register exact tokens only where machine vocabulary is required: `MD_Q_NEW_LOCATION`, `MD_CLAIM_UNCALIBRATED_PROBABILITY`, `MD_RED_FLAG_EXIT`, `MD_FALLBACK_FIRST`, `UNCALIBRATED`.
+- [ ] Run GREEN.
+- [ ] Commit `test: add adversarial eval contract v2`.
 
 ---
 
@@ -394,15 +217,14 @@ LONG_TERM and PROSPECTIVE are unsupported in 0.1.0 and receive an explicit limit
 
 **Files:** create `docs/CONTRACT_MATRIX.json`, `tests/test_contract_matrix.py`; extend `contract_controls.py`, validator and requirements enforcement labels.
 
-**Produces:** entries with `id`, `requirement_id`, `skill`, `helper`, exact test selectors, references, status; selector grammar `path.py::test_function` or `path.py::TestClass::test_method`.
-
-- [ ] **Step 1: Write RED tests** — missing selector, typo selector, duplicate matrix ID and statically skipped selector fail with stable validator codes.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement AST selector validation** — parse test files without importing; locate exact function/method; reject supported static skip decorators. Document that AST traceability does not prove assertion semantics.
-- [ ] **Step 4: Populate high-risk entries** for evidence, questions, timeline, search, hypothesis, safety, boundary, eval and release requirements.
-- [ ] **Step 5: Replace every `[unenforced: exact traceability added before release]` marker** with exact enforcement selector or a truthful semantic-review-only label.
-- [ ] **Step 6: Run GREEN** plus `grep -R "exact traceability added before release" docs/REQUIREMENTS.md` and require no match.
-- [ ] **Step 7: Commit** — `test: enforce exact contract traceability`.
+- [ ] Write RED tests for missing selector, typo selector, duplicate matrix ID and statically skipped selector.
+- [ ] Run RED.
+- [ ] Implement AST selector grammar `path.py::test_function` or `path.py::TestClass::test_method`; parse without importing test modules; reject supported static skips.
+- [ ] Document that AST traceability proves target existence, not assertion semantics.
+- [ ] Populate high-risk entries for evidence, questions, timeline, search, hypothesis, safety, boundary, eval and release.
+- [ ] Replace every `[unenforced: exact traceability added before release]` marker with exact selector or truthful semantic-review-only label.
+- [ ] Run GREEN and require `grep -R "exact traceability added before release" docs/REQUIREMENTS.md` to return no match.
+- [ ] Commit `test: enforce exact contract traceability`.
 
 ---
 
@@ -410,29 +232,30 @@ LONG_TERM and PROSPECTIVE are unsupported in 0.1.0 and receive an explicit limit
 
 **Files:** create `tests/test_boundaries.py`, security doc pair; extend validator.
 
-**Produces:** `scan_forbidden_imports(root: Path) -> list[str]`; initial denylist includes `requests`, `httpx`, `urllib.request`, `aiohttp`, `socket`, `selenium`, `playwright`, `boto3`, `google.cloud` and explicitly listed messenger/model SDK namespaces. Statically visible subprocess curl/wget invocation is forbidden.
+**Produces:** `scan_forbidden_imports(root)`; denylist includes `requests`, `httpx`, `urllib.request`, `aiohttp`, `socket`, `selenium`, `playwright`, `boto3`, `google.cloud` and explicitly listed messenger/model SDK namespaces; statically visible subprocess curl/wget is forbidden.
 
-- [ ] **Step 1: Write RED synthetic bad-module test** — source `import requests` returns `BOUNDARY_FORBIDDEN_IMPORT`; normal stdlib imports `json`, `dataclasses`, `enum`, `re`, `datetime` pass.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement AST scanner** with scoped claim: it is a denylist enforcement mechanism, not universal proof of no I/O.
-- [ ] **Step 4: Add security docs** — no credentials, no automatic file crawling, retrieved/user content is data not instructions, no chain-of-thought storage, minimize personal case data in reports.
-- [ ] **Step 5: Run GREEN**.
-- [ ] **Step 6: Commit** — `security: enforce transport-free P0 boundary`.
+- [ ] Write RED synthetic source `import requests` expecting `BOUNDARY_FORBIDDEN_IMPORT`; verify stdlib `json`, `dataclasses`, `enum`, `re`, `datetime` pass.
+- [ ] Run RED.
+- [ ] Implement AST scanner and scoped enforcement wording.
+- [ ] Add security docs: no credentials, no automatic file crawling, retrieved/user content is data not instructions, no hidden chain-of-thought storage, minimize personal case data.
+- [ ] Run GREEN.
+- [ ] Commit `security: enforce transport-free P0 boundary`.
 
 ---
 
 ## Task 14: Methodology, bilingual docs and freshness
 
-**Files:** create root README pair; architecture, plugin standard, methodology and glossary pairs; privacy and risk docs; `references/sources.md`; bilingual/freshness scripts and tests; extend validator.
+**Files:** create root README pair; architecture/plugin-standard/methodology/glossary pairs; privacy/risk docs; `references/sources.md`; bilingual/freshness scripts and tests; extend validator.
 
-**Produces:** reciprocal RU/EN links; controlled reference markers `Verified: YYYY-MM-DD` and `Review-Class: scientific|safety|api`; review windows scientific `365`, safety `180`, api `90` days; path-aware age failure in normal PR mode and strict scheduled full check.
+**Produces:** reciprocal language links; markers `Verified: YYYY-MM-DD` and `Review-Class: scientific|safety|api`; cadences `365/180/90`; path-aware age failure and strict full check.
 
-- [ ] **Step 1: Write RED bilingual tests** — missing mirror/reciprocal link fails.
-- [ ] **Step 2: Write RED freshness tests** — changed stale scientific file fails, untouched stale file does not hard-fail normal mode, future marker fails, strict mode fails stale controlled file.
-- [ ] **Step 3: Run RED**.
-- [ ] **Step 4: Implement public docs** — opening product boundary: MIND Detective does not know where the item is; it structures recall/search and preserves uncertainty. Cognitive Interview is transferred methodology, misinformation research motivates anti-leading guards, event-boundary findings are task-dependent, search theory motivates allocation but not calibrated household probabilities. No validated lost-item effect size claim.
-- [ ] **Step 5: Implement validators and run GREEN**.
-- [ ] **Step 6: Commit** — `docs: add truthful bilingual methodology contracts`.
+- [ ] Write RED bilingual mirror/link tests.
+- [ ] Write RED freshness tests: changed stale scientific source fails; untouched stale source does not hard-fail normal mode; future date fails; strict mode fails stale controlled source.
+- [ ] Run RED.
+- [ ] Write human-first docs: MIND Detective does not know where the item is; Cognitive Interview is transferred methodology; misinformation research motivates anti-leading guards; event-boundary evidence is task-dependent; search theory motivates allocation, not household probabilities; no validated lost-item effect-size claim.
+- [ ] Implement bilingual/freshness validators.
+- [ ] Run GREEN.
+- [ ] Commit `docs: add truthful bilingual methodology contracts`.
 
 ---
 
@@ -440,131 +263,81 @@ LONG_TERM and PROSPECTIVE are unsupported in 0.1.0 and receive an explicit limit
 
 **Files:** create repository/plugin changelog pairs, `CONTRIBUTING.md`, `LICENSE`, `THIRD_PARTY_NOTICES.md`, release-policy pair, `.github/releases/release.json`, `.github/releases/0.1.0.md`, `scripts/release_manifest.py`, release tests; extend bilingual validator.
 
-**Produces:** `load_release_manifest(path, root) -> dict`; CLI `python scripts/release_manifest.py --check .github/releases/release.json`.
+Target manifest repository entry is version/tag `0.1.0` with notes `.github/releases/0.1.0.md`; plugin entry is name `mind-detective`, version `0.1.0`, tag `mind-detective-v0.1.0`.
 
-Target manifest:
-
-```json
-{
-  "schema_version": 1,
-  "repository": {
-    "version": "0.1.0",
-    "tag": "0.1.0",
-    "title": "Repository 0.1.0",
-    "notes_file": ".github/releases/0.1.0.md"
-  },
-  "plugins": [
-    {
-      "name": "mind-detective",
-      "version": "0.1.0",
-      "tag": "mind-detective-v0.1.0"
-    }
-  ]
-}
-```
-
-- [ ] **Step 1: Write RED tests** — reject repository version/tag mismatch, plugin SSOT mismatch, noncanonical tag, missing notes, duplicate plugin entry; require RU/EN changelog marker parity for `0.1.0`.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Implement manifest validator and release docs** — repository SemVer distinct from plugin SemVer; P0/P1 labels are milestones; published tags/releases are not retargeted/deleted/reused.
-- [ ] **Step 4: Run GREEN**.
-- [ ] **Step 5: Commit** — `release: stage declarative 0.1.0 contracts`.
+- [ ] Write RED tests rejecting repository version/tag mismatch, plugin SSOT mismatch, noncanonical tag, missing notes and duplicate plugin entry; require RU/EN changelog marker parity for `0.1.0`.
+- [ ] Run RED.
+- [ ] Implement `load_release_manifest(path, root)` and CLI `python scripts/release_manifest.py --check .github/releases/release.json`.
+- [ ] Write release policy: repository SemVer distinct from plugin SemVer; P0/P1 are milestones; published tags/releases are immutable history.
+- [ ] Run GREEN.
+- [ ] Commit `release: stage declarative 0.1.0 contracts`.
 
 ---
 
 ## Task 16: CI and supply-chain pinning
 
-**Files:** create CI and strict freshness workflows, Dependabot, PR/issue templates; extend repository contract test.
+**Files:** create `.github/workflows/ci.yml`, `reference-freshness.yml`, `.github/dependabot.yml`, PR/issue templates; extend repository contract tests.
 
-**Produces:** Python `3.10`/`3.13` matrix; repository validator, root/plugin unittests, Ruff, mypy and gitleaks jobs; every third-party `uses:` ref is 40-hex immutable SHA.
-
-- [ ] **Step 1: Write RED mutable-action test** — synthetic `actions/checkout@v5` returns `WORKFLOW_MUTABLE_ACTION_REF`; local `uses: ./path` is exempt.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Add minimal CI** — checkout with `fetch-depth: 0`, setup-python, changed-file computation, validators, root/plugin tests, Ruff and mypy. Do not add multi-plugin path matrix because only one P0 plugin exists.
-- [ ] **Step 4: Add weekly strict freshness and Dependabot** — strict command `python scripts/check_reference_freshness.py --strict`; Dependabot monitors GitHub Actions weekly.
-- [ ] **Step 5: Add gitleaks with immutable SHA pin**.
-- [ ] **Step 6: Run local GREEN commands**:
-
-```bash
-python -m unittest discover -s tests -v
-python -m unittest discover -s plugins/mind-detective/tests -v
-python scripts/validate_repo.py
-ruff check .
-mypy scripts plugins/mind-detective/scripts
-```
-
-- [ ] **Step 7: Commit** — `ci: add pinned validation and freshness workflows`.
+- [ ] Write RED test rejecting synthetic `actions/checkout@v5` with `WORKFLOW_MUTABLE_ACTION_REF`; local `uses: ./path` is exempt.
+- [ ] Run RED.
+- [ ] Add minimal Python `3.10`/`3.13` CI: checkout `fetch-depth: 0`, setup-python, changed-file computation, validator, root/plugin unittest, Ruff, mypy.
+- [ ] Add gitleaks job with immutable SHA pin.
+- [ ] Add weekly strict freshness command `python scripts/check_reference_freshness.py --strict` and Dependabot for GitHub Actions.
+- [ ] Do not add multi-plugin path matrix because one P0 plugin exists.
+- [ ] Run locally: root tests, plugin tests, validator, `ruff check .`, `mypy scripts plugins/mind-detective/scripts`; all exit `0`.
+- [ ] Commit `ci: add pinned validation and freshness workflows`.
 
 ---
 
 ## Task 17: Single hardened publisher
 
-**Files:** create `.github/workflows/publish-current-release.yml`; extend release tests and release-policy pair when wording must match executable behavior.
+**Files:** create `.github/workflows/publish-current-release.yml`; extend release tests/policy when exact executable wording requires it.
 
-**Contract:** exactly one active publisher; reads declarative manifest; does not infer plugin releases from changed files; initial publication requires successful exact current `main` SHA; stale initial run is safe no-op/fail-safe; remote tag absence is fail-closed; standalone/conflicting tag or wrong target is hard failure; rollback is armed only in mutable publication window and is disarmed immediately after immutability confirmation.
+**Contract:** exactly one publisher; declarative manifest; no changed-file inference; initial publication requires current successful exact `main` SHA; stale initial run is safe; remote tag absence probe fails closed; standalone/conflicting tag or wrong target fails; rollback exists only during mutable publication window and is disarmed immediately after immutability confirmation.
 
-- [ ] **Step 1: Write RED structural publisher tests** — exactly one publisher file, manifest path literal present, live-main/exact-SHA gate present, no second release publisher workflow.
-- [ ] **Step 2: Run RED**.
-- [ ] **Step 3: Adapt the current repository-native Yandex publisher pattern** — preserve declarative manifest, exact-main gate, exact tag-SHA verification, idempotent recovery, fail-closed tag absence, immutability gate and rollback ordering. Do not create a new release framework or copy historical publisher variants.
-- [ ] **Step 4: Run GREEN** — release tests and repository validator.
-- [ ] **Step 5: Commit** — `release: add single hardened publisher`.
+- [ ] Write RED structural tests for exactly one publisher, manifest path literal, live-main/exact-SHA gate and absence of second release publisher.
+- [ ] Run RED.
+- [ ] Adapt the current repository-native Yandex publisher pattern; preserve exact-main gate, exact tag-SHA verification, idempotent recovery, fail-closed tag absence, immutability gate and rollback ordering. Do not create a new release framework or copy historical variants.
+- [ ] Run GREEN release tests and validator.
+- [ ] Commit `release: add single hardened publisher`.
 
 ---
 
-## Task 18: Final P0 verification and human release gate
+## Task 18: Final P0 verification and human gate
 
-**Files:** modify only files implicated by verified failures; create `docs/reviews/<date>-<review-source>.md` only when an actual review occurs.
+**Files:** modify only files implicated by verified failures; create a `docs/reviews/` artifact only when an actual review occurs.
 
-- [ ] **Step 1: Run full deterministic verification**
-
-```bash
-python -m unittest discover -s tests -v
-python -m unittest discover -s plugins/mind-detective/tests -v
-python scripts/validate_repo.py
-ruff check .
-mypy scripts plugins/mind-detective/scripts
-```
-
-All commands must exit `0`.
-
-- [ ] **Step 2: Run scope/overclaim scans**
-
-```bash
-if grep -R "memory-detective" . --exclude-dir=.git; then exit 1; fi
-if grep -R "\.agents-plugin" . --exclude-dir=.git; then exit 1; fi
-if grep -R -E "73%|scientifically.*most likely|validated.*lost-item" README.md README.en.md docs plugins/mind-detective; then exit 1; fi
-```
-
-- [ ] **Step 3: Verify release surfaces** — manifest repository version/tag `0.1.0`; plugin SSOT `0.1.0`; plugin tag `mind-detective-v0.1.0`; exactly one publisher. Run `python scripts/release_manifest.py --check .github/releases/release.json`.
-- [ ] **Step 4: Push and inspect exact PR-head CI** — record exact head SHA and verify every required job for that SHA; do not report green based on an earlier SHA.
-- [ ] **Step 5: Run semantic/independent review when available** — focus on scientific overclaim, guard bypass, evidence contamination, generic-host overclaim, pseudo-probability, red-flag routing and release state safety. If unavailable, record that limitation rather than fabricating clean review evidence.
-- [ ] **Step 6: Fix each verified executable finding with its own RED regression test, GREEN implementation and focused commit**. Documentation-only semantic corrections get a focused docs commit plus validator/eval changes when contract vocabulary changes.
-- [ ] **Step 7: Confirm clean worktree after fixes** — `git status --short` must be empty after the final focused commit; do not create an empty “final” commit.
-- [ ] **Step 8: Human gate** — present exact head SHA, exact-head CI evidence, review evidence/limitations, release manifest and proposed merge/release sequence. Do not merge or publish without explicit human authorization.
+- [ ] Run full deterministic verification: `python -m unittest discover -s tests -v`, plugin unittest discovery, validator, `ruff check .`, `mypy scripts plugins/mind-detective/scripts`; all must exit `0`.
+- [ ] Run scope scans: fail if `memory-detective`, `.agents-plugin`, `73%`, `scientifically.*most likely`, or `validated.*lost-item` appears in production docs/code outside historical plan/spec discussion that is explicitly quoted for correction.
+- [ ] Verify release surfaces: repository version/tag `0.1.0`, plugin SSOT `0.1.0`, plugin tag `mind-detective-v0.1.0`, one publisher; run release manifest CLI.
+- [ ] Push and inspect exact PR-head CI; record exact SHA and verify every required job for that SHA.
+- [ ] Run independent/semantic review when available, focused on scientific overclaim, guard bypass, evidence contamination, generic-host overclaim, pseudo-probability, red-flag routing and release state safety. If unavailable, record the limitation.
+- [ ] Fix each verified executable finding with its own RED regression test, GREEN implementation and focused commit. Documentation-only semantic corrections get a focused docs commit plus validator/eval update when vocabulary changes.
+- [ ] Require clean worktree `git status --short` after final focused commit; do not make an empty final commit.
+- [ ] Present exact head SHA, exact-head CI evidence, review evidence/limitations, release manifest and merge/release sequence to human maintainer. Do not merge or publish without explicit authorization.
 
 ---
 
 ## Post-merge release sequence
 
-After explicit human authorization:
-
 1. Merge implementation PR with expected exact head SHA.
 2. Resolve new exact `main` SHA.
 3. Verify post-merge CI on that exact `main` SHA.
-4. Re-confirm `.github/releases/release.json` is the intended release set.
-5. Human authorizes publication of repository `0.1.0` and plugin `mind-detective-v0.1.0`.
-6. Run/allow the single `publish-current-release.yml` publisher.
-7. Verify repository tag `0.1.0` and plugin tag `mind-detective-v0.1.0` target the intended exact release SHA under the manifest contract.
-8. Verify GitHub Release immutability/state before declaring publication complete.
-9. Never retarget a published tag; corrections use a new SemVer release.
+4. Re-confirm declarative release set.
+5. Human authorizes repository `0.1.0` + plugin `mind-detective-v0.1.0` publication.
+6. Run/allow single publisher.
+7. Verify both repository/plugin tags target intended exact release SHA.
+8. Verify GitHub Release immutability/state before declaring completion.
+9. Never retarget a published tag; correction uses new SemVer.
 
 ---
 
 ## Plan self-review result
 
-**Spec coverage:** P0 scope/YAGNI → Tasks 1/9/10; evidence → Task 2; guard → Tasks 3/9/11; timeline/event boundary → Task 4; search/no-zero → Task 5; hypotheses/no blame → Task 6; safety/fallback → Task 7; artifacts → Tasks 2/4/5/6/7/8; SDD/TDD/ADRs → Task 10; eval → Task 11; exact traceability → Task 12; transport/security → Task 13; methodology/bilingual/freshness → Task 14; version/release manifest → Task 15; pinned CI → Task 16; publisher → Task 17; exact-head/review/human gate → Task 18.
+**Spec coverage:** P0/YAGNI → Tasks 1/9/10; evidence → 2; guard → 3/9/11; timeline/event boundary → 4; search/no-zero → 5; hypotheses/no blame → 6; safety/fallback → 7; artifacts → 2/4/5/6/7/8; SDD/TDD/ADRs → 10; eval → 11; exact traceability → 12; transport/security → 13; methodology/bilingual/freshness → 14; version/release manifest → 15; pinned CI → 16; publisher → 17; exact-head/review/human gate → 18.
 
-**Placeholder scan:** no `TBD`, `TODO`, generic “implement later”, angle-bracket file placeholders, or code ellipsis tokens remain. Deferred product capabilities are explicit non-goals rather than unfinished plan steps.
+**Placeholder scan:** no `TBD`, `TODO`, generic “implement later”, angle-bracket file placeholders, or code ellipsis tokens remain. Deferred product capabilities are explicit non-goals.
 
-**Type consistency:** `EvidenceClass`/`Statement` precede timeline; `ConversationStage`/`GuardResult` precede skills/evals; timeline precedes search orchestration; `Zone` and `UNCALIBRATED` semantics precede docs/evals; `RiskSignal`/`RouteDecision` precede router skill/evals; `validate_repository` retains one signature while later tasks add checks; `contract_controls.py` grows from eval validation to exact traceability; `release_manifest.py` exists before publisher work.
+**Interface consistency:** evidence precedes timeline; guard types precede skills/evals; timeline precedes search orchestration; zone semantics precede docs/evals; risk routing precedes router/evals; `validate_repository` keeps one signature; `contract_controls.py` grows from eval validation to exact traceability; `release_manifest.py` exists before publisher work.
 
-**Mechanical spec correction:** the approved design tree used `.agents-plugin/plugin.json`; current reference installability uses `.codex-plugin/plugin.json`. Task 1 corrects the spec and tests that `.agents-plugin` does not exist. No approved architecture decision changes.
+**Mechanical spec correction:** Task 1 changes only `.agents-plugin/plugin.json` to `.codex-plugin/plugin.json`; no approved architecture semantics are changed.
