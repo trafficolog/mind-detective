@@ -1,26 +1,191 @@
 {
   "schema_version": 2,
   "entries": [
-    {"requirement_id":"MD-REQ-CASE-01","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective/SKILL.md","helper":"plugins/mind-detective/scripts/controller.py","test":"plugins/mind-detective/tests/test_controller.py::ControllerTests.test_lifecycle_create_pause_resume_close","reference":"plugins/mind-detective/references/resume-close.md"},
-    {"requirement_id":"MD-REQ-STATEMENT-01","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/statements.py","test":"plugins/mind-detective/tests/test_statements.py::StatementTests.test_file_can_only_originate_observation","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-STATEMENT-02","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/statements.py","test":"plugins/mind-detective/tests/test_statements.py::StatementTests.test_assistant_cannot_originate_recollection","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-STATEMENT-03","status":"active","enforcement":"deterministic+review","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/statements.py","test":"plugins/mind-detective/tests/test_statements.py::StatementTests.test_probability_word_does_not_reclassify_user_statement","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-RECONSTRUCT-01","status":"active","enforcement":"skill_contract+eval+review","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/guard.py","test":"tests/test_contract_matrix.py::ContractMatrixTests.test_reconstruct_skill_requires_free_account_before_clarification","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-RECONSTRUCT-02","status":"active","enforcement":"deterministic+skill_contract","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/guard.py","test":"plugins/mind-detective/tests/test_guard.py::GuardTests.test_new_location_blocked_in_reconstruction","reference":"plugins/mind-detective/references/guard-rules.md"},
-    {"requirement_id":"MD-REQ-RECONSTRUCT-03","status":"active","enforcement":"deterministic+skill_contract","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/timeline.py","test":"plugins/mind-detective/tests/test_timeline.py::TimelineTests.test_unknown_last_interaction_remains_unknown","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-TIMELINE-01","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md","helper":"plugins/mind-detective/scripts/timeline.py","test":"plugins/mind-detective/tests/test_timeline.py::TimelineTests.test_explicit_reversed_supported_times_add_contradiction","reference":"plugins/mind-detective/references/reconstruction.md"},
-    {"requirement_id":"MD-REQ-SEARCH-01","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-plan/SKILL.md","helper":"plugins/mind-detective/scripts/search_log.py","test":"plugins/mind-detective/tests/test_search_log.py::SearchLogTests.test_repeated_checks_remain_distinct_entries","reference":"plugins/mind-detective/references/search-planning.md"},
-    {"requirement_id":"MD-REQ-SEARCH-02","status":"active","enforcement":"deterministic+guard+review","skill":"plugins/mind-detective/skills/mind-detective-plan/SKILL.md","helper":"plugins/mind-detective/scripts/guard.py","test":"plugins/mind-detective/tests/test_guard.py::GuardTests.test_superficial_search_does_not_prove_absence","reference":"plugins/mind-detective/references/search-planning.md"},
-    {"requirement_id":"MD-REQ-SEARCH-03","status":"active","enforcement":"deterministic+skill_contract","skill":"plugins/mind-detective/skills/mind-detective-plan/SKILL.md","helper":"plugins/mind-detective/scripts/guard.py","test":"plugins/mind-detective/tests/test_guard.py::GuardTests.test_same_new_location_allowed_as_search_proposal","reference":"plugins/mind-detective/references/guard-rules.md"},
-    {"requirement_id":"MD-REQ-SEARCH-04","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-plan/SKILL.md","helper":"plugins/mind-detective/scripts/planner.py","test":"plugins/mind-detective/tests/test_end_to_end.py::EndToEndTests.test_pause_save_resume_found_flow_has_no_numeric_probability_state","reference":"plugins/mind-detective/references/search-planning.md"},
-    {"requirement_id":"MD-REQ-SEARCH-05","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-plan/SKILL.md","helper":"plugins/mind-detective/scripts/search_log.py","test":"plugins/mind-detective/tests/test_search_log.py::SearchLogTests.test_repeated_checks_remain_distinct_entries","reference":"plugins/mind-detective/references/search-planning.md"},
-    {"requirement_id":"MD-REQ-RESUME-01","status":"active","enforcement":"deterministic+artifact","skill":"plugins/mind-detective/skills/mind-detective-resume/SKILL.md","helper":"plugins/mind-detective/scripts/store.py","test":"plugins/mind-detective/tests/test_store.py::StoreTests.test_save_load_round_trip_preserves_case_state","reference":"plugins/mind-detective/references/resume-close.md"},
-    {"requirement_id":"MD-REQ-STORE-01","status":"active","enforcement":"deterministic","skill":"plugins/mind-detective/skills/mind-detective-resume/SKILL.md","helper":"plugins/mind-detective/scripts/store.py","test":"plugins/mind-detective/tests/test_store.py::StoreTests.test_delete_removes_only_selected_case","reference":"plugins/mind-detective/references/resume-close.md"},
-    {"requirement_id":"MD-REQ-STORE-02","status":"active","enforcement":"deterministic+boundary","skill":"plugins/mind-detective/skills/mind-detective-resume/SKILL.md","helper":"plugins/mind-detective/scripts/store.py","test":"plugins/mind-detective/tests/test_store.py::StoreTests.test_save_creates_no_profile_or_cross_case_index","reference":"plugins/mind-detective/references/resume-close.md"},
-    {"requirement_id":"MD-REQ-SAFETY-01","status":"active","enforcement":"deterministic+skill_contract","skill":"plugins/mind-detective/skills/mind-detective/SKILL.md","helper":"plugins/mind-detective/scripts/safety.py","test":"plugins/mind-detective/tests/test_safety.py::SafetyTests.test_medication_action_uncertainty_exits_search_reasoning","reference":"plugins/mind-detective/references/safety.md"},
-    {"requirement_id":"MD-REQ-CLOSE-01","status":"active","enforcement":"deterministic+artifact","skill":"plugins/mind-detective/skills/mind-detective-close/SKILL.md","helper":"plugins/mind-detective/scripts/artifacts.py","test":"plugins/mind-detective/tests/test_artifacts.py::ArtifactTests.test_outcome_references_user_authored_possible_cause_without_diagnosis","reference":"plugins/mind-detective/references/resume-close.md"},
-    {"requirement_id":"MD-REQ-EVAL-01","status":"active","enforcement":"repository_validator","skill":"plugins/mind-detective/skills/mind-detective/SKILL.md","helper":"scripts/contract_controls.py","test":"tests/test_eval_contract.py::EvalContractTests.test_repository_eval_contract_is_valid","reference":"docs/REQUIREMENTS.md"},
-    {"requirement_id":"MD-REQ-DOCS-01","status":"planned","planned_task":13,"reason":"Bilingual public documentation is implemented and activated in Task 13."},
-    {"requirement_id":"MD-REQ-RELEASE-01","status":"planned","planned_task":15,"reason":"Release manifest and publisher are implemented and activated in Task 15."}
+    {
+      "requirement_id": "MD-REQ-CASE-01",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/controller.py",
+      "test": "plugins/mind-detective/tests/test_controller.py::ControllerTests.test_lifecycle_create_pause_resume_close",
+      "reference": "plugins/mind-detective/references/resume-close.md"
+    },
+    {
+      "requirement_id": "MD-REQ-STATEMENT-01",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/statements.py",
+      "test": "plugins/mind-detective/tests/test_statements.py::StatementTests.test_file_can_only_originate_observation",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-STATEMENT-02",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/statements.py",
+      "test": "plugins/mind-detective/tests/test_statements.py::StatementTests.test_assistant_cannot_originate_recollection",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-STATEMENT-03",
+      "status": "active",
+      "enforcement": "deterministic+review",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/statements.py",
+      "test": "plugins/mind-detective/tests/test_statements.py::StatementTests.test_probability_word_does_not_reclassify_user_statement",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-RECONSTRUCT-01",
+      "status": "active",
+      "enforcement": "skill_contract+eval+review",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/guard.py",
+      "test": "tests/test_contract_matrix.py::ContractMatrixTests.test_reconstruct_skill_requires_free_account_before_clarification",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-RECONSTRUCT-02",
+      "status": "active",
+      "enforcement": "deterministic+skill_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/guard.py",
+      "test": "plugins/mind-detective/tests/test_guard.py::GuardTests.test_new_location_blocked_in_reconstruction",
+      "reference": "plugins/mind-detective/references/guard-rules.md"
+    },
+    {
+      "requirement_id": "MD-REQ-RECONSTRUCT-03",
+      "status": "active",
+      "enforcement": "deterministic+skill_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/timeline.py",
+      "test": "plugins/mind-detective/tests/test_timeline.py::TimelineTests.test_unknown_last_interaction_remains_unknown",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-TIMELINE-01",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-reconstruct/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/timeline.py",
+      "test": "plugins/mind-detective/tests/test_timeline.py::TimelineTests.test_explicit_reversed_supported_times_add_contradiction",
+      "reference": "plugins/mind-detective/references/reconstruction.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SEARCH-01",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-plan/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/search_log.py",
+      "test": "plugins/mind-detective/tests/test_search_log.py::SearchLogTests.test_repeated_checks_remain_distinct_entries",
+      "reference": "plugins/mind-detective/references/search-planning.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SEARCH-02",
+      "status": "active",
+      "enforcement": "deterministic+guard+review",
+      "skill": "plugins/mind-detective/skills/mind-detective-plan/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/guard.py",
+      "test": "plugins/mind-detective/tests/test_guard.py::GuardTests.test_superficial_search_does_not_prove_absence",
+      "reference": "plugins/mind-detective/references/search-planning.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SEARCH-03",
+      "status": "active",
+      "enforcement": "deterministic+skill_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective-plan/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/guard.py",
+      "test": "plugins/mind-detective/tests/test_guard.py::GuardTests.test_same_new_location_allowed_as_search_proposal",
+      "reference": "plugins/mind-detective/references/guard-rules.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SEARCH-04",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-plan/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/planner.py",
+      "test": "plugins/mind-detective/tests/test_end_to_end.py::EndToEndTests.test_pause_save_resume_found_flow_has_no_numeric_probability_state",
+      "reference": "plugins/mind-detective/references/search-planning.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SEARCH-05",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-plan/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/search_log.py",
+      "test": "plugins/mind-detective/tests/test_search_log.py::SearchLogTests.test_repeated_checks_remain_distinct_entries",
+      "reference": "plugins/mind-detective/references/search-planning.md"
+    },
+    {
+      "requirement_id": "MD-REQ-RESUME-01",
+      "status": "active",
+      "enforcement": "deterministic+artifact",
+      "skill": "plugins/mind-detective/skills/mind-detective-resume/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/store.py",
+      "test": "plugins/mind-detective/tests/test_store.py::StoreTests.test_save_load_round_trip_preserves_case_state",
+      "reference": "plugins/mind-detective/references/resume-close.md"
+    },
+    {
+      "requirement_id": "MD-REQ-STORE-01",
+      "status": "active",
+      "enforcement": "deterministic",
+      "skill": "plugins/mind-detective/skills/mind-detective-resume/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/store.py",
+      "test": "plugins/mind-detective/tests/test_store.py::StoreTests.test_delete_removes_only_selected_case",
+      "reference": "plugins/mind-detective/references/resume-close.md"
+    },
+    {
+      "requirement_id": "MD-REQ-STORE-02",
+      "status": "active",
+      "enforcement": "deterministic+boundary",
+      "skill": "plugins/mind-detective/skills/mind-detective-resume/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/store.py",
+      "test": "plugins/mind-detective/tests/test_store.py::StoreTests.test_save_creates_no_profile_or_cross_case_index",
+      "reference": "plugins/mind-detective/references/resume-close.md"
+    },
+    {
+      "requirement_id": "MD-REQ-SAFETY-01",
+      "status": "active",
+      "enforcement": "deterministic+skill_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/safety.py",
+      "test": "plugins/mind-detective/tests/test_safety.py::SafetyTests.test_medication_action_uncertainty_exits_search_reasoning",
+      "reference": "plugins/mind-detective/references/safety.md"
+    },
+    {
+      "requirement_id": "MD-REQ-CLOSE-01",
+      "status": "active",
+      "enforcement": "deterministic+artifact",
+      "skill": "plugins/mind-detective/skills/mind-detective-close/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/artifacts.py",
+      "test": "plugins/mind-detective/tests/test_artifacts.py::ArtifactTests.test_outcome_references_user_authored_possible_cause_without_diagnosis",
+      "reference": "plugins/mind-detective/references/resume-close.md"
+    },
+    {
+      "requirement_id": "MD-REQ-EVAL-01",
+      "status": "active",
+      "enforcement": "repository_validator",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "scripts/contract_controls.py",
+      "test": "tests/test_eval_contract.py::EvalContractTests.test_repository_eval_contract_is_valid",
+      "reference": "docs/REQUIREMENTS.md"
+    },
+    {
+      "requirement_id": "MD-REQ-DOCS-01",
+      "status": "active",
+      "enforcement": "repository_validator",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "scripts/bilingual_docs.py",
+      "test": "tests/test_bilingual_docs.py::BilingualDocsTests.test_required_ru_en_pairs_exist_and_link_to_each_other",
+      "reference": "docs/PLUGIN_STANDARD.md"
+    },
+    {
+      "requirement_id": "MD-REQ-RELEASE-01",
+      "status": "planned",
+      "planned_task": 15,
+      "reason": "Release manifest and publisher are implemented and activated in Task 15."
+    }
   ]
 }
