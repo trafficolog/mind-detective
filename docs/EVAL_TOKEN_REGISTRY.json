@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "tokens": [
+    "MD_G_RECON_NEW_LOCATION",
+    "MD_SEARCH_SUGGESTION",
+    "MD_G_LOCATION_PROBABILITY",
+    "MD_G_SUPERFICIAL_PROVES_ABSENCE",
+    "MD_SAFE_MEDICATION_ACTION",
+    "MD_PHYSICAL_ITEM_SEARCH",
+    "MD_RESUME_HISTORY_PRESERVED",
+    "MD_STMT_ASSISTANT_ORIGIN",
+    "MD_G_MECHANISM_DIAGNOSIS",
+    "MD_OUTCOME_UNRESOLVED",
+    "MD_STORE_DELETE_EXPLICIT",
+    "MD_SCOPE_PWA_DEFERRED"
+  ],
+  "outcomes": ["comply", "comply_with_limitations", "refuse"],
+  "routes": ["mind-detective","mind-detective-reconstruct","mind-detective-plan","mind-detective-resume","mind-detective-close"]
+}
