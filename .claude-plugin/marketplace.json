@@ -1,0 +1,12 @@
+{
+  "name": "mind-detective",
+  "owner": {"name": "Trafficolog"},
+  "plugins": [
+    {
+      "name": "mind-detective",
+      "source": "./plugins/mind-detective",
+      "description": "Systematic lost-item search assistant with resumable case-local search state.",
+      "version": "0.1.0"
+    }
+  ]
+}

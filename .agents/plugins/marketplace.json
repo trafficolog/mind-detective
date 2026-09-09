@@ -1,0 +1,13 @@
+{
+  "name": "mind-detective",
+  "interface": {"displayName": "MIND Detective"},
+  "plugins": [
+    {
+      "name": "mind-detective",
+      "version": "0.1.0",
+      "source": {"source": "local", "path": "./plugins/mind-detective"},
+      "policy": {"installation": "AVAILABLE", "authentication": "ON_USE"},
+      "category": "Productivity"
+    }
+  ]
+}

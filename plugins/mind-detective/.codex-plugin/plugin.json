@@ -1,0 +1,17 @@
+{
+  "name": "mind-detective",
+  "description": "Systematic lost-item search assistant with deterministic case state and search logging.",
+  "version": "0.1.0",
+  "author": {"name": "Trafficolog"},
+  "license": "MIT",
+  "keywords": ["lost-items", "search", "case-management", "productivity"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "MIND Detective",
+    "shortDescription": "Systematic lost-item search assistant.",
+    "longDescription": "Helps reconstruct user-provided context, log physical checks, choose one next search action, resume a saved case, and close it without inventing memories or calibrated location probabilities.",
+    "developerName": "Trafficolog",
+    "category": "Productivity",
+    "capabilities": ["Productivity", "Search", "Case Management"]
+  }
+}
