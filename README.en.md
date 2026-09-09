@@ -1,5 +1,7 @@
 # MIND Detective
 
+<!-- release-0.1.0 -->
+
 [Русский](README.md)
 
 **MIND Detective is a systematic lost-item search assistant.** It reduces cognitive load during a search by preserving the user's own account without promoting it to verified fact, keeping a durable log of physical checks, selecting one useful next action, and resuming an explicitly saved case after interruption.

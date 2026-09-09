@@ -2,7 +2,7 @@
 
 [Русский](CHANGELOG.md)
 
-## [0.1.0] — Unreleased
+## [0.1.0] — 2026-09-09
 
 ### Added
 - deterministic Case Controller and provenance-aware statement model;

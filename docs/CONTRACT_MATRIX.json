@@ -183,9 +183,12 @@
     },
     {
       "requirement_id": "MD-REQ-RELEASE-01",
-      "status": "planned",
-      "planned_task": 15,
-      "reason": "Release manifest and publisher are implemented and activated in Task 15."
+      "status": "active",
+      "enforcement": "repository_validator+publisher+human_gate",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "scripts/release_manifest.py",
+      "test": "tests/test_release_contract.py::ReleaseContractTests.test_repository_manifest_is_valid",
+      "reference": "docs/RELEASE_POLICY.md"
     }
   ]
 }
