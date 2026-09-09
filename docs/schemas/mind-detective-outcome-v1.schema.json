@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mind-detective-outcome-v1.schema.json",
+  "title": "MIND Detective Outcome v1",
+  "type": "object",
+  "required": [
+    "schema", "case_id", "status", "user_reported_found_location",
+    "preceding_search_check_id", "possible_cause_statement_id", "prevention_note",
+    "retention_decision", "limitations"
+  ],
+  "properties": {
+    "schema": {"const": "mind-detective-outcome/v1"},
+    "case_id": {"type": "string"},
+    "status": {"enum": ["found", "unresolved", "abandoned"]},
+    "user_reported_found_location": {"type": ["string", "null"]},
+    "preceding_search_check_id": {"type": ["string", "null"]},
+    "possible_cause_statement_id": {"type": ["string", "null"]},
+    "prevention_note": {"type": ["string", "null"]},
+    "retention_decision": {"type": ["string", "null"]},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mind-detective-handoff-v1.schema.json",
+  "title": "MIND Detective Handoff v1",
+  "type": "object",
+  "required": [
+    "schema", "case_id", "item_label", "lifecycle", "statements", "timeline",
+    "search_history", "next_action", "constraints", "limitations"
+  ],
+  "properties": {
+    "schema": {"const": "mind-detective-handoff/v1"},
+    "case_id": {"type": "string"},
+    "item_label": {"type": "string"},
+    "lifecycle": {"type": "string"},
+    "statements": {"type": "array"},
+    "timeline": {"type": ["object", "null"]},
+    "search_history": {"type": "array"},
+    "next_action": {"type": ["object", "null"]},
+    "constraints": {"type": "array"},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}
