@@ -1,0 +1,53 @@
+name: Reference freshness
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  strict-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - id: freshness
+        name: Run strict full-set freshness check
+        shell: bash
+        run: |
+          set +e
+          python scripts/check_reference_freshness.py --strict > /tmp/freshness.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/freshness.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - name: Open or update freshness issue
+        if: steps.freshness.outputs.status != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title='Reference freshness requires review'
+          body_file=/tmp/freshness-issue.md
+          {
+            echo 'The scheduled strict reference-freshness check found stale or invalid markers.'
+            echo
+            echo '```text'
+            cat /tmp/freshness.txt
+            echo '```'
+            echo
+            echo "Workflow SHA: ${{ github.sha }}"
+          } > "$body_file"
+          number="$(gh issue list --state open --search "$title in:title" --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)"
+          if [[ -n "$number" ]]; then
+            gh issue edit "$number" --body-file "$body_file"
+          else
+            gh issue create --title "$title" --body-file "$body_file"
+          fi

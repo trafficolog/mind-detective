@@ -1,0 +1,63 @@
+import unittest
+from pathlib import Path
+
+from scripts.validate_repo import scan_source_for_forbidden_imports, validate_boundaries
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class BoundaryTests(unittest.TestCase):
+    def test_forbidden_import_returns_stable_machine_code(self):
+        self.assertEqual(
+            scan_source_for_forbidden_imports("import requests\n"),
+            ["MD_BOUNDARY_FORBIDDEN_IMPORT:requests"],
+        )
+
+    def test_nested_forbidden_import_returns_root_module_code(self):
+        self.assertEqual(
+            scan_source_for_forbidden_imports("from google.cloud import storage\n"),
+            ["MD_BOUNDARY_FORBIDDEN_IMPORT:google.cloud"],
+        )
+
+    def test_current_runtime_satisfies_transport_and_scope_boundary(self):
+        self.assertEqual(validate_boundaries(ROOT), [])
+
+    def test_forbidden_runtime_names_are_part_of_boundary_contract(self):
+        for name in ("zones.py", "ach.py", "model_adapter.py"):
+            self.assertFalse((ROOT / "plugins/mind-detective/scripts" / name).exists())
+
+    def test_frontend_manifests_are_absent_from_p0_plugin(self):
+        plugin = ROOT / "plugins/mind-detective"
+        forbidden = [plugin / "package.json", plugin / "nuxt.config.ts", plugin / "vite.config.ts"]
+        self.assertFalse(any(path.exists() for path in forbidden))
+
+    def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("'3.10'", ci)
+        self.assertIn("'3.13'", ci)
+        self.assertIn("ruff check .", ci)
+        self.assertIn("mypy plugins/mind-detective/scripts scripts", ci)
+        self.assertIn("gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e", ci)
+        for line in ci.splitlines():
+            if "uses:" in line:
+                ref = line.split("@", 1)[-1].split()[0]
+                self.assertRegex(ref, r"^[0-9a-f]{40}$")
+
+    def test_reference_freshness_workflow_opens_or_updates_issue(self):
+        workflow = (ROOT / ".github/workflows/reference-freshness.yml").read_text(encoding="utf-8")
+        self.assertIn("schedule:", workflow)
+        self.assertIn("issues: write", workflow)
+        self.assertIn("python scripts/check_reference_freshness.py --strict", workflow)
+        self.assertIn("gh issue create", workflow)
+        self.assertIn("gh issue edit", workflow)
+
+    def test_dependabot_and_pr_template_exist(self):
+        dependabot = (ROOT / ".github/dependabot.yml").read_text(encoding="utf-8")
+        template = (ROOT / ".github/pull_request_template.md").read_text(encoding="utf-8")
+        self.assertIn("package-ecosystem: github-actions", dependabot)
+        self.assertIn("exact PR head SHA", template)
+        self.assertIn("Human merge authorization", template)
+
+
+if __name__ == "__main__":
+    unittest.main()
