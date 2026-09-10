@@ -37,11 +37,18 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("'3.13'", ci)
         self.assertIn("ruff check .", ci)
         self.assertIn("mypy plugins/mind-detective/scripts scripts", ci)
+        self.assertIn("ruff==0.16.6", ci)
+        self.assertIn("mypy==2.3.1", ci)
         self.assertIn("gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e", ci)
         for line in ci.splitlines():
             if "uses:" in line:
                 ref = line.split("@", 1)[-1].split()[0]
                 self.assertRegex(ref, r"^[0-9a-f]{40}$")
+
+    def test_ruff_rule_set_is_explicit_and_stable(self):
+        pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn("[tool.ruff.lint]", pyproject)
+        self.assertIn('select = ["E4", "E7", "E9", "F", "B", "UP"]', pyproject)
 
     def test_reference_freshness_workflow_opens_or_updates_issue(self):
         workflow = (ROOT / ".github/workflows/reference-freshness.yml").read_text(encoding="utf-8")
