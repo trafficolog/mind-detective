@@ -75,6 +75,10 @@ The prototype may open a thoroughness sheet immediately for demonstration. Produ
 
 Mode tags shown in prototype messages are retained, but production entries come from `case/v2.interaction_journal`. Historical labels survive reload and cannot be reconstructed from current screen mode.
 
+### 6. Local persistence is not the same as no external processing
+
+The prototype correctly emphasizes that the server does not persist the Case. Production assistant mode must additionally disclose that the minimum current proposal context is transiently processed by the configured model provider. "Stored locally" must not be presented as "never leaves this device" when the assistant arm is enabled.
+
 ## Scenario matrix to preserve in automated tests
 
 At minimum the Web implementation must be testable in these states:
