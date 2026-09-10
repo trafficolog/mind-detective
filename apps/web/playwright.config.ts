@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
+const assistantFallbackSpec = /offline-assistant-fallback\.spec\.ts/
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -11,8 +13,32 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'chromium',
+      testIgnore: assistantFallbackSpec,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'webkit',
+      testIgnore: assistantFallbackSpec,
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'assistant-chromium',
+      testMatch: assistantFallbackSpec,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://127.0.0.1:3001',
+      },
+    },
+    {
+      name: 'assistant-webkit',
+      testMatch: assistantFallbackSpec,
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: 'http://127.0.0.1:3001',
+      },
+    },
   ],
   webServer: [
     {
@@ -26,6 +52,16 @@ export default defineConfig({
       command: 'pnpm dev --host 127.0.0.1 --port 3000',
       cwd: '.',
       url: 'http://127.0.0.1:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      command: 'pnpm dev --host 127.0.0.1 --port 3001',
+      cwd: '.',
+      url: 'http://127.0.0.1:3001',
+      env: {
+        NUXT_PUBLIC_MIND_DETECTIVE_ARM: 'assistant',
+      },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
