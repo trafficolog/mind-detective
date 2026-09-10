@@ -5,18 +5,28 @@ import { importCase } from '~/lib/storage/exportImport'
 const repository = useCaseRepository()
 const api = useCaseApi()
 const loading = ref(true)
+const caseRouteReady = ref(false)
 const importPending = ref(false)
 const importMessage = ref<string | null>(null)
 
+async function prepareCaseRoute(): Promise<void> {
+  await preloadRouteComponents('/cases/offline-preload')
+  caseRouteReady.value = true
+}
+
 onMounted(async () => {
   try {
-    await repository.refresh()
+    await Promise.all([
+      repository.refresh(),
+      prepareCaseRoute(),
+    ])
   } finally {
     loading.value = false
   }
 })
 
 async function handleCreated(caseValue: CaseV2): Promise<void> {
+  if (!caseRouteReady.value) await prepareCaseRoute()
   await navigateTo(`/cases/${caseValue.case_id}`)
 }
 
@@ -30,6 +40,7 @@ async function handleImport(event: Event): Promise<void> {
     const imported = await importCase(file, api.validateCase)
     await repository.put(imported)
     importMessage.value = 'Импорт завершён. Дело сохранено локально.'
+    if (!caseRouteReady.value) await prepareCaseRoute()
     await navigateTo(`/cases/${imported.case_id}`)
   } catch {
     importMessage.value = 'Не удалось импортировать дело: файл или версия схемы не поддерживается.'
@@ -48,7 +59,10 @@ async function handleImport(event: Event): Promise<void> {
       <p class="lede">
         Зафиксируем, что уже известно и проверено, затем выберем один полезный следующий шаг.
       </p>
-      <CreateCaseForm @created="handleCreated" />
+      <div v-if="caseRouteReady" data-testid="offline-route-ready">
+        <CreateCaseForm @created="handleCreated" />
+      </div>
+      <p v-else class="muted" aria-live="polite">Подготавливаем локальный поиск…</p>
     </section>
 
     <p v-if="loading" class="muted" aria-live="polite">Загружаем локальные дела…</p>
