@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'PYTHONPATH=../..//plugins/mind-detective:. python ../api/run.py',
+      command: 'python ../api/run.py',
       cwd: '.',
       url: 'http://127.0.0.1:8000/docs',
       reuseExistingServer: !process.env.CI,
