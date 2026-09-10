@@ -14,9 +14,27 @@ class ContractMatrixTests(unittest.TestCase):
         selector = "plugins/mind-detective/tests/test_guard.py::GuardTests.test_new_location_blocked_in_reconstruction"
         self.assertTrue(selector_exists(ROOT, selector))
 
+    def test_exact_selector_exists_for_real_playwright_test(self):
+        selector = (
+            "apps/web/tests/e2e/create-resume.spec.ts::"
+            "production creation is one field and preserves a paused case for resume"
+        )
+        self.assertTrue(selector_exists(ROOT, selector))
+
     def test_missing_exact_selector_is_rejected(self):
         selector = "plugins/mind-detective/tests/test_guard.py::GuardTests.test_not_real"
         self.assertFalse(selector_exists(ROOT, selector))
+
+    def test_web_requirement_ids_are_collected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "requirements.md"
+            path.write_text(
+                "- `MD-REQ-CASE-01` core\n- `MD-WEB-REQ-SHELL-01` web\n",
+                encoding="utf-8",
+            )
+            ids, duplicates = collect_requirement_ids(path)
+        self.assertEqual(ids, {"MD-REQ-CASE-01", "MD-WEB-REQ-SHELL-01"})
+        self.assertEqual(duplicates, set())
 
     def test_duplicate_requirement_ids_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
