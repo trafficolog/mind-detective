@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const assistantFallbackSpec = /offline-assistant-fallback\.spec\.ts/
+const offlinePwaSpec = /offline-vertical-slice\.spec\.ts/
+const devSpecsToIgnore = [assistantFallbackSpec, offlinePwaSpec]
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,12 +17,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: assistantFallbackSpec,
+      testIgnore: devSpecsToIgnore,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'webkit',
-      testIgnore: assistantFallbackSpec,
+      testIgnore: devSpecsToIgnore,
       use: { ...devices['Desktop Safari'] },
     },
     {
@@ -37,6 +39,22 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         baseURL: 'http://127.0.0.1:3001',
+      },
+    },
+    {
+      name: 'offline-pwa-chromium',
+      testMatch: offlinePwaSpec,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://127.0.0.1:3002',
+      },
+    },
+    {
+      name: 'offline-pwa-webkit',
+      testMatch: offlinePwaSpec,
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: 'http://127.0.0.1:3002',
       },
     },
   ],
@@ -64,6 +82,13 @@ export default defineConfig({
       },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
+    },
+    {
+      command: 'test -f .output/public/index.html || pnpm build; python -m http.server 3002 --bind 127.0.0.1 --directory .output/public',
+      cwd: '.',
+      url: 'http://127.0.0.1:3002',
+      reuseExistingServer: !process.env.CI,
+      timeout: 90_000,
     },
   ],
 })
