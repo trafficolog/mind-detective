@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -30,6 +31,16 @@ class BoundaryTests(unittest.TestCase):
         plugin = ROOT / "plugins/mind-detective"
         forbidden = [plugin / "package.json", plugin / "nuxt.config.ts", plugin / "vite.config.ts"]
         self.assertFalse(any(path.exists() for path in forbidden))
+
+    def test_web_workspace_is_pinned_and_core_stays_dependency_free(self):
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["packageManager"], "pnpm@12.3.4")
+        self.assertEqual((ROOT / ".node-version").read_text(encoding="utf-8").strip(), "24.21.0")
+        api_pyproject = (ROOT / "apps/api/pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('fastapi==0.141.1', api_pyproject)
+        self.assertIn('openai==3.8.0', api_pyproject)
+        self.assertNotIn("fastapi", (ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        self.assertFalse((ROOT / "plugins/mind-detective/apps").exists())
 
     def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
