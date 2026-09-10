@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mind-detective-case-v2.schema.json",
+  "title": "MIND Detective Case v2",
+  "type": "object",
+  "required": [
+    "schema",
+    "case_id",
+    "item_label",
+    "created_at",
+    "updated_at",
+    "lifecycle",
+    "statements",
+    "timeline",
+    "search_checks",
+    "candidates",
+    "next_action",
+    "constraints",
+    "outcome",
+    "current_mode",
+    "interaction_journal",
+    "action_feedback"
+  ],
+  "properties": {
+    "schema": {"const": "mind-detective-case/v2"},
+    "case_id": {"type": "string", "minLength": 1},
+    "item_label": {"type": "string", "minLength": 1},
+    "created_at": {"type": "string"},
+    "updated_at": {"type": "string"},
+    "lifecycle": {
+      "enum": ["active", "paused", "closed_found", "closed_unresolved", "deleted"]
+    },
+    "statements": {"type": "array"},
+    "timeline": {"type": ["object", "null"]},
+    "search_checks": {"type": "array"},
+    "candidates": {"type": "array"},
+    "next_action": {"type": ["object", "null"]},
+    "constraints": {"type": "array", "items": {"type": "string"}},
+    "outcome": {"type": ["object", "null"]},
+    "current_mode": {"enum": ["unselected", "reconstruction", "search"]},
+    "interaction_journal": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "author", "mode", "entry_type", "text", "created_at", "statement_ids", "search_check_ids"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "author": {"enum": ["user", "assistant", "system"]},
+          "mode": {"enum": ["reconstruction", "search", "system"]},
+          "entry_type": {"type": "string", "minLength": 1},
+          "text": {"type": "string"},
+          "created_at": {"type": "string"},
+          "statement_ids": {"type": "array", "items": {"type": "string"}},
+          "search_check_ids": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "action_feedback": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "candidate_id", "reason", "recorded_at"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "candidate_id": {"type": "string", "minLength": 1},
+          "reason": {"enum": ["already_checked", "impossible_now", "irrelevant", "unsafe_or_uncomfortable", "other"]},
+          "recorded_at": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
