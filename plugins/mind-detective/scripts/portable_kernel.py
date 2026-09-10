@@ -350,7 +350,7 @@ def _apply_record_search_check(
         portable_error("MD_WEB_COMMAND_PAYLOAD", "completed_at must be a string or null")
     check_id = _required_str(payload, "check_id")
     target = _required_str(payload, "target")
-    check = {
+    check: dict[str, object] = {
         "id": check_id,
         "target": target,
         "method": method_raw,
