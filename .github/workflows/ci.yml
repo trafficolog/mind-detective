@@ -69,7 +69,7 @@ jobs:
       - name: Mypy
         env:
           MYPYPATH: plugins/mind-detective:apps/api
-        run: mypy plugins/mind-detective/scripts scripts apps/api/mind_detective_api apps/api/tests
+        run: mypy --explicit-package-bases plugins/mind-detective/scripts scripts apps/api/mind_detective_api apps/api/tests
 
   web:
     name: Validate Web
