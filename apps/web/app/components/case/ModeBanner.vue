@@ -4,11 +4,12 @@ import type { InteractionMode } from '~/lib/api/contracts'
 const props = defineProps<{
   mode: InteractionMode
 }>()
+const { t } = useCopy()
 
 const label = computed(() => {
-  if (props.mode === 'reconstruction') return 'Восстановление последовательности'
-  if (props.mode === 'search') return 'Физический поиск'
-  return 'Режим не выбран'
+  if (props.mode === 'reconstruction') return t('mode.reconstruction')
+  if (props.mode === 'search') return t('mode.search')
+  return t('mode.unselected')
 })
 </script>
 
