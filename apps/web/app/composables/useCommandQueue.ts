@@ -1,4 +1,4 @@
-import { readonly, ref, type DeepReadonly, type Ref } from 'vue'
+import { readonly, ref, toRaw, type DeepReadonly, type Ref } from 'vue'
 import type { CaseV2, CommandEnvelope } from '~/lib/api/contracts'
 import type { CaseApi } from './useCaseApi'
 
@@ -34,11 +34,11 @@ export interface CommandQueue {
 }
 
 function cloneCase(caseValue: CaseV2): CaseV2 {
-  return structuredClone(caseValue)
+  return structuredClone(toRaw(caseValue))
 }
 
 function cloneEnvelope(command: CommandEnvelope): CommandEnvelope {
-  return structuredClone(command)
+  return structuredClone(toRaw(command))
 }
 
 function errorCode(error: unknown): string {
