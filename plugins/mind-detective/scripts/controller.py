@@ -5,10 +5,11 @@ from dataclasses import replace
 from .case import Case, CaseError, CaseLifecycle
 from .feedback import ActionFeedback
 from .journal import InteractionMode, JournalEntry
-from .planner import CandidateCheck, select_next_action
+from .planner import CandidateCheck, CheckState, select_next_action
 from .search_log import (
     SearchCheck,
     SearchMethod,
+    SearchResult,
     find_duplicate_checks,
     refine_search_check_method,
 )
@@ -21,6 +22,28 @@ _TERMINAL = {
     CaseLifecycle.CLOSED_UNRESOLVED,
     CaseLifecycle.DELETED,
 }
+
+
+def _candidate_state_for_check(check: SearchCheck) -> CheckState:
+    if check.result in {SearchResult.PARTIAL, SearchResult.INACCESSIBLE} or check.inaccessible_parts:
+        return CheckState.PARTIAL
+    return CheckState.CHECKED
+
+
+def _apply_check_to_candidates(
+    candidates: tuple[CandidateCheck, ...],
+    check: SearchCheck,
+) -> tuple[CandidateCheck, ...]:
+    related_ids = set(check.based_on)
+    if not related_ids:
+        return candidates
+    state = _candidate_state_for_check(check)
+    return tuple(
+        replace(candidate, check_state=state)
+        if candidate.id in related_ids
+        else candidate
+        for candidate in candidates
+    )
 
 
 class CaseController:
@@ -78,7 +101,12 @@ class CaseController:
 
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
         self._ensure_mutable(case)
-        return replace(case, search_checks=case.search_checks + (check,), updated_at=now)
+        return replace(
+            case,
+            search_checks=case.search_checks + (check,),
+            candidates=_apply_check_to_candidates(case.candidates, check),
+            updated_at=now,
+        )
 
     def refine_search_check(
         self,
@@ -96,7 +124,13 @@ class CaseController:
             else check
             for check in checks
         )
-        return replace(case, search_checks=checks, updated_at=now)
+        refined = next(check for check in checks if check.id == check_id)
+        return replace(
+            case,
+            search_checks=checks,
+            candidates=_apply_check_to_candidates(case.candidates, refined),
+            updated_at=now,
+        )
 
     def find_duplicate_search_checks(self, case: Case, target: str) -> tuple[SearchCheck, ...]:
         return find_duplicate_checks(case.search_checks, target)
