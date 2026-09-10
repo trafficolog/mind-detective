@@ -8,11 +8,20 @@ const emit = defineEmits<{
 }>()
 
 const reason = ref<ActionFeedbackV2['reason']>('irrelevant')
+const { dialogRef, onDialogKeydown } = useDialogFocus(() => emit('close'))
 </script>
 
 <template>
   <div class="dialog-backdrop" data-testid="action-reject-dialog" @click.self="emit('close')">
-    <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+    <section
+      ref="dialogRef"
+      class="dialog-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reject-title"
+      tabindex="-1"
+      @keydown="onDialogKeydown"
+    >
       <p class="eyebrow">Следующий шаг</p>
       <h2 id="reject-title">Почему «{{ props.target }}» сейчас не подходит?</h2>
       <label class="field-label" for="reject-reason">Причина</label>
