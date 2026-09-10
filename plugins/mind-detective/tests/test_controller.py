@@ -104,3 +104,35 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(duplicates, (first,))
         self.assertEqual(duplicates[0].method, SearchMethod.GLANCE)
         self.assertEqual(duplicates[0].result, SearchResult.NOT_FOUND)
+
+    def test_controller_refines_reported_check_without_replacing_identity(self):
+        reported = SearchCheck(
+            id="c1",
+            target="Рюкзак",
+            method=SearchMethod.REPORTED_CHECK,
+            started_at="2026-09-09T18:04:00Z",
+            completed_at="2026-09-09T18:05:00Z",
+            result=SearchResult.NOT_FOUND,
+            inaccessible_parts=(),
+            based_on=("p1",),
+            notes=("user reported check",),
+        )
+        updated = self.controller.record_search_check(self.case, reported, "2026-09-09T18:05:00Z")
+        refined = self.controller.refine_search_check(
+            updated,
+            "c1",
+            SearchMethod.EMPTY_AND_CHECK,
+            ("секретный карман",),
+            "2026-09-09T18:06:00Z",
+        )
+        self.assertEqual(len(refined.search_checks), 1)
+        check = refined.search_checks[0]
+        self.assertEqual(check.id, "c1")
+        self.assertEqual(check.started_at, reported.started_at)
+        self.assertEqual(check.result, reported.result)
+        self.assertEqual(check.method, SearchMethod.EMPTY_AND_CHECK)
+        self.assertEqual(check.inaccessible_parts, ("секретный карман",))
+
+
+if __name__ == "__main__":
+    unittest.main()
