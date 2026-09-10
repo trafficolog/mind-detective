@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { toRaw } from 'vue'
+import { shallowRef, toRaw } from 'vue'
 import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCaseApi'
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
 import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
@@ -28,7 +28,7 @@ const showComposer = ref(false)
 const showReject = ref(false)
 const showClose = ref(false)
 const suppressedQualityCheckId = ref<string | null>(null)
-const retryCommandState = ref<RetryableCommand | null>(null)
+const retryCommandState = shallowRef<RetryableCommand | null>(null)
 const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
@@ -174,7 +174,7 @@ async function refreshProposal(): Promise<void> {
 async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2): Promise<CaseV2 | null> {
   const current = caseValue.value
   if (!current) return null
-  const inputCase = retryCaseSnapshot ? structuredClone(retryCaseSnapshot) : snapshotCase(current)
+  const inputCase = retryCaseSnapshot ? snapshotCase(retryCaseSnapshot) : snapshotCase(current)
   busy.value = true
   errorCode.value = null
   try {
