@@ -5,108 +5,125 @@ from dataclasses import replace
 from .case import Case, CaseError, CaseLifecycle
 from .feedback import ActionFeedback
 from .journal import InteractionMode, JournalEntry
-from .planner import CandidateCheck, CheckState, select_next_action
-from .search_log import (
-    SearchCheck,
-    SearchMethod,
-    SearchResult,
-    find_duplicate_checks,
-    refine_search_check_method,
+from .planner import CandidateCheck, select_next_action
+from .portable_intrinsics import PortableKernelError
+from .portable_kernel import (
+    add_statement_json,
+    append_journal_entry_json,
+    close_found_json,
+    close_unresolved_json,
+    create_case,
+    pause_json,
+    record_action_feedback_json,
+    record_search_check_json,
+    refine_search_check_json,
+    resume_json,
+    set_mode_json,
 )
+from .search_log import SearchCheck, SearchLogError, SearchMethod, find_duplicate_checks
 from .statements import Statement
+from .store import case_from_dict, case_to_dict
 from .timeline import Timeline
 
 
-_TERMINAL = {
-    CaseLifecycle.CLOSED_FOUND,
-    CaseLifecycle.CLOSED_UNRESOLVED,
-    CaseLifecycle.DELETED,
-}
-
-
-def _candidate_state_for_check(check: SearchCheck) -> CheckState:
-    if check.result in {SearchResult.PARTIAL, SearchResult.INACCESSIBLE} or check.inaccessible_parts:
-        return CheckState.PARTIAL
-    return CheckState.CHECKED
-
-
-def _apply_check_to_candidates(
-    candidates: tuple[CandidateCheck, ...],
-    check: SearchCheck,
-) -> tuple[CandidateCheck, ...]:
-    related_ids = set(check.based_on)
-    if not related_ids:
-        return candidates
-    state = _candidate_state_for_check(check)
-    return tuple(
-        replace(candidate, check_state=state)
-        if candidate.id in related_ids
-        else candidate
-        for candidate in candidates
-    )
-
-
 class CaseController:
+    def _from_portable(self, payload: dict[str, object]) -> Case:
+        return case_from_dict(payload)
+
+    def _case_error(self, exc: PortableKernelError) -> CaseError:
+        return CaseError(exc.code, str(exc))
+
     def create_case(self, case_id: str, item_label: str, now: str) -> Case:
-        return Case(
-            schema="mind-detective-case/v2",
-            case_id=case_id,
-            item_label=item_label,
-            created_at=now,
-            updated_at=now,
-            lifecycle=CaseLifecycle.ACTIVE,
-            statements=(),
-            timeline=None,
-            search_checks=(),
-            candidates=(),
-            next_action=None,
-            constraints=(),
-            outcome=None,
-            current_mode=InteractionMode.UNSELECTED,
-            interaction_journal=(),
-            action_feedback=(),
-        )
+        try:
+            return self._from_portable(create_case(case_id, item_label, now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def _ensure_mutable(self, case: Case) -> None:
-        if case.lifecycle in _TERMINAL:
+        if case.lifecycle in {
+            CaseLifecycle.CLOSED_FOUND,
+            CaseLifecycle.CLOSED_UNRESOLVED,
+            CaseLifecycle.DELETED,
+        }:
             raise CaseError("MD_CASE_TERMINAL", f"case is terminal: {case.lifecycle.value}")
 
     def set_mode(self, case: Case, mode: InteractionMode, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, current_mode=mode, updated_at=now)
+        try:
+            return self._from_portable(set_mode_json(case_to_dict(case), mode.value, now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def append_journal_entry(self, case: Case, entry: JournalEntry, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(
-            case,
-            interaction_journal=case.interaction_journal + (entry,),
-            updated_at=now,
-        )
+        entry_payload: dict[str, object] = {
+            "id": entry.id,
+            "author": entry.author.value,
+            "mode": entry.mode.value,
+            "entry_type": entry.entry_type,
+            "text": entry.text,
+            "created_at": entry.created_at,
+            "statement_ids": list(entry.statement_ids),
+            "search_check_ids": list(entry.search_check_ids),
+        }
+        try:
+            return self._from_portable(
+                append_journal_entry_json(case_to_dict(case), entry_payload, now)
+            )
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def record_action_feedback(self, case: Case, feedback: ActionFeedback, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(
-            case,
-            action_feedback=case.action_feedback + (feedback,),
-            updated_at=now,
-        )
+        feedback_payload: dict[str, object] = {
+            "id": feedback.id,
+            "candidate_id": feedback.candidate_id,
+            "reason": feedback.reason.value,
+            "recorded_at": feedback.recorded_at,
+        }
+        try:
+            return self._from_portable(
+                record_action_feedback_json(case_to_dict(case), feedback_payload, now)
+            )
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def add_statement(self, case: Case, statement: Statement, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, statements=case.statements + (statement,), updated_at=now)
+        statement_payload: dict[str, object] = {
+            "id": statement.id,
+            "source": statement.source.value,
+            "statement_type": statement.statement_type.value,
+            "original_text": statement.original_text,
+            "recorded_at": statement.recorded_at,
+            "event_time": statement.event_time,
+            "user_confirmation": statement.user_confirmation,
+            "supporting_evidence_ids": list(statement.supporting_evidence_ids),
+            "limitations": list(statement.limitations),
+        }
+        try:
+            return self._from_portable(add_statement_json(case_to_dict(case), statement_payload, now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def set_timeline(self, case: Case, timeline: Timeline, now: str) -> Case:
         self._ensure_mutable(case)
         return replace(case, timeline=timeline, updated_at=now)
 
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(
-            case,
-            search_checks=case.search_checks + (check,),
-            candidates=_apply_check_to_candidates(case.candidates, check),
-            updated_at=now,
-        )
+        check_payload: dict[str, object] = {
+            "id": check.id,
+            "target": check.target,
+            "method": check.method.value,
+            "started_at": check.started_at,
+            "completed_at": check.completed_at,
+            "result": check.result.value,
+            "inaccessible_parts": list(check.inaccessible_parts),
+            "based_on": list(check.based_on),
+            "notes": list(check.notes),
+        }
+        try:
+            return self._from_portable(
+                record_search_check_json(case_to_dict(case), check_payload, now)
+            )
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def refine_search_check(
         self,
@@ -116,21 +133,20 @@ class CaseController:
         inaccessible_parts: tuple[str, ...],
         now: str,
     ) -> Case:
-        self._ensure_mutable(case)
-        checks = refine_search_check_method(case.search_checks, check_id, method)
-        checks = tuple(
-            replace(check, inaccessible_parts=tuple(inaccessible_parts))
-            if check.id == check_id
-            else check
-            for check in checks
-        )
-        refined = next(check for check in checks if check.id == check_id)
-        return replace(
-            case,
-            search_checks=checks,
-            candidates=_apply_check_to_candidates(case.candidates, refined),
-            updated_at=now,
-        )
+        try:
+            return self._from_portable(
+                refine_search_check_json(
+                    case_to_dict(case),
+                    check_id,
+                    method.value,
+                    list(inaccessible_parts),
+                    now,
+                )
+            )
+        except PortableKernelError as exc:
+            if exc.code in {"MD_SEARCH_METHOD_INVALID", "MD_SEARCH_CHECK_NOT_FOUND"}:
+                raise SearchLogError(exc.code, str(exc)) from exc
+            raise self._case_error(exc) from exc
 
     def find_duplicate_search_checks(self, case: Case, target: str) -> tuple[SearchCheck, ...]:
         return find_duplicate_checks(case.search_checks, target)
@@ -153,16 +169,16 @@ class CaseController:
         return replace(case, constraints=tuple(constraints), updated_at=now)
 
     def pause(self, case: Case, now: str) -> Case:
-        self._ensure_mutable(case)
-        if case.lifecycle is not CaseLifecycle.ACTIVE:
-            raise CaseError("MD_CASE_STATE", "only active cases can be paused")
-        return replace(case, lifecycle=CaseLifecycle.PAUSED, updated_at=now)
+        try:
+            return self._from_portable(pause_json(case_to_dict(case), now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def resume(self, case: Case, now: str) -> Case:
-        self._ensure_mutable(case)
-        if case.lifecycle is not CaseLifecycle.PAUSED:
-            raise CaseError("MD_CASE_STATE", "only paused cases can be resumed")
-        return replace(case, lifecycle=CaseLifecycle.ACTIVE, updated_at=now)
+        try:
+            return self._from_portable(resume_json(case_to_dict(case), now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def close_found(
         self,
@@ -170,13 +186,10 @@ class CaseController:
         now: str,
         outcome: dict[str, object] | None = None,
     ) -> Case:
-        self._ensure_mutable(case)
-        return replace(
-            case,
-            lifecycle=CaseLifecycle.CLOSED_FOUND,
-            outcome=outcome,
-            updated_at=now,
-        )
+        try:
+            return self._from_portable(close_found_json(case_to_dict(case), now, outcome))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def close_unresolved(
         self,
@@ -184,13 +197,10 @@ class CaseController:
         now: str,
         outcome: dict[str, object] | None = None,
     ) -> Case:
-        self._ensure_mutable(case)
-        return replace(
-            case,
-            lifecycle=CaseLifecycle.CLOSED_UNRESOLVED,
-            outcome=outcome,
-            updated_at=now,
-        )
+        try:
+            return self._from_portable(close_unresolved_json(case_to_dict(case), now, outcome))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def mark_deleted(self, case: Case, now: str) -> Case:
         if case.lifecycle is CaseLifecycle.DELETED:
