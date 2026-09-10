@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import type { CaseV2, CommandEnvelope, ProposalModel } from '~/lib/api/contracts'
 import {
   applyLocalCommand,
@@ -11,6 +12,10 @@ export interface LocalExecution {
   checklistProposal(caseValue: CaseV2, mode: 'reconstruction' | 'search'): ProposalModel
 }
 
+function plainCase(caseValue: CaseV2): CaseV2 {
+  return structuredClone(toRaw(caseValue))
+}
+
 export function useLocalExecution(): LocalExecution {
   const repository = useCaseRepository()
 
@@ -19,11 +24,11 @@ export function useLocalExecution(): LocalExecution {
   }
 
   async function sendCommand(caseValue: CaseV2, command: CommandEnvelope): Promise<CaseV2> {
-    return await applyLocalCommand(repository, caseValue, command)
+    return await applyLocalCommand(repository, plainCase(caseValue), command)
   }
 
   function checklistProposal(caseValue: CaseV2, mode: 'reconstruction' | 'search'): ProposalModel {
-    return buildLocalChecklistProposal(caseValue, mode)
+    return buildLocalChecklistProposal(plainCase(caseValue), mode)
   }
 
   return { createCase, sendCommand, checklistProposal }
