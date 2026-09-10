@@ -51,6 +51,7 @@ _COMMON_ALLOWED_NODES: tuple[type[ast.AST], ...] = (
     ast.BinOp,
     ast.UnaryOp,
     ast.Add,
+    ast.Sub,
     ast.BitOr,
     ast.USub,
     ast.Not,
