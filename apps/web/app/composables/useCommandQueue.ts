@@ -21,6 +21,12 @@ interface QueueRecord {
   envelope: CommandEnvelope
 }
 
+interface ScheduledCommand {
+  record: QueueRecord
+  resolve: (value: CaseV2) => void
+  reject: (reason?: unknown) => void
+}
+
 export interface CommandQueue {
   commands: DeepReadonly<Ref<PendingCommand[]>>
   enqueue(caseValue: CaseV2, command: CommandEnvelope): Promise<CaseV2>
@@ -49,7 +55,8 @@ function errorCode(error: unknown): string {
 export function makeCommandQueue(api: Pick<CaseApi, 'sendCommand'>, repository: CaseSink): CommandQueue {
   const commands = ref<PendingCommand[]>([])
   const records = new Map<string, QueueRecord>()
-  let tail: Promise<void> = Promise.resolve()
+  const waiting: ScheduledCommand[] = []
+  let running = false
 
   function refreshVisible(): void {
     commands.value = Array.from(records.values(), ({ visible }) => ({ ...visible }))
@@ -74,22 +81,25 @@ export function makeCommandQueue(api: Pick<CaseApi, 'sendCommand'>, repository: 
     }
   }
 
-  function schedule(record: QueueRecord): Promise<CaseV2> {
-    let resolveResult!: (value: CaseV2) => void
-    let rejectResult!: (reason?: unknown) => void
-    const result = new Promise<CaseV2>((resolve, reject) => {
-      resolveResult = resolve
-      rejectResult = reject
-    })
-    tail = tail
-      .catch(() => undefined)
-      .then(async () => {
-        try {
-          resolveResult(await execute(record))
-        } catch (error: unknown) {
-          rejectResult(error)
-        }
+  function startNext(): void {
+    if (running) return
+    const scheduled = waiting.shift()
+    if (!scheduled) return
+
+    running = true
+    execute(scheduled.record)
+      .then(scheduled.resolve, scheduled.reject)
+      .finally(() => {
+        running = false
+        startNext()
       })
+  }
+
+  function schedule(record: QueueRecord): Promise<CaseV2> {
+    const result = new Promise<CaseV2>((resolve, reject) => {
+      waiting.push({ record, resolve, reject })
+    })
+    startNext()
     return result
   }
 
