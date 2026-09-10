@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeVar
+
+from .portable_kernel import select_next_action_json
 
 
 class RouteRelation(str, Enum):
@@ -62,61 +62,37 @@ class NextAction:
     rationale_codes: tuple[str, ...]
 
 
-_T = TypeVar("_T")
+def _candidate_to_json(candidate: CandidateCheck) -> dict[str, object]:
+    return {
+        "id": candidate.id,
+        "target": candidate.target,
+        "route_relation": candidate.route_relation.value,
+        "check_state": candidate.check_state.value,
+        "effort": candidate.effort.value,
+        "safety": candidate.safety.value,
+        "urgency_relevance": candidate.urgency_relevance.value,
+        "basis": candidate.basis.value,
+        "based_on": list(candidate.based_on),
+        "rationale": list(candidate.rationale),
+    }
 
 
-def _keep_best(
-    items: list[_T],
-    getter: Callable[[_T], object],
-    order: tuple[object, ...],
-) -> list[_T]:
-    for preferred in order:
-        matched = [item for item in items if getter(item) == preferred]
-        if matched:
-            return matched
-    return items
+def _required_str(data: dict[str, object], key: str) -> str:
+    value = data.get(key)
+    if not isinstance(value, str):
+        raise ValueError(f"portable planner returned invalid {key}")
+    return value
 
 
 def select_next_action(candidates: list[CandidateCheck]) -> NextAction | None:
-    pool = [candidate for candidate in candidates if candidate.safety is not Safety.UNSAFE]
-    if not pool:
+    raw = select_next_action_json([_candidate_to_json(candidate) for candidate in candidates])
+    if raw is None:
         return None
-
-    pool = _keep_best(
-        pool,
-        lambda item: item.urgency_relevance,
-        (UrgencyRelevance.HIGH, UrgencyRelevance.NORMAL),
-    )
-    pool = _keep_best(
-        pool,
-        lambda item: item.basis,
-        (CandidateBasis.EPISODE, CandidateBasis.HABIT, CandidateBasis.GENERIC),
-    )
-    pool = _keep_best(
-        pool,
-        lambda item: item.route_relation,
-        (RouteRelation.DIRECT, RouteRelation.INDIRECT, RouteRelation.NONE),
-    )
-    pool = _keep_best(
-        pool,
-        lambda item: item.check_state,
-        (CheckState.UNCHECKED, CheckState.PARTIAL, CheckState.CHECKED),
-    )
-    pool = _keep_best(pool, lambda item: item.effort, (Effort.LOW, Effort.MEDIUM, Effort.HIGH))
-    chosen = min(pool, key=lambda item: item.id)
-
-    codes: list[str] = []
-    if chosen.urgency_relevance is UrgencyRelevance.HIGH:
-        codes.append("MD_PLAN_URGENT")
-    codes.append(f"MD_PLAN_BASIS_{chosen.basis.value.upper()}")
-    codes.append(f"MD_PLAN_{chosen.route_relation.value.upper()}_ROUTE")
-    codes.append(f"MD_PLAN_{chosen.check_state.value.upper()}")
-    codes.append(f"MD_PLAN_{chosen.effort.value.upper()}_EFFORT")
-    if chosen.safety is Safety.CAUTION:
-        codes.append("MD_PLAN_CAUTION")
-
+    codes_raw = raw.get("rationale_codes")
+    if not isinstance(codes_raw, list) or not all(isinstance(code, str) for code in codes_raw):
+        raise ValueError("portable planner returned invalid rationale_codes")
     return NextAction(
-        candidate_id=chosen.id,
-        target=chosen.target,
-        rationale_codes=tuple(codes),
+        candidate_id=_required_str(raw, "candidate_id"),
+        target=_required_str(raw, "target"),
+        rationale_codes=tuple(codes_raw),
     )
