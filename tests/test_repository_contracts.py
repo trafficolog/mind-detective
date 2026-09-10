@@ -11,7 +11,7 @@ class RepositoryContractTests(unittest.TestCase):
         claude = json.loads((ROOT / "plugins/mind-detective/.claude-plugin/plugin.json").read_text())
         agents = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text())
         market = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
-        self.assertEqual(codex["version"], "0.1.0")
+        self.assertEqual(codex["version"], "0.2.0")
         self.assertEqual(claude["version"], codex["version"])
         self.assertEqual(agents["plugins"][0]["version"], codex["version"])
         self.assertEqual(market["plugins"][0]["version"], codex["version"])
