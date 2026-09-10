@@ -50,6 +50,13 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[tool.ruff.lint]", pyproject)
         self.assertIn('select = ["E4", "E7", "E9", "F", "B", "UP"]', pyproject)
 
+    def test_pr_ci_checks_out_and_diffs_exact_head_sha(self):
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        exact_ref = "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+        self.assertEqual(ci.count(exact_ref), 2)
+        self.assertIn('head="${{ github.event.pull_request.head.sha }}"', ci)
+        self.assertIn('git diff --name-only "$base" "$head"', ci)
+
     def test_reference_freshness_workflow_opens_or_updates_issue(self):
         workflow = (ROOT / ".github/workflows/reference-freshness.yml").read_text(encoding="utf-8")
         self.assertIn("schedule:", workflow)
