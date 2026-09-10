@@ -58,6 +58,28 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(response.status_code, 422)
         self.assertEqual(response.json()["code"], "MD_STORE_SCHEMA_VERSION")
 
+    def test_cors_allows_configured_local_web_origin_only(self) -> None:
+        allowed = self.client.options(
+            "/api/v1/case/create",
+            headers={
+                "Origin": "http://127.0.0.1:3000",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        self.assertEqual(allowed.status_code, 200)
+        self.assertEqual(allowed.headers.get("access-control-allow-origin"), "http://127.0.0.1:3000")
+
+        denied = self.client.options(
+            "/api/v1/case/create",
+            headers={
+                "Origin": "https://untrusted.example",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        self.assertNotEqual(denied.headers.get("access-control-allow-origin"), "https://untrusted.example")
+
 
 if __name__ == "__main__":
     unittest.main()
