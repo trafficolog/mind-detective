@@ -241,7 +241,7 @@
       "enforcement": "browser_contract",
       "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
       "helper": "apps/web/app/pages/cases/[id].vue",
-      "test": "apps/web/tests/e2e/check-flow.spec.ts::one-tap check stays pending without optimistic canonical progress",
+      "test": "apps/web/tests/e2e/check-flow.spec.ts::one-tap check commits canonical progress locally without command network",
       "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
     },
     {
