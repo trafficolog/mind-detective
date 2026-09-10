@@ -26,6 +26,14 @@ const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
 const failedCommand = computed(() => [...queue.commands.value].reverse().find(command => command.status === 'failed') ?? null)
+const engaged = computed(() => {
+  const current = caseValue.value
+  if (!current) return false
+  return current.current_mode !== 'unselected'
+    || current.statements.length > 0
+    || current.search_checks.length > 0
+    || current.interaction_journal.length > 0
+})
 const qualityContext = computed(() => {
   const current = caseValue.value
   const candidateId = proposal.value?.candidate_id
@@ -267,7 +275,6 @@ onMounted(async () => {
 
       <CaseShell
         :case-value="caseValue"
-        :arm="arm"
         :proposal="proposal"
         :pending="busy"
         @checked="markChecked"
@@ -276,6 +283,10 @@ onMounted(async () => {
         @journal="scrollJournal"
         @found="showClose = true"
       />
+
+      <StorageNotice :engaged="engaged" />
+      <InstallEducation :engaged="engaged" />
+      <CaseDataActions :case-value="caseValue" />
 
       <CheckQualityDialog
         v-if="qualityContext"
