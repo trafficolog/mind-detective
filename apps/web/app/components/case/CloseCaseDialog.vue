@@ -12,11 +12,20 @@ const emit = defineEmits<{
 }>()
 
 const context = ref<FoundContext>('current_suggested_action')
+const { dialogRef, onDialogKeydown } = useDialogFocus(() => emit('close'))
 </script>
 
 <template>
   <div class="dialog-backdrop" data-testid="close-case-dialog" @click.self="emit('close')">
-    <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="close-title">
+    <section
+      ref="dialogRef"
+      class="dialog-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="close-title"
+      tabindex="-1"
+      @keydown="onDialogKeydown"
+    >
       <p class="eyebrow">Завершение дела</p>
       <h2 id="close-title">Чем закончился поиск?</h2>
       <label class="field-label" for="found-context">Если вещь найдена — где относительно плана?</label>
