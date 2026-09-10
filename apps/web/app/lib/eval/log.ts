@@ -8,6 +8,8 @@ export type EvalEventName =
   | 'duplicate_check_detected'
   | 'check_quality_clarified'
   | 'ai_guard_blocked'
+  | 'assistant_offline_fallback'
+  | 'local_execution_failed'
   | 'pending_command_started'
   | 'pending_command_retried'
   | 'pending_command_failed'
