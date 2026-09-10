@@ -14,13 +14,26 @@ const emit = defineEmits<{
   write: []
   journal: []
   found: []
+  pause: []
 }>()
 </script>
 
 <template>
   <article class="case-shell" data-testid="case-shell" :data-arm="arm">
     <header class="case-shell__header">
-      <NuxtLink to="/" class="muted">← Все дела</NuxtLink>
+      <div class="section-heading">
+        <NuxtLink to="/" class="muted">← Все дела</NuxtLink>
+        <button
+          v-if="props.caseValue.lifecycle === 'active'"
+          class="secondary-action"
+          data-testid="pause-case"
+          type="button"
+          :disabled="pending"
+          @click="emit('pause')"
+        >
+          Приостановить
+        </button>
+      </div>
       <h1>{{ props.caseValue.item_label }}</h1>
       <ModeBanner :mode="props.caseValue.current_mode" :arm="arm" />
     </header>
