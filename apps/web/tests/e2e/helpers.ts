@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import type { CaseV2, CandidateCheckV2, JournalEntryV2, SearchCheckV2 } from '../../app/lib/api/contracts'
+import { DB_VERSION } from '../../app/lib/storage/indexeddb'
 
 export function candidate(
   id: string,
@@ -78,42 +79,92 @@ export function caseFixture(overrides: Partial<CaseV2> = {}): CaseV2 {
   }
 }
 
-export async function seedCase(page: Page, caseValue: CaseV2): Promise<void> {
-  await page.goto('/')
-  await page.evaluate(async (payload) => {
+async function ensureCaseDatabase(page: Page): Promise<void> {
+  await page.evaluate(async (version) => {
     await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open('mind-detective')
-      request.onerror = () => reject(request.error)
-      request.onsuccess = () => {
+      const request = indexedDB.open('mind-detective', version)
+      request.onupgradeneeded = () => {
         const database = request.result
-        const transaction = database.transaction('cases', 'readwrite')
-        transaction.objectStore('cases').put(payload)
-        transaction.oncomplete = () => {
-          database.close()
-          resolve()
+        if (!database.objectStoreNames.contains('cases')) {
+          database.createObjectStore('cases', { keyPath: 'case_id' })
         }
-        transaction.onerror = () => reject(transaction.error)
+        if (!database.objectStoreNames.contains('execution_receipts')) {
+          const receipts = database.createObjectStore('execution_receipts', { keyPath: 'command_id' })
+          receipts.createIndex('case_id', 'case_id', { unique: false })
+        }
+      }
+      request.onerror = () => reject(request.error)
+      request.onblocked = () => reject(new Error('MD_WEB_TEST_IDB_BLOCKED'))
+      request.onsuccess = () => {
+        request.result.close()
+        resolve()
       }
     })
-  }, caseValue)
+  }, DB_VERSION)
+}
+
+export async function seedCase(page: Page, caseValue: CaseV2): Promise<void> {
+  await page.goto('/')
+  await ensureCaseDatabase(page)
+  await page.evaluate(async ({ payload, version }) => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('mind-detective', version)
+      request.onerror = () => reject(request.error)
+      request.onblocked = () => reject(new Error('MD_WEB_TEST_IDB_BLOCKED'))
+      request.onsuccess = () => {
+        const database = request.result
+        try {
+          const transaction = database.transaction('cases', 'readwrite')
+          transaction.objectStore('cases').put(payload)
+          transaction.oncomplete = () => {
+            database.close()
+            resolve()
+          }
+          transaction.onerror = () => {
+            database.close()
+            reject(transaction.error)
+          }
+          transaction.onabort = () => {
+            database.close()
+            reject(transaction.error ?? new Error('MD_WEB_TEST_IDB_ABORT'))
+          }
+        }
+        catch (error) {
+          database.close()
+          reject(error)
+        }
+      }
+    })
+  }, { payload: caseValue, version: DB_VERSION })
 }
 
 export async function storedCase(page: Page, caseId: string): Promise<CaseV2 | null> {
-  return await page.evaluate(async (id) => {
+  await ensureCaseDatabase(page)
+  return await page.evaluate(async ({ id, version }) => {
     return await new Promise<CaseV2 | null>((resolve, reject) => {
-      const request = indexedDB.open('mind-detective')
+      const request = indexedDB.open('mind-detective', version)
       request.onerror = () => reject(request.error)
+      request.onblocked = () => reject(new Error('MD_WEB_TEST_IDB_BLOCKED'))
       request.onsuccess = () => {
         const database = request.result
-        const transaction = database.transaction('cases', 'readonly')
-        const get = transaction.objectStore('cases').get(id)
-        get.onsuccess = () => {
-          const result = (get.result as CaseV2 | undefined) ?? null
-          database.close()
-          resolve(result)
+        try {
+          const transaction = database.transaction('cases', 'readonly')
+          const get = transaction.objectStore('cases').get(id)
+          get.onsuccess = () => {
+            const result = (get.result as CaseV2 | undefined) ?? null
+            database.close()
+            resolve(result)
+          }
+          get.onerror = () => {
+            database.close()
+            reject(get.error)
+          }
         }
-        get.onerror = () => reject(get.error)
+        catch (error) {
+          database.close()
+          reject(error)
+        }
       }
     })
-  }, caseId)
+  }, { id: caseId, version: DB_VERSION })
 }
