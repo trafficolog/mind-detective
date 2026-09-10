@@ -507,7 +507,7 @@ git commit -m "feat: add deterministic checklist proposals"
 
 **Interfaces:**
 - `OpenAIProposalClient.propose(case: dict[str, object], mode: str) -> Proposal` is asynchronous.
-- Implementation uses the OpenAI Responses API with a strict structured-output schema derived from the Pydantic `ProposalModel`; the exact SDK helper call must be confirmed against `openai==3.8.0` during Task 8 before implementation.
+- OpenAI SDK `3.8.0` uses the Responses structured-output parser with a Pydantic class passed as `text_format`.
 - `OPENAI_API_KEY` and `MIND_DETECTIVE_OPENAI_MODEL` are read server-side only.
 - Blocked proposals never enter user-facing journal text; a reviewed system event plus deterministic fallback is returned.
 
@@ -538,7 +538,25 @@ Expected: FAIL.
 
 - [ ] **Step 3: Implement provider and guarded proposal pipeline**
 
-Before writing the provider call, inspect the installed `openai==3.8.0` API surface and use its supported Responses structured-output helper with `ProposalModel`; do not invent an SDK method name. Tests must not require a live API key. Application metadata logs may contain request id, arm, outcome code, latency bucket and configured model id; they must not contain item label, user text, target text, full Case JSON, or raw model output.
+The provider uses this verified SDK shape:
+
+```python
+response = await self.client.responses.parse(
+    model=self.model_name,
+    input=model_input,
+    text_format=ProposalModel,
+    store=False,
+)
+message = response.output[0]
+if message.type != "message":
+    raise ProposalProviderError("MD_WEB_MODEL_OUTPUT", "expected message output")
+content = message.content[0]
+if content.type != "output_text" or content.parsed is None:
+    raise ProposalProviderError("MD_WEB_MODEL_OUTPUT", "structured proposal missing")
+proposal = content.parsed
+```
+
+Tests must not require a live API key. Application metadata logs may contain request id, arm, outcome code, latency bucket and configured model id; they must not contain item label, user text, target text, full Case JSON, or raw model output.
 
 - [ ] **Step 4: Run GREEN**
 
