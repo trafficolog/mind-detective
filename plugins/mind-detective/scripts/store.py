@@ -140,9 +140,12 @@ def _as_list(value: object, field: str) -> list[object]:
 
 def _tuple_str(value: object, field: str) -> tuple[str, ...]:
     items = _as_list(value, field)
-    if not all(isinstance(item, str) for item in items):
-        raise StoreError("MD_STORE_SCHEMA_INVALID", f"{field} must contain strings")
-    return tuple(items)
+    result: list[str] = []
+    for item in items:
+        if not isinstance(item, str):
+            raise StoreError("MD_STORE_SCHEMA_INVALID", f"{field} must contain strings")
+        result.append(item)
+    return tuple(result)
 
 
 def _required_str(data: dict[str, object], field: str) -> str:
@@ -161,6 +164,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
     statements = []
     for raw in _as_list(data["statements"], "statements"):
         item = _as_dict(raw, "statement")
+        event_time = item.get("event_time")
         statements.append(
             create_statement(
                 statement_id=_required_str(item, "id"),
@@ -168,7 +172,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
                 statement_type=StatementType(_required_str(item, "statement_type")),
                 original_text=_required_str(item, "original_text"),
                 recorded_at=_required_str(item, "recorded_at"),
-                event_time=item.get("event_time") if isinstance(item.get("event_time"), str) else None,
+                event_time=event_time if isinstance(event_time, str) else None,
                 user_confirmation=bool(item.get("user_confirmation", False)),
                 supporting_evidence_ids=_tuple_str(
                     item.get("supporting_evidence_ids", []), "supporting_evidence_ids"
