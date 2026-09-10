@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.generate_local_execution import generate_typescript
+from scripts.generate_local_execution_certified import generate_certified_typescript
 from scripts.local_execution_manifest import build_execution_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,7 +15,7 @@ GENERATED_META = GENERATED_DIR / "localExecution.meta.json"
 
 
 def render_artifacts() -> tuple[str, str]:
-    generated = generate_typescript(KERNEL, CONTRACT)
+    generated = generate_certified_typescript(KERNEL, CONTRACT)
     metadata = build_execution_metadata(
         kernel_bytes=KERNEL.read_bytes(),
         generated_bytes=generated.encode("utf-8"),
