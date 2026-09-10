@@ -9,8 +9,11 @@ from .contracts import (
     CaseCreateRequest,
     CaseResponse,
     CaseValidateRequest,
+    ProposalRequest,
+    ProposalResponse,
 )
 from .core_bridge import create_case_payload, validate_or_migrate_case_payload
+from .proposals import build_proposal
 
 _DOMAIN_ERROR = "MD_WEB_DOMAIN_ERROR"
 
@@ -48,3 +51,11 @@ def command_case(request: CaseCommandRequest) -> CaseResponse | JSONResponse:
     except ValueError as exc:
         return _domain_error(exc)
     return CaseResponse(case=payload)
+
+
+@app.post("/api/v1/proposal/next", response_model=ProposalResponse)
+async def next_proposal(request: ProposalRequest) -> ProposalResponse | JSONResponse:
+    try:
+        return await build_proposal(request)
+    except ValueError as exc:
+        return _domain_error(exc)
