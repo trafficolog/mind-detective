@@ -61,6 +61,24 @@ describe('read-only case derivations', () => {
     expect(caseValue).toEqual(before)
   })
 
+  it('uses only the latest repeated check to derive accessibility', () => {
+    const caseValue = fixture()
+    caseValue.candidates = caseValue.candidates.map(item => item.id === 'c8' ? { ...item, check_state: 'checked' } : item)
+    caseValue.search_checks.push({
+      id: 'check-complete',
+      target: 'target-c8',
+      method: 'visual_systematic',
+      started_at: '2026-09-10T07:02:00Z',
+      completed_at: '2026-09-10T07:02:30Z',
+      result: 'not_found',
+      inaccessible_parts: [],
+      based_on: ['c8'],
+      notes: [],
+    })
+
+    expect(deriveProgress(caseValue)).toEqual({ checked: 5, remaining: 3, inaccessible: 0 })
+  })
+
   it('uses explicit candidate ids for prior-check annotations', () => {
     const caseValue = fixture()
     expect(derivePriorCheckAnnotation(caseValue, 'c8')).toEqual({
