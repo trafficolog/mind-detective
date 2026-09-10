@@ -27,7 +27,7 @@ test('journal provenance partial accessibility and persistent summary survive in
   await expect(page.getByTestId('progress-inaccessible')).toContainText('1')
   await expect(page.getByTestId('journal-entry-recon-entry')).toContainText('Восстановление')
   await expect(page.getByTestId('journal-entry-search-entry')).toContainText('Поиск')
-  await expect(page.getByTestId('journal-entry-system-entry')).toContainText('Система')
+  await expect(page.getByTestId('journal-entry-system-entry')).toContainText('Системное событие')
   await expect(page.getByTestId('mode-banner').locator('svg')).toHaveCount(1)
 })
 
