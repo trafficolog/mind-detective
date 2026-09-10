@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isCaseApiTransportError } from '~/composables/useCaseApi'
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
 import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import { appendEvalEvent } from '~/lib/eval/log'
@@ -77,6 +78,16 @@ function setLocalProposal(current: CaseV2): void {
   }
 }
 
+function useAssistantFallback(current: CaseV2): void {
+  assistantOfflineFallback.value = true
+  setLocalProposal(current)
+  logEvent('assistant_offline_fallback', {
+    case_id: current.case_id,
+    arm: arm.value,
+    mode: current.current_mode,
+  })
+}
+
 async function refreshProposal(): Promise<void> {
   const current = caseValue.value
   assistantOfflineFallback.value = false
@@ -92,13 +103,7 @@ async function refreshProposal(): Promise<void> {
   }
 
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    assistantOfflineFallback.value = true
-    setLocalProposal(current)
-    logEvent('assistant_offline_fallback', {
-      case_id: current.case_id,
-      arm: arm.value,
-      mode: current.current_mode,
-    })
+    useAssistantFallback(current)
     return
   }
 
@@ -133,15 +138,9 @@ async function refreshProposal(): Promise<void> {
         guard_code: response.guard_code,
       })
     }
-  } catch {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      assistantOfflineFallback.value = true
-      setLocalProposal(current)
-      logEvent('assistant_offline_fallback', {
-        case_id: current.case_id,
-        arm: arm.value,
-        mode: current.current_mode,
-      })
+  } catch (error: unknown) {
+    if ((typeof navigator !== 'undefined' && !navigator.onLine) || isCaseApiTransportError(error)) {
+      useAssistantFallback(current)
       return
     }
     errorCode.value = 'MD_WEB_PROPOSAL_FAILED'
@@ -335,9 +334,7 @@ onMounted(async () => {
       </div>
 
       <aside v-if="assistantOfflineFallback" class="system-event" data-testid="assistant-offline-fallback">
-        {{ locale === 'ru'
-          ? 'Нет сети: используется локальный детерминированный план. История не будет автоматически отправлена модели после подключения.'
-          : 'Offline: using the local deterministic plan. History will not be automatically sent to the model after reconnecting.' }}
+        {{ t('assistant.offline_fallback') }}
       </aside>
 
       <aside v-if="arm === 'assistant'" class="privacy-note" data-testid="provider-disclosure">
