@@ -48,6 +48,25 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("esbuild@0.28.2: true", workspace)
         self.assertNotIn("dangerouslyAllowAllBuilds", workspace)
 
+    def test_web_ci_uses_committed_frozen_lockfile(self):
+        self.assertTrue((ROOT / "pnpm-lock.yaml").is_file())
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("pnpm install --frozen-lockfile", ci)
+        self.assertNotIn("pnpm install --no-frozen-lockfile", ci)
+        self.assertNotIn("generated-pnpm-lock", ci)
+
+    def test_web_has_no_client_domain_reducer_or_case_controller_port(self):
+        forbidden = ("reduceCase", "applyCommandLocally", "class CaseController")
+        offenders: list[str] = []
+        for path in sorted((ROOT / "apps/web").rglob("*")):
+            if path.suffix not in {".ts", ".tsx", ".vue"} or "node_modules" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8")
+            for token in forbidden:
+                if token in text:
+                    offenders.append(f"{path.relative_to(ROOT)}:{token}")
+        self.assertEqual(offenders, [])
+
     def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("'3.10'", ci)
