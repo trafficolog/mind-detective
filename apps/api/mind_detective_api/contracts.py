@@ -56,6 +56,8 @@ class ProposalModel(StrictModel):
 
 
 class ProposalRequest(StrictModel):
+    request_id: str = Field(min_length=1)
+    now: str = Field(min_length=1)
     case: dict[str, object]
     mode: Literal["reconstruction", "search"]
     locale: Literal["ru", "en"]
@@ -63,6 +65,7 @@ class ProposalRequest(StrictModel):
 
 
 class ProposalResponse(StrictModel):
+    case: dict[str, object]
     proposal: ProposalModel
     guard_code: str | None = None
 
