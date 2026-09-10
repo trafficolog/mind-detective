@@ -71,8 +71,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   const download = await downloadPromise
   expect(download.suggestedFilename()).toContain(caseId)
 
-  await page.goto('/')
-  await page.goto(`/cases/${caseId}`)
+  await page.reload()
   await expect(page.getByTestId('case-outcome')).toContainText('найдено')
   expect((await storedCase(page, caseId))?.lifecycle).toBe('closed_found')
   expect(apiRequests).toBe(0)
