@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { ExperimentalArm, InteractionMode } from '~/lib/api/contracts'
+import type { InteractionMode } from '~/lib/api/contracts'
 
 const props = defineProps<{
   mode: InteractionMode
-  arm: ExperimentalArm
 }>()
 
 const label = computed(() => {
@@ -20,7 +19,5 @@ const label = computed(() => {
       <path d="M12 7v5l3 2" />
     </svg>
     <strong>{{ label }}</strong>
-    <span aria-hidden="true">·</span>
-    <span data-testid="experimental-arm">{{ arm === 'assistant' ? 'AI-предложение' : 'Контрольный список' }}</span>
   </div>
 </template>
