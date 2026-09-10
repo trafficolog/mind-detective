@@ -53,6 +53,13 @@ def is_duplicate_target(a: str, b: str) -> bool:
     return len(smaller) >= 2 and smaller.issubset(larger)
 
 
+def find_duplicate_checks(
+    checks: tuple[SearchCheck, ...],
+    target: str,
+) -> tuple[SearchCheck, ...]:
+    return tuple(check for check in checks if is_duplicate_target(check.target, target))
+
+
 @dataclass(slots=True)
 class SearchLog:
     _checks: list[SearchCheck] = field(default_factory=list)

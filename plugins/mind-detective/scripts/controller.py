@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from .case import Case, CaseError, CaseLifecycle
 from .planner import CandidateCheck, select_next_action
-from .search_log import SearchCheck
+from .search_log import SearchCheck, find_duplicate_checks
 from .statements import Statement
 from .timeline import Timeline
 
@@ -49,6 +49,9 @@ class CaseController:
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
         self._ensure_mutable(case)
         return replace(case, search_checks=case.search_checks + (check,), updated_at=now)
+
+    def find_duplicate_search_checks(self, case: Case, target: str) -> tuple[SearchCheck, ...]:
+        return find_duplicate_checks(case.search_checks, target)
 
     def replace_candidates(
         self,
