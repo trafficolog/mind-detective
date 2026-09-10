@@ -92,7 +92,7 @@ async def build_proposal(
             proposal=build_checklist_proposal(canonical, request.mode),
         )
     if client is None:
-        from .openai_provider import OpenAIProposalClient
+        from .litellm_provider import LiteLLMProposalClient
 
-        client = OpenAIProposalClient.from_env()
+        client = LiteLLMProposalClient.from_env()
     return await build_assistant_proposal(request, client)
