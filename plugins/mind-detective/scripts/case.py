@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from .feedback import ActionFeedback
+from .journal import InteractionMode, JournalEntry
 from .planner import CandidateCheck, NextAction
 from .search_log import SearchCheck
 from .statements import Statement
@@ -38,3 +40,6 @@ class Case:
     next_action: NextAction | None
     constraints: tuple[str, ...]
     outcome: dict[str, object] | None
+    current_mode: InteractionMode = InteractionMode.UNSELECTED
+    interaction_journal: tuple[JournalEntry, ...] = ()
+    action_feedback: tuple[ActionFeedback, ...] = ()
