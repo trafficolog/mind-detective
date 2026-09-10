@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { isCaseApiTransportError } from '~/composables/useCaseApi'
+import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCaseApi'
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
+import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
 import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import { appendEvalEvent } from '~/lib/eval/log'
 
@@ -28,6 +29,7 @@ const suppressedQualityCheckId = ref<string | null>(null)
 const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
+const executionContractMismatch = computed(() => errorCode.value === EXECUTION_CONTRACT_MISMATCH)
 const engaged = computed(() => {
   const current = caseValue.value
   if (!current) return false
@@ -141,6 +143,13 @@ async function refreshProposal(): Promise<void> {
   } catch (error: unknown) {
     if ((typeof navigator !== 'undefined' && !navigator.onLine) || isCaseApiTransportError(error)) {
       useAssistantFallback(current)
+      return
+    }
+    const apiCode = caseApiErrorCode(error)
+    if (apiCode === EXECUTION_CONTRACT_MISMATCH) {
+      errorCode.value = apiCode
+      proposal.value = null
+      guardCode.value = null
       return
     }
     errorCode.value = 'MD_WEB_PROPOSAL_FAILED'
@@ -323,7 +332,7 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="errorCode" class="privacy-note" role="alert" data-testid="command-error">
+      <div v-if="errorCode && !executionContractMismatch" class="privacy-note" role="alert" data-testid="command-error">
         {{ t('case.command_error') }}
         <details><summary>{{ t('common.details') }}</summary><code>{{ errorCode }}</code></details>
       </div>
@@ -332,6 +341,12 @@ onMounted(async () => {
         {{ t('guard.banner') }}
         <details><summary>{{ t('common.details') }}</summary><code>{{ guardCode }}</code></details>
       </div>
+
+      <aside v-if="executionContractMismatch" class="system-event" role="status" data-testid="execution-contract-mismatch">
+        {{ locale === 'ru'
+          ? 'Версия приложения и AI-сервиса временно не совпадает. Локальный поиск продолжает работать; восстановите связь и обновите страницу перед следующим AI-предложением.'
+          : 'The app and AI service versions are temporarily out of sync. Local search still works; reconnect and refresh before requesting another AI proposal.' }}
+      </aside>
 
       <aside v-if="assistantOfflineFallback" class="system-event" data-testid="assistant-offline-fallback">
         {{ t('assistant.offline_fallback') }}
