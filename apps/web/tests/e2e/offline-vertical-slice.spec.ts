@@ -18,6 +18,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   })
   await page.reload()
   await expect.poll(async () => await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
+  await expect(page.getByTestId('offline-route-ready')).toBeVisible()
 
   apiRequests = 0
   await context.setOffline(true)
