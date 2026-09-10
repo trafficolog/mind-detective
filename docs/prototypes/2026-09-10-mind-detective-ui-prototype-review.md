@@ -1,114 +1,233 @@
 # MIND Detective 0.2.0 UI Prototype Review
 
-**Status:** approved UX reference for implementation planning; non-normative where it conflicts with the canonical `0.2.0` design spec.
+**Status:** reviewed updated UX/state reference; non-normative where it conflicts with the canonical `0.2.0` design spec.
 
 **Canonical spec:** `docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md`
 
-## What the prototype contributes
+**Reviewed source:** user-supplied updated HTML prototype, 2026-09-10.
 
-The supplied HTML prototype is the primary visual/state reference for the `0.2.0` mobile-first shell. It demonstrates:
+## Review conclusion
 
-- Cases / local resume list;
-- New case creation;
-- Active case shell;
-- Reconstruction and search visual states;
-- checklist and assistant scenario switching;
-- pending action affordance;
-- checked / remaining / timeline detail views;
-- guard/system note presentation;
-- check-quality clarification;
-- found / close flow;
-- local-storage warning, export and install education;
-- light/dark appearance and reduced-motion / contrast behavior;
-- a developer-facing control rail for viewing scenario states.
+The updated prototype is materially closer to the approved `0.2.0` architecture and should remain the primary visual/state reference for implementation. It now demonstrates several previously missing invariants directly rather than only through explanatory notes.
 
-The visual direction (platform-native mobile density, glass surfaces, 44px targets, safe-area handling, SVG icon system, readable contrast floors) is a useful implementation reference, but product semantics remain governed by the canonical spec and requirements.
+It is still a **scenario harness**, not production logic. Five behaviors remain intentionally overridden by the canonical spec and implementation plan.
+
+## What the updated prototype now gets right
+
+### 1. One B/C shell
+
+The updated version uses one active-case structure for checklist and assistant arms:
+
+- one navigation model;
+- one mode banner;
+- one next-action card;
+- one persistent checked/remaining/inaccessible strip;
+- one interaction journal slot;
+- one chip area;
+- one free-text escape hatch;
+- one bottom dock (`Журнал`, `Написать`, `Нашёл`);
+- the same pending/error area.
+
+This resolves the earlier prototype divergence where checklist and assistant modes had different lower interaction structures.
+
+### 2. Visible command transport state
+
+The prototype now includes a visible command queue with:
+
+- pending state;
+- `aria-busy` on the triggering control;
+- retryable error state;
+- stable visible `command_id`;
+- an explicit same-command-id retry path.
+
+This is a good visual model for the production transport queue. The queue remains transport state only and must not become planner evidence.
+
+### 3. Mode provenance and v1 migration presentation
+
+The prototype now shows:
+
+- reconstruction/search tags on individual historical entries;
+- non-color-only differentiation through label/icon/treatment;
+- a neutral `Режим не выбран` state for a case migrated from v1.
+
+Production data still comes from canonical `case/v2.interaction_journal`; the browser must not infer historical mode from the currently selected screen phase.
+
+### 4. RU/EN shared rendering templates
+
+The updated prototype contains RU and EN copy maps feeding the same component templates. This is aligned with the planned RU/EN key-parity contract.
+
+Production copy resources will be separated from the prototype JavaScript and covered by exact parity/safety selectors.
+
+### 5. Accessibility mechanics
+
+Useful implementation references now include:
+
+- `:focus-visible` treatment;
+- 44px target sizing;
+- focus trapping in modal sheets;
+- Escape close;
+- trigger-focus restoration;
+- background `inert` handling;
+- reduced-motion handling;
+- increased-contrast overrides;
+- no automatic keyboard focus on active-case load.
+
+### 6. Neutral-check and accessibility concepts are visually separated
+
+The check-quality sheet distinguishes method quality from an orthogonal inaccessible-parts control. The copy correctly describes the initial check as neutral rather than automatically systematic.
+
+The timing of this sheet still needs the production correction described below.
+
+### 7. Explicit research and close states
+
+The prototype now has useful visual references for:
+
+- `action_feedback` / `Не подходит`;
+- planner-empty state;
+- found-context variants;
+- local research-log export;
+- persistent-storage denied/request states;
+- case export/import affordances;
+- retained/deleted close outcome.
 
 ## Prototype-only controls
 
-The left-side control rail is a **developer scenario harness**, not a production navigation surface. It may be preserved as a docs/test reference or reproduced in test tooling, but it must not ship as the normal end-user experience.
+The left-side control rail is developer/test tooling. It must not ship as normal product navigation.
 
-In particular:
+The rail may continue to force:
 
-- engine arm (`checklist` / `assistant`) is assigned by test/experiment configuration, not chosen on the first-case screen;
-- phase controls may force reconstruction/search states in fixtures, but production mode comes from canonical Case state;
-- theme/translucency controls are visual test aids and do not create domain state.
+- light/dark/auto theme;
+- translucency;
+- RU/EN locale;
+- checklist/assistant arm;
+- reconstruction/search phase;
+- normal/empty/error scenarios;
+- direct navigation to scenario screens.
 
-## Normative corrections before production implementation
+Those controls are useful for visual regression and E2E fixtures but do not define canonical Case behavior.
 
-### 1. One shell means one interaction structure
+## Remaining normative corrections
 
-The prototype currently hides the interaction stream in checklist mode and swaps an assistant composer for a checklist action dock. Production `0.2.0` must not do this.
+### 1. Production case creation is still too configurable
 
-Both B and C arms use the same:
+The updated `Новое дело` screen still exposes:
 
-- journal slot;
-- quick actions/chips;
-- free-text escape-hatch placement;
-- next-action card;
-- checked/remaining summary;
-- pending/error affordances.
+- `Как работать`: checklist vs assistant;
+- `С чего начнём`: reconstruction vs physical search;
+- copy saying the engine mode can be changed at any time.
 
-The experimental difference is only the server-side mechanism that produces the next structured proposal.
+Production `0.2.0` must instead keep the first-case flow to:
 
-### 2. Case creation remains one field + one primary button
+1. one item-label field;
+2. one primary `Начать поиск` action.
 
-The prototype's `Как работать` engine choice is useful in the scenario harness, but it must not appear before production case creation. Research arm/configuration is external to that user flow.
+The research arm is deployment/test configuration and is not user-selectable. Initial mode is canonical Case state (`unselected`) and is resolved by the controller-driven flow after case creation rather than through a pre-creation configuration form.
 
-### 3. No optimistic domain mutation
+The prototype may retain these controls only in its external scenario rail/test fixtures.
 
-The prototype's demo JavaScript increments `done/left` locally after a timeout. Production must instead:
+### 2. Demo JavaScript still owns Case-like counters
 
-1. create a transport-only pending command;
-2. render `aria-busy` / pending state;
-3. send the command to the Python API;
-4. replace the canonical local Case only after a validated server response;
-5. derive progress counters from that returned Case.
+The updated prototype waits for a simulated successful command before calling `applyCheck()`, which is better than true optimistic mutation. However `applyCheck()` still performs browser-local domain-like mutation:
 
-No client-side Case reducer is allowed in `0.2.0`.
+```text
+state.done += 1
+state.left = max(0, state.left - 1)
+```
 
-### 4. One-tap check is neutral
+Production must not do this. After a successful `/case/command` response it replaces the canonical IndexedDB Case with the validated full Case returned by Python, then derives progress from that Case.
 
-The prototype may open a thoroughness sheet immediately for demonstration. Production behavior follows the spec: `Проверил` records neutral `reported_check`; clarification appears only when check quality later changes the usefulness of repeating that target.
+No client-side Case reducer or authoritative `done/left` mutation is allowed.
 
-### 5. Journal mode provenance is canonical
+### 3. Check-quality clarification is still immediate
 
-Mode tags shown in prototype messages are retained, but production entries come from `case/v2.interaction_journal`. Historical labels survive reload and cannot be reconstructed from current screen mode.
+After every successful simulated check the prototype calls the method-quality sheet immediately.
 
-### 6. Local persistence is not the same as no external processing
+Production behavior is:
 
-The prototype correctly emphasizes that the server does not persist the Case. Production assistant mode must additionally disclose that the minimum current proposal context is transiently processed by the configured model provider. "Stored locally" must not be presented as "never leaves this device" when the assistant arm is enabled.
+1. one tap records neutral `reported_check`;
+2. the user continues without a mandatory method sheet;
+3. method quality is requested only later when it becomes decision-relevant to repeating or interpreting that target.
+
+The sheet itself is a valid visual reference; its automatic timing is not.
+
+### 4. Assistant privacy copy still lacks provider-processing disclosure
+
+The storage screen states that cases remain in the browser and are not stored on the application server. That is correct for persistence, but incomplete for assistant mode.
+
+Production copy must separately disclose that the minimum current proposal context is transiently processed by the configured model provider. Local persistence must never be paraphrased as `never leaves this device` when the assistant arm is enabled.
+
+The provider API key/model configuration remains server-side, and application logs exclude raw Case/user/model text by default.
+
+### 5. A guard-blocked raw proposal must not reappear later
+
+The current reconstruction guard copy says, in effect, that the concrete place suggestion is hidden now and will appear when the user moves to search.
+
+That is not the canonical behavior.
+
+When AI output is blocked:
+
+1. the raw rejected proposal is not persisted as a future user-facing suggestion;
+2. the journal receives reviewed system copy with the guard reason class;
+3. the current request returns a deterministic safe fallback;
+4. switching to search may trigger a **new** proposal request under search-mode rules;
+5. only that newly generated and freshly validated proposal may be rendered.
+
+A blocked reconstruction proposal therefore cannot be cached and revealed later merely because the mode changed.
 
 ## Scenario matrix to preserve in automated tests
 
-At minimum the Web implementation must be testable in these states:
+The implementation must support at least these reference states:
 
-1. no cases / create first case;
-2. active case in reconstruction, checklist arm;
-3. active case in reconstruction, assistant arm;
-4. active case in search, checklist arm;
-5. active case in search, assistant arm;
-6. pending deterministic command;
-7. retryable network failure;
-8. blocked AI proposal with deterministic fallback;
-9. partial/inaccessible prior check;
-10. repeated target requiring quality clarification;
-11. empty planner / need-more-information state;
-12. next action rejected;
-13. paused case on case list;
-14. found on current suggested action;
-15. found elsewhere/unplanned;
-16. unresolved close;
-17. persistent storage granted / denied;
-18. valid v1 import migrated to v2;
-19. invalid/future schema import rejected;
-20. light/dark + reduced-motion + increased-contrast visual checks.
+1. no cases / first case;
+2. migrated v1 case with `current_mode=unselected`;
+3. active reconstruction + checklist arm;
+4. active reconstruction + assistant arm;
+5. active search + checklist arm;
+6. active search + assistant arm;
+7. pending deterministic command;
+8. retryable command failure with same-id retry;
+9. successful command where canonical Case changes only after response;
+10. blocked assistant proposal + deterministic fallback;
+11. mode switch after blocked proposal without revealing stale raw proposal;
+12. partial/inaccessible prior check;
+13. neutral `reported_check` without immediate quality dialog;
+14. later repeated target requiring method-quality clarification;
+15. empty planner / need-more-information state;
+16. next-action rejection with categorical feedback;
+17. paused case on case list;
+18. found on current suggested action;
+19. found elsewhere/unplanned;
+20. unresolved close;
+21. persistent storage granted / denied / unsupported;
+22. valid v1 import migrated to v2;
+23. invalid/future schema import rejected;
+24. RU/EN parity;
+25. light/dark, reduced-motion and increased-contrast behavior.
+
+## Visual details worth carrying into production
+
+Use the prototype as a visual reference for:
+
+- 4px-based spacing rhythm;
+- compact system-font typography;
+- 44px minimum interactive targets;
+- safe-area-aware bottom controls;
+- SVG `currentColor` icon system;
+- readable glass-opacity floors;
+- persistent progress strip;
+- compact system events;
+- one primary next-action card;
+- modal sheet mechanics and focus behavior;
+- mobile-first centered desktop presentation.
+
+Do not treat the decorative iPhone frame, external control rail, hard-coded sample item/location data, timers, fake command latency, or local demo counters as product requirements.
 
 ## Precedence rule
 
-When the prototype and canonical design disagree, implementation follows:
+When the supplied HTML and canonical design disagree, implementation follows:
 
 1. canonical design spec;
-2. stable `MD-WEB-REQ-*` requirements / contract tests;
-3. this prototype review;
-4. visual behavior of the supplied HTML.
+2. stable `MD-WEB-REQ-*` requirements and exact contract tests;
+3. implementation plan;
+4. this prototype review;
+5. literal visual/JavaScript behavior of the HTML prototype.
