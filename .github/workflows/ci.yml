@@ -82,16 +82,27 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
       - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
         with:
           version: 12.3.4
           run_install: false
+      - name: Install API runtime for browser tests
+        run: |
+          python -m pip install \
+            fastapi==0.141.1 pydantic==2.13.5 uvicorn==0.52.1 httpx==0.28.1 openai==3.8.0
       - name: Install Web dependencies
         run: pnpm install --no-frozen-lockfile
       - name: Run Web unit tests
         run: pnpm --dir apps/web exec vitest run
       - name: Build Web PWA
         run: pnpm --dir apps/web build
+      - name: Install Playwright browsers
+        run: pnpm --dir apps/web exec playwright install --with-deps chromium webkit
+      - name: Run Web browser tests
+        run: pnpm --dir apps/web exec playwright test
 
   secrets:
     name: Secret scan
