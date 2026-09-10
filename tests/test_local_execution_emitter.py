@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from scripts.generate_local_execution import generate_typescript
+from scripts.generate_local_execution_certified import generate_certified_typescript
 from scripts.local_execution_manifest import build_execution_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,8 +14,8 @@ CONTRACT = ROOT / "plugins/mind-detective/scripts/portable_contract.py"
 
 class LocalExecutionEmitterTests(unittest.TestCase):
     def test_generation_is_byte_deterministic_and_source_identified(self) -> None:
-        first = generate_typescript(KERNEL, CONTRACT)
-        second = generate_typescript(KERNEL, CONTRACT)
+        first = generate_certified_typescript(KERNEL, CONTRACT)
+        second = generate_certified_typescript(KERNEL, CONTRACT)
         self.assertEqual(first, second)
         self.assertTrue(first.startswith("// GENERATED FILE — DO NOT EDIT\n"))
         self.assertIn("mind-detective-local-execution/v1", first)
@@ -39,7 +39,7 @@ class LocalExecutionEmitterTests(unittest.TestCase):
             self.assertRegex(value, r"^sha256:[0-9a-f]{64}$")
 
     def test_generated_executor_contains_certified_intrinsic_prelude_only(self) -> None:
-        generated = generate_typescript(KERNEL, CONTRACT)
+        generated = generate_certified_typescript(KERNEL, CONTRACT)
         for required in (
             "function pyClone",
             "function pyCasefold",
@@ -62,8 +62,17 @@ class LocalExecutionEmitterTests(unittest.TestCase):
         for token in forbidden:
             self.assertNotIn(token.lower(), lowered)
 
+    def test_reserved_python_names_are_mangled_and_locals_are_function_scoped(self) -> None:
+        generated = generate_certified_typescript(KERNEL, CONTRACT)
+        self.assertNotIn("function _ensure_case_shape(case:", generated)
+        self.assertIn("function _ensure_case_shape(case$: any)", generated)
+        self.assertIn("export function apply_command(case$: any, command: any)", generated)
+        self.assertNotIn("for (const raw of", generated)
+        self.assertIn("let ", generated)
+        self.assertIn("for (raw of", generated)
+
     def test_metadata_json_is_canonicalizable(self) -> None:
-        generated = generate_typescript(KERNEL, CONTRACT)
+        generated = generate_certified_typescript(KERNEL, CONTRACT)
         metadata = build_execution_metadata(
             kernel_bytes=KERNEL.read_bytes(),
             generated_bytes=generated.encode("utf-8"),
