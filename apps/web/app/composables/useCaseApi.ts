@@ -14,6 +14,11 @@ export interface CaseApi {
   ): Promise<ProposalResponse>
 }
 
+export function isCaseApiTransportError(error: unknown): boolean {
+  if (!(error instanceof Error) || error.name !== 'FetchError') return false
+  return (error as Error & { response?: unknown }).response == null
+}
+
 export function useCaseApi(): CaseApi {
   const config = useRuntimeConfig()
   const baseURL = String(config.public.mindDetectiveApiBase || 'http://127.0.0.1:8000')
