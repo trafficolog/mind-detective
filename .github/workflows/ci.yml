@@ -74,6 +74,8 @@ jobs:
   web:
     name: Validate Web
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -95,6 +97,21 @@ jobs:
           set -euo pipefail
           python -m scripts.write_local_execution_artifacts
           git diff --exit-code -- apps/web/app/generated/localExecution.ts apps/web/app/generated/localExecution.meta.json
+      - name: Generate local execution conformance corpus
+        run: python -m scripts.generate_local_execution_corpus
+      - name: Commit conformance corpus bootstrap
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add conformance/local-execution/v1/manifest.json conformance/local-execution/v1/vectors.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "test: commit local execution conformance corpus"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
       - name: Install API runtime for browser tests
         run: |
           python -m pip install \
