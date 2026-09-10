@@ -16,7 +16,7 @@ export interface CaseApi {
 
 export function useCaseApi(): CaseApi {
   const config = useRuntimeConfig()
-  const baseURL = String(config.public.apiBase || 'http://127.0.0.1:8000')
+  const baseURL = String(config.public.mindDetectiveApiBase || 'http://127.0.0.1:8000')
 
   async function createCase(caseId: string, itemLabel: string, now: string): Promise<CaseV2> {
     const response = await $fetch<{ case: CaseV2 }>('/api/v1/case/create', {
