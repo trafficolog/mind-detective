@@ -125,3 +125,10 @@ export interface ProposalResponse {
   proposal: ProposalModel
   guard_code: string | null
 }
+
+export interface ExecutionIdentity {
+  version: string
+  kernel_sha256: string
+  generated_sha256: string
+  generator_version: string
+}
