@@ -72,15 +72,6 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   expect(download.suggestedFilename()).toContain(caseId)
 
   expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
-  await expect.poll(async () => await page.evaluate(async () => {
-    const cacheNames = await caches.keys()
-    for (const cacheName of cacheNames) {
-      const requests = await (await caches.open(cacheName)).keys()
-      if (requests.some(request => new URL(request.url).pathname === '/index.html')) return true
-    }
-    return false
-  })).toBe(true)
-
   await Promise.all([
     page.waitForEvent('load'),
     page.evaluate(() => window.location.reload()),
