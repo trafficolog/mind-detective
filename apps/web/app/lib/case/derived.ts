@@ -16,16 +16,20 @@ export interface PriorCheckAnnotation {
 
 export function deriveProgress(caseValue: CaseV2): ProgressSummary {
   const candidateIds = new Set(caseValue.candidates.map(candidate => candidate.id))
-  const inaccessibleIds = new Set<string>()
+  const latestChecks = new Map<string, SearchCheckV2>()
 
   for (const check of caseValue.search_checks) {
-    if (check.result !== 'inaccessible' && check.inaccessible_parts.length === 0) {
-      continue
-    }
     for (const candidateId of check.based_on) {
       if (candidateIds.has(candidateId)) {
-        inaccessibleIds.add(candidateId)
+        latestChecks.set(candidateId, check)
       }
+    }
+  }
+
+  const inaccessibleIds = new Set<string>()
+  for (const [candidateId, check] of latestChecks) {
+    if (check.result === 'inaccessible' || check.inaccessible_parts.length > 0) {
+      inaccessibleIds.add(candidateId)
     }
   }
 
