@@ -22,7 +22,7 @@ test('deterministic create and mutations do not require case API network calls',
   await page.getByRole('button', { name: 'Перейти к поиску' }).click()
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 
-  await page.getByTestId('write-note').click()
+  await page.getByRole('button', { name: 'Написать' }).click()
   await page.locator('#composer-text').fill('карман рюкзака')
   await page.getByRole('button', { name: 'Сохранить' }).click()
   await expect(page.getByTestId('next-action-target')).toHaveText('карман рюкзака')

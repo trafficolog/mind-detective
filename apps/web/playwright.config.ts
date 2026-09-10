@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const assistantFallbackSpec = /offline-assistant-fallback\.spec\.ts/
+const assistantSpec = /(?:offline-assistant-fallback|assistant-proposal)\.spec\.ts/
 const offlinePwaSpec = /offline-vertical-slice\.spec\.ts/
-const devSpecsToIgnore = [assistantFallbackSpec, offlinePwaSpec]
+const devSpecsToIgnore = [assistantSpec, offlinePwaSpec]
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -27,7 +27,7 @@ export default defineConfig({
     },
     {
       name: 'assistant-chromium',
-      testMatch: assistantFallbackSpec,
+      testMatch: assistantSpec,
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://127.0.0.1:3001',
@@ -35,7 +35,7 @@ export default defineConfig({
     },
     {
       name: 'assistant-webkit',
-      testMatch: assistantFallbackSpec,
+      testMatch: assistantSpec,
       use: {
         ...devices['Desktop Safari'],
         baseURL: 'http://127.0.0.1:3001',

@@ -30,7 +30,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   await page.getByRole('button', { name: 'Перейти к поиску' }).click()
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 
-  await page.getByTestId('write-note').click()
+  await page.getByRole('button', { name: 'Написать' }).click()
   await page.locator('#composer-text').fill('карман рюкзака')
   await page.getByRole('button', { name: 'Сохранить' }).click()
   await expect(page.getByTestId('next-action-target')).toHaveText('карман рюкзака')
@@ -39,7 +39,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   await expect.poll(async () => (await storedCase(page, caseId))?.search_checks.length).toBe(1)
   await expect(page.getByTestId('check-quality-dialog')).toHaveCount(0)
 
-  await page.getByTestId('write-note').click()
+  await page.getByRole('button', { name: 'Написать' }).click()
   await page.locator('#composer-text').fill('полка у двери')
   await page.getByRole('button', { name: 'Сохранить' }).click()
   await expect(page.getByTestId('next-action-target')).toHaveText('полка у двери')
