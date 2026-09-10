@@ -15,6 +15,7 @@ const emit = defineEmits<{
 
 const method = ref<Exclude<SearchMethod, 'reported_check' | 'inaccessible'>>('visual_systematic')
 const inaccessibleText = ref(props.initialInaccessibleParts.join(', '))
+const { dialogRef, onDialogKeydown } = useDialogFocus(() => emit('close'))
 
 function submit(): void {
   emit('refine', {
@@ -27,7 +28,15 @@ function submit(): void {
 
 <template>
   <div class="dialog-backdrop" data-testid="check-quality-dialog" @click.self="emit('close')">
-    <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="quality-title">
+    <section
+      ref="dialogRef"
+      class="dialog-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quality-title"
+      tabindex="-1"
+      @keydown="onDialogKeydown"
+    >
       <p class="eyebrow">Уточнение проверки</p>
       <h2 id="quality-title">Как именно вы проверяли «{{ target }}»?</h2>
       <p class="muted">Это уточнение появилось только потому, что тот же шаг снова стал полезным для решения.</p>
