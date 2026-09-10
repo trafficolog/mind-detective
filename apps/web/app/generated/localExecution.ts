@@ -193,7 +193,8 @@ export function create_case(case_id: any, item_label: any, now: any): any {
 }
 
 function _required_str(data: any, key: any): any {
-  let value = pyGet(data, key, null)
+  let value: any
+  value = pyGet(data, key, null)
   if (pyTruth(pyOr(!pyTruth((typeof value === 'string')), () => !pyTruth(value)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", `${pyStr(key)} must be a non-empty string`)
   }
@@ -201,7 +202,8 @@ function _required_str(data: any, key: any): any {
 }
 
 function _optional_str(data: any, key: any): any {
-  let value = pyGet(data, key, null)
+  let value: any
+  value = pyGet(data, key, null)
   if (pyTruth(((value === null)))) {
     return null
   }
@@ -226,10 +228,11 @@ function _as_list(value: any, key: any): any {
 }
 
 function _string_list(data: any, key: any): any {
-  let value = pyGet(data, key, [])
-  let items = _as_list(value, key)
-  let result = []
-  for (const item of items) {
+  let item, items, result, value: any
+  value = pyGet(data, key, [])
+  items = _as_list(value, key)
+  result = []
+  for (item of items) {
     if (pyTruth(!pyTruth((typeof item === 'string')))) {
       portable_error("MD_WEB_COMMAND_PAYLOAD", `${pyStr(key)} must be an array of strings`)
     }
@@ -239,7 +242,8 @@ function _string_list(data: any, key: any): any {
 }
 
 function _outcome(data: any): any {
-  let value = pyGet(data, "outcome", null)
+  let value: any
+  value = pyGet(data, "outcome", null)
   if (pyTruth(((value === null)))) {
     return null
   }
@@ -247,8 +251,9 @@ function _outcome(data: any): any {
 }
 
 function _reject_forbidden_keys(value: any): any {
+  let key, nested: any
   if (pyTruth((pyIsDict(value)))) {
-    for (const [key, nested] of pyItems(value)) {
+    for ([key, nested] of pyItems(value)) {
       if (pyTruth((pyContains(_FORBIDDEN_KEYS, unicode_casefold(pyStr(key)))))) {
         portable_error("MD_WEB_FORBIDDEN_FIELD", `forbidden command field: ${pyStr(key)}`)
       }
@@ -257,7 +262,7 @@ function _reject_forbidden_keys(value: any): any {
     return
   }
   if (pyTruth((Array.isArray(value)))) {
-    for (const nested of value) {
+    for (nested of value) {
       _reject_forbidden_keys(nested)
     }
     return
@@ -268,59 +273,64 @@ function _reject_forbidden_keys(value: any): any {
 }
 
 function _validate_payload(command_type: any, payload: any): any {
+  let allowed, unexpected: any
   _reject_forbidden_keys(payload)
-  let allowed = pyGet(_ALLOWED_PAYLOAD_KEYS, command_type, null)
+  allowed = pyGet(_ALLOWED_PAYLOAD_KEYS, command_type, null)
   if (pyTruth(((allowed === null)))) {
     portable_error("MD_WEB_COMMAND_TYPE", `unsupported command: ${pyStr(command_type)}`)
   }
-  let unexpected = pySorted(pySetDifference(pySet(payload), allowed))
+  unexpected = pySorted(pySetDifference(pySet(payload), allowed))
   if (pyTruth(unexpected)) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", ("unexpected command fields: " + pyJoin(",", unexpected)))
   }
 }
 
-function _ensure_case_shape(case: any): any {
-  if (pyTruth((!pyEqual(pyGet(case, "schema", null), _CASE_SCHEMA)))) {
+function _ensure_case_shape(case$: any): any {
+  let current_mode, lifecycle: any
+  if (pyTruth((!pyEqual(pyGet(case$, "schema", null), _CASE_SCHEMA)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "unsupported case schema")
   }
-  _required_str(case, "case_id")
-  _required_str(case, "updated_at")
-  let lifecycle = _required_str(case, "lifecycle")
+  _required_str(case$, "case_id")
+  _required_str(case$, "updated_at")
+  lifecycle = _required_str(case$, "lifecycle")
   if (pyTruth((!pyContains(new Set(["active", "paused", "closed_found", "closed_unresolved", "deleted"]), lifecycle)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid lifecycle")
   }
-  let current_mode = _required_str(case, "current_mode")
+  current_mode = _required_str(case$, "current_mode")
   if (pyTruth((!pyContains(_INTERACTION_MODES, current_mode)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid current_mode")
   }
-  _as_list(pyGet(case, "statements", null), "statements")
-  _as_list(pyGet(case, "search_checks", null), "search_checks")
-  _as_list(pyGet(case, "candidates", null), "candidates")
-  _as_list(pyGet(case, "constraints", null), "constraints")
-  _as_list(pyGet(case, "interaction_journal", null), "interaction_journal")
-  _as_list(pyGet(case, "action_feedback", null), "action_feedback")
+  _as_list(pyGet(case$, "statements", null), "statements")
+  _as_list(pyGet(case$, "search_checks", null), "search_checks")
+  _as_list(pyGet(case$, "candidates", null), "candidates")
+  _as_list(pyGet(case$, "constraints", null), "constraints")
+  _as_list(pyGet(case$, "interaction_journal", null), "interaction_journal")
+  _as_list(pyGet(case$, "action_feedback", null), "action_feedback")
 }
 
-function _ensure_mutable(case: any): any {
-  let lifecycle = _required_str(case, "lifecycle")
+function _ensure_mutable(case$: any): any {
+  let lifecycle: any
+  lifecycle = _required_str(case$, "lifecycle")
   if (pyTruth((pyContains(_TERMINAL_LIFECYCLES, lifecycle)))) {
     portable_error("MD_CASE_TERMINAL", `case is terminal: ${pyStr(lifecycle)}`)
   }
 }
 
-function _primitive_copy(case: any, now: any): any {
-  _ensure_case_shape(case)
-  _ensure_mutable(case)
+function _primitive_copy(case$: any, now: any): any {
+  let result: any
+  _ensure_case_shape(case$)
+  _ensure_mutable(case$)
   if (pyTruth(!pyTruth(now))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "now must be a non-empty string")
   }
-  let result = clone_json(case)
+  result = clone_json(case$)
   result["updated_at"] = now
   return result
 }
 
-function set_mode_json(case: any, mode: any, now: any): any {
-  let result = _primitive_copy(case, now)
+function set_mode_json(case$: any, mode: any, now: any): any {
+  let result: any
+  result = _primitive_copy(case$, now)
   if (pyTruth((!pyContains(_INTERACTION_MODES, mode)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid interaction mode")
   }
@@ -328,72 +338,79 @@ function set_mode_json(case: any, mode: any, now: any): any {
   return result
 }
 
-function append_journal_entry_json(case: any, entry: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  let journal = _as_list(result["interaction_journal"], "interaction_journal")
+function append_journal_entry_json(case$: any, entry: any, now: any): any {
+  let journal, result: any
+  result = _primitive_copy(case$, now)
+  journal = _as_list(result["interaction_journal"], "interaction_journal")
   journal.push(clone_json(entry))
   return result
 }
 
-function record_action_feedback_json(case: any, feedback: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  let items = _as_list(result["action_feedback"], "action_feedback")
+function record_action_feedback_json(case$: any, feedback: any, now: any): any {
+  let items, result: any
+  result = _primitive_copy(case$, now)
+  items = _as_list(result["action_feedback"], "action_feedback")
   items.push(clone_json(feedback))
   return result
 }
 
-function add_statement_json(case: any, statement: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  let statements = _as_list(result["statements"], "statements")
+function add_statement_json(case$: any, statement: any, now: any): any {
+  let result, statements: any
+  result = _primitive_copy(case$, now)
+  statements = _as_list(result["statements"], "statements")
   statements.push(clone_json(statement))
   return result
 }
 
 function _candidate_state_for_check(check: any): any {
-  let result = _required_str(check, "result")
-  let inaccessible_parts = _as_list(pyGet(check, "inaccessible_parts", []), "inaccessible_parts")
+  let inaccessible_parts, result: any
+  result = _required_str(check, "result")
+  inaccessible_parts = _as_list(pyGet(check, "inaccessible_parts", []), "inaccessible_parts")
   if (pyTruth(pyOr((pyContains(new Set(["partial", "inaccessible"]), result)), () => inaccessible_parts))) {
     return "partial"
   }
   return "checked"
 }
 
-function _apply_check_to_candidates(case: any, check: any): any {
-  let based_on = pySet(_string_list(check, "based_on"))
+function _apply_check_to_candidates(case$: any, check: any): any {
+  let based_on, candidate, candidates, raw, state: any
+  based_on = pySet(_string_list(check, "based_on"))
   if (pyTruth(!pyTruth(based_on))) {
     return
   }
-  let state = _candidate_state_for_check(check)
-  let candidates = _as_list(case["candidates"], "candidates")
-  for (const raw of candidates) {
-    let candidate = _as_dict(raw, "candidate")
+  state = _candidate_state_for_check(check)
+  candidates = _as_list(case$["candidates"], "candidates")
+  for (raw of candidates) {
+    candidate = _as_dict(raw, "candidate")
     if (pyTruth((pyContains(based_on, _required_str(candidate, "id"))))) {
       candidate["check_state"] = state
     }
   }
 }
 
-function record_search_check_json(case: any, check: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  let checks = _as_list(result["search_checks"], "search_checks")
-  let copied_check = clone_json(check)
+function record_search_check_json(case$: any, check: any, now: any): any {
+  let checks, copied_check, result: any
+  result = _primitive_copy(case$, now)
+  checks = _as_list(result["search_checks"], "search_checks")
+  copied_check = clone_json(check)
   checks.push(copied_check)
   _apply_check_to_candidates(result, copied_check)
   return result
 }
 
-function refine_search_check_json(case: any, check_id: any, method: any, inaccessible_parts: any, now: any): any {
-  let result = _primitive_copy(case, now)
+function refine_search_check_json(case$: any, check_id: any, method: any, inaccessible_parts: any, now: any): any {
+  let check, checks, found, raw, result: any
+  result = _primitive_copy(case$, now)
   if (pyTruth((pyEqual(method, "inaccessible")))) {
     portable_error("MD_SEARCH_METHOD_INVALID", "inaccessible is a legacy compatibility value, not a refinement method")
   }
   if (pyTruth((!pyContains(_SEARCH_METHODS, method)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
   }
-  let checks = _as_list(result["search_checks"], "search_checks")
-  let found = null
-  for (const raw of checks) {
-    let check = _as_dict(raw, "search_check")
+  checks = _as_list(result["search_checks"], "search_checks")
+  found = null
+  for (raw of checks) {
+    check = _as_dict(raw, "search_check")
     if (pyTruth((pyEqual(_required_str(check, "id"), check_id)))) {
       check["method"] = method
       check["inaccessible_parts"] = clone_json(inaccessible_parts)
@@ -408,40 +425,45 @@ function refine_search_check_json(case: any, check_id: any, method: any, inacces
   return result
 }
 
-function pause_json(case: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  if (pyTruth((!pyEqual(_required_str(case, "lifecycle"), "active")))) {
+function pause_json(case$: any, now: any): any {
+  let result: any
+  result = _primitive_copy(case$, now)
+  if (pyTruth((!pyEqual(_required_str(case$, "lifecycle"), "active")))) {
     portable_error("MD_CASE_STATE", "only active cases can be paused")
   }
   result["lifecycle"] = "paused"
   return result
 }
 
-function resume_json(case: any, now: any): any {
-  let result = _primitive_copy(case, now)
-  if (pyTruth((!pyEqual(_required_str(case, "lifecycle"), "paused")))) {
+function resume_json(case$: any, now: any): any {
+  let result: any
+  result = _primitive_copy(case$, now)
+  if (pyTruth((!pyEqual(_required_str(case$, "lifecycle"), "paused")))) {
     portable_error("MD_CASE_STATE", "only paused cases can be resumed")
   }
   result["lifecycle"] = "active"
   return result
 }
 
-function close_found_json(case: any, now: any, outcome: any = null): any {
-  let result = _primitive_copy(case, now)
+function close_found_json(case$: any, now: any, outcome: any = null): any {
+  let result: any
+  result = _primitive_copy(case$, now)
   result["lifecycle"] = "closed_found"
   result["outcome"] = clone_json(outcome)
   return result
 }
 
-function close_unresolved_json(case: any, now: any, outcome: any = null): any {
-  let result = _primitive_copy(case, now)
+function close_unresolved_json(case$: any, now: any, outcome: any = null): any {
+  let result: any
+  result = _primitive_copy(case$, now)
   result["lifecycle"] = "closed_unresolved"
   result["outcome"] = clone_json(outcome)
   return result
 }
 
-function _journal_mode(case: any): any {
-  let mode = _required_str(case, "current_mode")
+function _journal_mode(case$: any): any {
+  let mode: any
+  mode = _required_str(case$, "current_mode")
   if (pyTruth((pyContains(new Set(["reconstruction", "search"]), mode)))) {
     return mode
   }
@@ -449,16 +471,18 @@ function _journal_mode(case: any): any {
 }
 
 function _normalize_candidate_target(value: any): any {
-  let folded = pyReplace(unicode_casefold(value), "ё", "е")
+  let folded: any
+  folded = pyReplace(unicode_casefold(value), "ё", "е")
   return pyJoin(" ", split_python_whitespace(folded))
 }
 
-function _append_search_candidate(case: any, statement_id: any, target: any): any {
-  let result = clone_json(case)
-  let candidates = _as_list(result["candidates"], "candidates")
-  let normalized = _normalize_candidate_target(target)
-  for (const raw of candidates) {
-    let candidate = _as_dict(raw, "candidate")
+function _append_search_candidate(case$: any, statement_id: any, target: any): any {
+  let candidate, candidates, normalized, raw, result: any
+  result = clone_json(case$)
+  candidates = _as_list(result["candidates"], "candidates")
+  normalized = _normalize_candidate_target(target)
+  for (raw of candidates) {
+    candidate = _as_dict(raw, "candidate")
     if (pyTruth((pyEqual(_normalize_candidate_target(_required_str(candidate, "target")), normalized)))) {
       return result
     }
@@ -472,11 +496,12 @@ function _web_journal_entry(command_id: any, mode: any, entry_type: any, text: a
 }
 
 function _statement_from_payload(payload: any, now: any): any {
-  let source = _required_str(payload, "source")
+  let source, statement_type: any
+  source = _required_str(payload, "source")
   if (pyTruth((!pyEqual(source, "user")))) {
     portable_error("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
   }
-  let statement_type = _required_str(payload, "statement_type")
+  statement_type = _required_str(payload, "statement_type")
   if (pyTruth((!pyContains(_STATEMENT_TYPES, statement_type)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid statement_type")
   }
@@ -484,7 +509,8 @@ function _statement_from_payload(payload: any, now: any): any {
 }
 
 function _check_from_payload(payload: any, now: any): any {
-  let method = pyGet(payload, "method", "reported_check")
+  let completed_at, method, search_result, started_at: any
+  method = pyGet(payload, "method", "reported_check")
   if (pyTruth(!pyTruth((typeof method === 'string')))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "method must be a string")
   }
@@ -494,12 +520,12 @@ function _check_from_payload(payload: any, now: any): any {
   if (pyTruth((!pyContains(_SEARCH_METHODS, method)))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
   }
-  let search_result = pyGet(payload, "result", "not_found")
+  search_result = pyGet(payload, "result", "not_found")
   if (pyTruth(pyOr(!pyTruth((typeof search_result === 'string')), () => (!pyContains(_SEARCH_RESULTS, search_result))))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search result")
   }
-  let started_at = pyGet(payload, "started_at", now)
-  let completed_at = pyGet(payload, "completed_at", now)
+  started_at = pyGet(payload, "started_at", now)
+  completed_at = pyGet(payload, "completed_at", now)
   if (pyTruth(!pyTruth((typeof started_at === 'string')))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "started_at must be a string")
   }
@@ -509,60 +535,61 @@ function _check_from_payload(payload: any, now: any): any {
   return {["id"]: _required_str(payload, "check_id"), ["target"]: _required_str(payload, "target"), ["method"]: method, ["started_at"]: started_at, ["completed_at"]: completed_at, ["result"]: search_result, ["inaccessible_parts"]: _string_list(payload, "inaccessible_parts"), ["based_on"]: _string_list(payload, "based_on"), ["notes"]: _string_list(payload, "notes")}
 }
 
-export function apply_command(case: any, command: any): any {
-  _ensure_case_shape(case)
-  let command_type = _required_str(command, "command_type")
+export function apply_command(case$: any, command: any): any {
+  let check, command_id, command_type, expected_updated_at, feedback, mode, now, payload, reason, result, statement: any
+  _ensure_case_shape(case$)
+  command_type = _required_str(command, "command_type")
   if (pyTruth((!pyContains(SUPPORTED_COMMAND_TYPES, command_type)))) {
     portable_error("MD_WEB_COMMAND_TYPE", `unsupported command: ${pyStr(command_type)}`)
   }
-  let expected_updated_at = _required_str(command, "expected_updated_at")
-  let now = _required_str(command, "now")
-  let command_id = _required_str(command, "command_id")
-  let payload = _as_dict(pyGet(command, "payload", {}), "payload")
-  if (pyTruth((!pyEqual(_required_str(case, "updated_at"), expected_updated_at)))) {
+  expected_updated_at = _required_str(command, "expected_updated_at")
+  now = _required_str(command, "now")
+  command_id = _required_str(command, "command_id")
+  payload = _as_dict(pyGet(command, "payload", {}), "payload")
+  if (pyTruth((!pyEqual(_required_str(case$, "updated_at"), expected_updated_at)))) {
     portable_error("MD_WEB_STALE_COMMAND", "command was created for an older case state")
   }
   _validate_payload(command_type, payload)
   if (pyTruth((pyEqual(command_type, "set_mode")))) {
-    return set_mode_json(case, _required_str(payload, "mode"), now)
+    return set_mode_json(case$, _required_str(payload, "mode"), now)
   }
   if (pyTruth((pyEqual(command_type, "add_statement")))) {
-    let mode = _journal_mode(case)
-    let statement = _statement_from_payload(payload, now)
-    let result = add_statement_json(case, statement, now)
+    mode = _journal_mode(case$)
+    statement = _statement_from_payload(payload, now)
+    result = add_statement_json(case$, statement, now)
     if (pyTruth(pyAnd((pyEqual(mode, "search")), () => (pyEqual(statement["statement_type"], "search_suggestion"))))) {
       result = _append_search_candidate(result, _required_str(statement, "id"), _required_str(statement, "original_text"))
     }
     return append_journal_entry_json(result, _web_journal_entry(command_id, mode, "statement", _required_str(statement, "original_text"), now, [_required_str(statement, "id")]), now)
   }
   if (pyTruth((pyEqual(command_type, "record_search_check")))) {
-    mode = _journal_mode(case)
-    let check = _check_from_payload(payload, now)
-    result = record_search_check_json(case, check, now)
+    mode = _journal_mode(case$)
+    check = _check_from_payload(payload, now)
+    result = record_search_check_json(case$, check, now)
     return append_journal_entry_json(result, _web_journal_entry(command_id, mode, "search_check", _required_str(check, "target"), now, undefined, [_required_str(check, "id")]), now)
   }
   if (pyTruth((pyEqual(command_type, "refine_search_check")))) {
-    return refine_search_check_json(case, _required_str(payload, "check_id"), _required_str(payload, "method"), _string_list(payload, "inaccessible_parts"), now)
+    return refine_search_check_json(case$, _required_str(payload, "check_id"), _required_str(payload, "method"), _string_list(payload, "inaccessible_parts"), now)
   }
   if (pyTruth((pyEqual(command_type, "reject_next_action")))) {
-    let reason = _required_str(payload, "reason")
+    reason = _required_str(payload, "reason")
     if (pyTruth((!pyContains(_FEEDBACK_REASONS, reason)))) {
       portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid action feedback reason")
     }
-    let feedback = {["id"]: _required_str(payload, "feedback_id"), ["candidate_id"]: _required_str(payload, "candidate_id"), ["reason"]: reason, ["recorded_at"]: now}
-    return record_action_feedback_json(case, feedback, now)
+    feedback = {["id"]: _required_str(payload, "feedback_id"), ["candidate_id"]: _required_str(payload, "candidate_id"), ["reason"]: reason, ["recorded_at"]: now}
+    return record_action_feedback_json(case$, feedback, now)
   }
   if (pyTruth((pyEqual(command_type, "pause")))) {
-    return pause_json(case, now)
+    return pause_json(case$, now)
   }
   if (pyTruth((pyEqual(command_type, "resume")))) {
-    return resume_json(case, now)
+    return resume_json(case$, now)
   }
   if (pyTruth((pyEqual(command_type, "close_found")))) {
-    return close_found_json(case, now, _outcome(payload))
+    return close_found_json(case$, now, _outcome(payload))
   }
   if (pyTruth((pyEqual(command_type, "close_unresolved")))) {
-    return close_unresolved_json(case, now, _outcome(payload))
+    return close_unresolved_json(case$, now, _outcome(payload))
   }
   portable_error("MD_WEB_COMMAND_TYPE", `unsupported command: ${pyStr(command_type)}`)
 }
@@ -573,14 +600,16 @@ let _ROUTE_ORDER = ["direct", "indirect", "none"]
 let _CHECK_STATE_ORDER = ["unchecked", "partial", "checked"]
 let _EFFORT_ORDER = ["low", "medium", "high"]
 function _candidate_field(candidate: any, field: any): any {
-  let value = _required_str(candidate, field)
+  let value: any
+  value = _required_str(candidate, field)
   return value
 }
 
 function _keep_best_candidates(candidates: any, field: any, order: any): any {
-  for (const preferred of order) {
-    let matched = []
-    for (const candidate of candidates) {
+  let candidate, matched, preferred: any
+  for (preferred of order) {
+    matched = []
+    for (candidate of candidates) {
       if (pyTruth((pyEqual(_candidate_field(candidate, field), preferred)))) {
         matched.push(candidate)
       }
@@ -593,9 +622,10 @@ function _keep_best_candidates(candidates: any, field: any, order: any): any {
 }
 
 export function select_next_action_json(candidates: any): any {
-  let pool = []
-  for (const raw of candidates) {
-    let candidate = _as_dict(raw, "candidate")
+  let basis, candidate, check_state, chosen, codes, effort, pool, raw, route, safety, urgency: any
+  pool = []
+  for (raw of candidates) {
+    candidate = _as_dict(raw, "candidate")
     if (pyTruth((!pyEqual(_candidate_field(candidate, "safety"), "unsafe")))) {
       pool.push(candidate)
     }
@@ -608,19 +638,19 @@ export function select_next_action_json(candidates: any): any {
   pool = _keep_best_candidates(pool, "route_relation", _ROUTE_ORDER)
   pool = _keep_best_candidates(pool, "check_state", _CHECK_STATE_ORDER)
   pool = _keep_best_candidates(pool, "effort", _EFFORT_ORDER)
-  let chosen = pool[0]
-  for (const candidate of pool.slice(1)) {
+  chosen = pool[0]
+  for (candidate of pool.slice(1)) {
     if (pyTruth(((compare_python_strings(_candidate_field(candidate, "id"), _candidate_field(chosen, "id")) < 0)))) {
       chosen = candidate
     }
   }
-  let urgency = _candidate_field(chosen, "urgency_relevance")
-  let basis = _candidate_field(chosen, "basis")
-  let route = _candidate_field(chosen, "route_relation")
-  let check_state = _candidate_field(chosen, "check_state")
-  let effort = _candidate_field(chosen, "effort")
-  let safety = _candidate_field(chosen, "safety")
-  let codes = []
+  urgency = _candidate_field(chosen, "urgency_relevance")
+  basis = _candidate_field(chosen, "basis")
+  route = _candidate_field(chosen, "route_relation")
+  check_state = _candidate_field(chosen, "check_state")
+  effort = _candidate_field(chosen, "effort")
+  safety = _candidate_field(chosen, "safety")
+  codes = []
   if (pyTruth((pyEqual(urgency, "high")))) {
     codes.push("MD_PLAN_URGENT")
   }
@@ -638,13 +668,14 @@ function _proposal(kind: any, copy_key: any, candidate_id: any = null, target: a
   return {["kind"]: kind, ["candidate_id"]: candidate_id, ["target"]: target, ["copy_key"]: copy_key, ["rationale_codes"]: pyOr(rationale_codes, () => []), ["related_statement_ids"]: pyOr(related_statement_ids, () => [])}
 }
 
-export function build_checklist_proposal_json(case: any, mode: any): any {
-  _ensure_case_shape(case)
+export function build_checklist_proposal_json(case$: any, mode: any): any {
+  let action, available, candidate, check, checks, feedback, inaccessible, rationale, rationale_codes, raw, rejected, related, result, statement, statements, value: any
+  _ensure_case_shape(case$)
   if (pyTruth((pyEqual(mode, "reconstruction")))) {
-    let statements = _as_list(case["statements"], "statements")
-    let related = []
-    for (const raw of statements.slice(-(3))) {
-      let statement = _as_dict(raw, "statement")
+    statements = _as_list(case$["statements"], "statements")
+    related = []
+    for (raw of statements.slice(-(3))) {
+      statement = _as_dict(raw, "statement")
       related.push(_required_str(statement, "id"))
     }
     return _proposal("clarification", "reconstruction.clarify_supported_sequence", undefined, undefined, undefined, related)
@@ -652,23 +683,23 @@ export function build_checklist_proposal_json(case: any, mode: any): any {
   if (pyTruth((!pyEqual(mode, "search")))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid proposal mode")
   }
-  let rejected = pySet([])
-  for (const raw of _as_list(case["action_feedback"], "action_feedback")) {
-    let feedback = _as_dict(raw, "action_feedback")
+  rejected = pySet([])
+  for (raw of _as_list(case$["action_feedback"], "action_feedback")) {
+    feedback = _as_dict(raw, "action_feedback")
     rejected.add(_required_str(feedback, "candidate_id"))
   }
-  let available = []
-  for (const raw of _as_list(case["candidates"], "candidates")) {
-    let candidate = _as_dict(raw, "candidate")
+  available = []
+  for (raw of _as_list(case$["candidates"], "candidates")) {
+    candidate = _as_dict(raw, "candidate")
     if (pyTruth((!pyContains(rejected, _required_str(candidate, "id"))))) {
       available.push(candidate)
     }
   }
-  let action = select_next_action_json(available)
+  action = select_next_action_json(available)
   if (pyTruth(((action !== null)))) {
-    let rationale = _as_list(action["rationale_codes"], "rationale_codes")
-    let rationale_codes = []
-    for (const value of rationale) {
+    rationale = _as_list(action["rationale_codes"], "rationale_codes")
+    rationale_codes = []
+    for (value of rationale) {
       if (pyTruth(!pyTruth((typeof value === 'string')))) {
         portable_error("MD_WEB_COMMAND_PAYLOAD", "rationale code must be a string")
       }
@@ -676,11 +707,11 @@ export function build_checklist_proposal_json(case: any, mode: any): any {
     }
     return _proposal("next_action", "next_action.check_target", _required_str(action, "candidate_id"), _required_str(action, "target"), rationale_codes)
   }
-  let checks = _as_list(case["search_checks"], "search_checks")
-  for (const raw of checks.slice().reverse()) {
-    let check = _as_dict(raw, "search_check")
-    let result = _required_str(check, "result")
-    let inaccessible = _as_list(pyGet(check, "inaccessible_parts", []), "inaccessible_parts")
+  checks = _as_list(case$["search_checks"], "search_checks")
+  for (raw of checks.slice().reverse()) {
+    check = _as_dict(raw, "search_check")
+    result = _required_str(check, "result")
+    inaccessible = _as_list(pyGet(check, "inaccessible_parts", []), "inaccessible_parts")
     if (pyTruth(pyOr((pyContains(new Set(["partial", "inaccessible"]), result)), () => inaccessible))) {
       return _proposal("clarification", "empty.resolve_partial_check", undefined, _required_str(check, "target"))
     }

@@ -80,10 +80,20 @@ def _vector(vector_id: str, operation: str, input_value: dict[str, object]) -> d
             )
         )
     elif operation == "command":
-        case = input_value["case"]
-        command = input_value["command"]
-        if not isinstance(case, dict) or not isinstance(command, dict):
+        raw_case = input_value["case"]
+        raw_command = input_value["command"]
+        if not isinstance(raw_case, dict) or not isinstance(raw_command, dict):
             raise AssertionError("command vector shape")
+        case: dict[str, object] = {}
+        for key, value in raw_case.items():
+            if not isinstance(key, str):
+                raise AssertionError("command case keys must be strings")
+            case[key] = value
+        command: dict[str, object] = {}
+        for key, value in raw_command.items():
+            if not isinstance(key, str):
+                raise AssertionError("command envelope keys must be strings")
+            command[key] = value
         expected = _capture(lambda: apply_command(case, command))
     elif operation == "proposal":
         case = input_value["case"]
