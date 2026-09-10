@@ -82,13 +82,7 @@ export async function seedCase(page: Page, caseValue: CaseV2): Promise<void> {
   await page.goto('/')
   await page.evaluate(async (payload) => {
     await new Promise<void>((resolve, reject) => {
-      const request = indexedDB.open('mind-detective', 1)
-      request.onupgradeneeded = () => {
-        const database = request.result
-        if (!database.objectStoreNames.contains('cases')) {
-          database.createObjectStore('cases', { keyPath: 'case_id' })
-        }
-      }
+      const request = indexedDB.open('mind-detective')
       request.onerror = () => reject(request.error)
       request.onsuccess = () => {
         const database = request.result
@@ -107,7 +101,7 @@ export async function seedCase(page: Page, caseValue: CaseV2): Promise<void> {
 export async function storedCase(page: Page, caseId: string): Promise<CaseV2 | null> {
   return await page.evaluate(async (id) => {
     return await new Promise<CaseV2 | null>((resolve, reject) => {
-      const request = indexedDB.open('mind-detective', 1)
+      const request = indexedDB.open('mind-detective')
       request.onerror = () => reject(request.error)
       request.onsuccess = () => {
         const database = request.result
