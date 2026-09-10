@@ -2,7 +2,7 @@
 
 ## Два разных контура хранения
 
-Plugin surface сохраняет прежний 0.1.0 contract: Case создаётся в памяти процесса, а запись на диск выполняется только по явному действию пользователя (`save`/`pause`/`retain`) в `.mind-detective/cases/<case-id>/case.json`.
+Plugin surface сохраняет прежний 0.1.0 contract: Case создаётся в памяти процесса, а запись на диск выполняется только по явному действию пользователя (`save`/`pause`/`retain`) в `.mind-detective/cases/<case-id>/case.json`. Плагин не создаёт cross-case index, общий пользовательский профиль, hidden priors или автоматическое обучение на предыдущих кейсах.
 
 В Web/PWA 0.2.0 каноническая browser copy хранится локально в IndexedDB. Service worker кэширует только application shell/static assets. Case payload, пользовательский текст, model output и evaluation records не должны попадать в Cache Storage или background sync. Persistent-storage permission повышает устойчивость browser-local storage, но **не является резервной копией**; для переноса предусмотрен явный JSON export/import.
 
@@ -14,7 +14,7 @@ Provider credentials и LiteLLM secrets остаются только на се�
 
 ## Минимизация данных
 
-Плагин и Web surface не создают cross-case index, общий пользовательский профиль, hidden priors или автоматическое обучение на предыдущих кейсах. Evaluation log хранит только allowlisted interaction/outcome metadata и отвергает raw `item_label`, location target, journal/user text и raw model output.
+Web surface также не создаёт cross-case index или общий пользовательский профиль. Evaluation log хранит только allowlisted interaction/outcome metadata и отвергает raw `item_label`, location target, journal/user text и raw model output.
 
 Не следует вводить в Case данные, не необходимые для поиска: credentials, access tokens, платёжные данные, подробные медицинские сведения, полный домашний адрес или другую идентифицирующую информацию без необходимости.
 
