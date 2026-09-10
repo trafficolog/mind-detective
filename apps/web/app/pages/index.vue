@@ -17,7 +17,6 @@ onMounted(async () => {
 })
 
 async function handleCreated(caseValue: CaseV2): Promise<void> {
-  await repository.put(caseValue)
   await navigateTo(`/cases/${caseValue.case_id}`)
 }
 
