@@ -17,16 +17,17 @@ class ReleaseContractTests(unittest.TestCase):
     def test_repository_manifest_is_valid(self):
         self.assertEqual(validate_release_manifest(ROOT), [])
         items = release_items(ROOT)
-        self.assertEqual([item.tag for item in items], ["0.1.0", "mind-detective-v0.1.0"])
+        self.assertEqual([item.tag for item in items], ["0.2.0", "mind-detective-v0.2.0"])
 
     def test_manifest_version_parity_and_notes_file(self):
         data = json.loads((ROOT / ".github/releases/release.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["repository"]["version"], "0.1.0")
-        self.assertEqual(data["repository"]["tag"], "0.1.0")
+        self.assertEqual(data["repository"]["version"], "0.2.0")
+        self.assertEqual(data["repository"]["tag"], "0.2.0")
         self.assertEqual(data["plugins"][0]["plugin"], "mind-detective")
-        self.assertEqual(data["plugins"][0]["version"], "0.1.0")
-        self.assertEqual(data["plugins"][0]["tag"], "mind-detective-v0.1.0")
+        self.assertEqual(data["plugins"][0]["version"], "0.2.0")
+        self.assertEqual(data["plugins"][0]["tag"], "mind-detective-v0.2.0")
         self.assertTrue((ROOT / data["repository"]["notes_file"]).is_file())
+        self.assertTrue((ROOT / ".github/releases/0.1.0.md").is_file())
 
     def test_recovery_sha_requires_full_40_hex(self):
         with self.assertRaisesRegex(ValueError, "MD_RELEASE_SHA"):
