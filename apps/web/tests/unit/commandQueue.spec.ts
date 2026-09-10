@@ -1,3 +1,4 @@
+import { reactive } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { makeCommandQueue } from '../../app/composables/useCommandQueue'
 import type { CaseV2, CommandEnvelope } from '../../app/lib/api/contracts'
@@ -62,6 +63,24 @@ describe('transport-only command queue', () => {
     gate.resolve(returned)
     await expect(pending).resolves.toEqual(returned)
     expect(writes).toEqual([returned])
+  })
+
+  it('accepts reactive case values from Vue refs', async () => {
+    const started: string[] = []
+    const api = {
+      sendCommand: async (_caseValue: CaseV2, envelope: CommandEnvelope) => {
+        started.push(envelope.command_id)
+        return caseFixture('2026-09-10T07:01:00Z')
+      },
+    }
+    const repository = { put: async (_value: CaseV2) => undefined }
+    const queue = makeCommandQueue(api, repository)
+    const reactiveCase = reactive(caseFixture()) as CaseV2
+
+    await expect(queue.enqueue(reactiveCase, command('cmd-reactive'))).resolves.toMatchObject({
+      updated_at: '2026-09-10T07:01:00Z',
+    })
+    expect(started).toEqual(['cmd-reactive'])
   })
 
   it('sends commands sequentially', async () => {
