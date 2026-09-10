@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { toRaw } from 'vue'
 import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCaseApi'
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
 import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
@@ -7,6 +8,7 @@ import { appendEvalEvent } from '~/lib/eval/log'
 
 type FoundContext = 'current_suggested_action' | 'elsewhere_unplanned' | 'after_previous_check' | 'unknown'
 type RefinedMethod = Exclude<SearchMethod, 'reported_check' | 'inaccessible'>
+type RetryableCommand = { caseSnapshot: CaseV2; command: CommandEnvelope }
 
 const route = useRoute()
 const repository = useCaseRepository()
@@ -26,6 +28,7 @@ const showComposer = ref(false)
 const showReject = ref(false)
 const showClose = ref(false)
 const suppressedQualityCheckId = ref<string | null>(null)
+const retryCommandState = ref<RetryableCommand | null>(null)
 const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
@@ -47,8 +50,19 @@ const qualityContext = computed(() => {
   return { ...prior, target: proposal.value.target ?? current.candidates.find(candidate => candidate.id === candidateId)?.target ?? '' }
 })
 
+watch(
+  () => proposal.value?.candidate_id ?? null,
+  (nextCandidateId, previousCandidateId) => {
+    if (nextCandidateId !== previousCandidateId) suppressedQualityCheckId.value = null
+  },
+)
+
 function logEvent(event: Parameters<typeof appendEvalEvent>[0], metadata: Record<string, unknown> = {}): void {
   void appendEvalEvent(event, metadata).catch(() => undefined)
+}
+
+function snapshotCase(current: CaseV2): CaseV2 {
+  return structuredClone(toRaw(current))
 }
 
 function envelope(commandType: CommandEnvelope['command_type'], payload: Record<string, unknown>): CommandEnvelope {
@@ -157,27 +171,45 @@ async function refreshProposal(): Promise<void> {
   }
 }
 
-async function runCommand(command: CommandEnvelope): Promise<CaseV2 | null> {
-  if (!caseValue.value) return null
+async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2): Promise<CaseV2 | null> {
+  const current = caseValue.value
+  if (!current) return null
+  const inputCase = retryCaseSnapshot ? structuredClone(retryCaseSnapshot) : snapshotCase(current)
   busy.value = true
   errorCode.value = null
   try {
-    const returned = await localExecution.sendCommand(caseValue.value, command)
+    const returned = await localExecution.sendCommand(inputCase, command)
+    retryCommandState.value = null
     caseValue.value = returned
     await refreshProposal()
     return returned
   } catch (error: unknown) {
     const code = error instanceof Error ? error.message : 'MD_WEB_LOCAL_EXECUTION_FAILED'
-    errorCode.value = code.startsWith('MD_') ? code : 'MD_WEB_LOCAL_EXECUTION_FAILED'
+    const normalizedCode = code.startsWith('MD_') ? code : 'MD_WEB_LOCAL_EXECUTION_FAILED'
+    errorCode.value = normalizedCode
+    if (normalizedCode === 'MD_WEB_LOCAL_EXECUTION_FAILED' || normalizedCode.startsWith('MD_WEB_IDB_')) {
+      retryCommandState.value = {
+        caseSnapshot: structuredClone(inputCase),
+        command: structuredClone(command),
+      }
+    } else {
+      retryCommandState.value = null
+    }
     logEvent('local_execution_failed', {
-      case_id: caseValue.value.case_id,
+      case_id: current.case_id,
       command_id: command.command_id,
-      outcome_code: errorCode.value,
+      outcome_code: normalizedCode,
     })
     return null
   } finally {
     busy.value = false
   }
+}
+
+async function retryLastCommand(): Promise<void> {
+  const retry = retryCommandState.value
+  if (!retry) return
+  await runCommand(retry.command, retry.caseSnapshot)
 }
 
 async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
@@ -287,6 +319,7 @@ async function submitComposer(): Promise<void> {
 function handleDeleted(): void {
   caseValue.value = null
   proposal.value = null
+  retryCommandState.value = null
 }
 
 function scrollJournal(): void {
@@ -334,6 +367,16 @@ onMounted(async () => {
 
       <div v-if="errorCode && !executionContractMismatch" class="privacy-note" role="alert" data-testid="command-error">
         {{ t('case.command_error') }}
+        <button
+          v-if="retryCommandState"
+          class="secondary-action"
+          data-testid="retry-command"
+          type="button"
+          :disabled="busy"
+          @click="retryLastCommand"
+        >
+          {{ locale === 'ru' ? 'Повторить ту же команду' : 'Retry the same command' }}
+        </button>
         <details><summary>{{ t('common.details') }}</summary><code>{{ errorCode }}</code></details>
       </div>
 
