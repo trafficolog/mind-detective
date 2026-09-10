@@ -86,3 +86,21 @@ class ControllerTests(unittest.TestCase):
         updated = self.controller.refresh_next_action(updated, "2026-09-09T18:03:00Z")
         self.assertEqual(updated.statements, (statement,))
         self.assertEqual(updated.next_action.candidate_id, "p1")
+
+    def test_controller_surfaces_near_duplicate_search_history(self):
+        first = SearchCheck(
+            id="c1",
+            target="Карманы куртки",
+            method=SearchMethod.GLANCE,
+            started_at="2026-09-09T18:04:00Z",
+            completed_at="2026-09-09T18:05:00Z",
+            result=SearchResult.NOT_FOUND,
+            inaccessible_parts=(),
+            based_on=("s1",),
+            notes=(),
+        )
+        updated = self.controller.record_search_check(self.case, first, "2026-09-09T18:05:00Z")
+        duplicates = self.controller.find_duplicate_search_checks(updated, "карманы вчерашней куртки")
+        self.assertEqual(duplicates, (first,))
+        self.assertEqual(duplicates[0].method, SearchMethod.GLANCE)
+        self.assertEqual(duplicates[0].result, SearchResult.NOT_FOUND)
