@@ -6,8 +6,12 @@ import re
 from pathlib import Path
 from typing import Any
 
-_REQUIREMENT_RE = re.compile(r"MD-REQ-[A-Z]+-\d{2}")
+_REQUIREMENT_RE = re.compile(r"MD(?:-WEB)?-REQ-[A-Z0-9]+-\d{2}")
 _ACTIVE_FIELDS = ("skill", "helper", "test", "reference")
+_TS_TEST_RE = re.compile(
+    r"\b(?:test|it)\s*\(\s*(['\"])(?P<title>.*?)\1",
+    re.DOTALL,
+)
 
 
 def collect_requirement_ids(path: Path) -> tuple[set[str], set[str]]:
@@ -21,14 +25,10 @@ def collect_requirement_ids(path: Path) -> tuple[set[str], set[str]]:
     return seen, duplicates
 
 
-def selector_exists(root: Path, selector: str) -> bool:
+def _python_selector_exists(path: Path, member: str) -> bool:
     try:
-        path_text, member = selector.split("::", 1)
         class_name, method_name = member.split(".", 1)
     except ValueError:
-        return False
-    path = root / path_text
-    if not path.is_file():
         return False
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
@@ -36,7 +36,34 @@ def selector_exists(root: Path, selector: str) -> bool:
         return False
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == class_name:
-            return any(isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == method_name for child in node.body)
+            return any(
+                isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and child.name == method_name
+                for child in node.body
+            )
+    return False
+
+
+def _typescript_selector_exists(path: Path, title: str) -> bool:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    return any(match.group("title") == title for match in _TS_TEST_RE.finditer(text))
+
+
+def selector_exists(root: Path, selector: str) -> bool:
+    try:
+        path_text, member = selector.split("::", 1)
+    except ValueError:
+        return False
+    path = root / path_text
+    if not path.is_file() or not member:
+        return False
+    if path.suffix == ".py":
+        return _python_selector_exists(path, member)
+    if path.suffix in {".ts", ".tsx"}:
+        return _typescript_selector_exists(path, member)
     return False
 
 

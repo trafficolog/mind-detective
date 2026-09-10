@@ -2,10 +2,38 @@
 
 [Русский](ARCHITECTURE.md)
 
-The canonical `Case` plus `CaseController` is the single deterministic state center. Skills orchestrate dialogue and call helper modules but do not create parallel sources of truth.
+## Single domain source of truth
 
-The plugin-local runtime separates provenance (`statements.py`), uncertainty-preserving sequence (`timeline.py`), durable physical checks (`search_log.py`), categorical one-next-action selection (`planner.py`), mode-aware utterance checks (`guard.py`), explicit case-local persistence (`store.py`), and derived handoff/outcome artifacts (`artifacts.py`). Safety routing precedes ordinary search reasoning.
+The canonical `Case` together with the Python `CaseController` remains the only deterministic state authority. Version 0.2.0 adds a Web/PWA surface but does **not** port the domain state machine to TypeScript or introduce a parallel reducer. The Nuxt client sends commands and accepts the full canonical Case returned by the API.
 
-P0 is Python-standard-library-only and transport-free. It contains no connector runtime, ModelAdapter, Web/PWA, voice/messenger surface, cloud storage, cross-case learning, Bayesian/POD/numerical location model, or hidden belief weight.
+The plugin runtime still separates provenance (`statements.py`), uncertainty-preserving sequence (`timeline.py`), physical checks (`search_log.py`), categorical one-next-action planning (`planner.py`), guard checks (`guard.py`), plugin-surface local file persistence (`store.py`), and derived artifacts (`artifacts.py`). Safety routing runs before ordinary search reasoning.
 
-Normative requirements live in `REQUIREMENTS.md`; exact traceability lives in `CONTRACT_MATRIX.json`. Eval fixtures are machine-checkable expectations, not proof of live-model semantic compliance. See ADRs under `docs/adr/`.
+## Web/PWA 0.2.0
+
+```text
+Nuxt 4 PWA
+  │  IndexedDB: browser-local canonical Case copy
+  │  sequential command queue / reviewed RU+EN copy
+  ▼
+FastAPI stateless adapter
+  │
+  ├── Python CaseController / planner / guard / artifacts
+  │
+  └── proposal adapter ──► LiteLLM Proxy ──► configured model provider
+```
+
+`apps/web` owns presentation, browser-local IndexedDB persistence, the PWA shell, import/export, and interaction telemetry that excludes raw case content. `apps/api` is a thin stateless transport adapter: it does not store user cases and does not become another domain state owner.
+
+For the AI arm, LiteLLM Proxy is the single live-model gateway. Provider credentials are never shipped to the client; model output crosses the server-side proposal/guard boundary and is converted into a reviewed proposal contract. Checklist and AI arms use the same production shell and the same canonical mutation path.
+
+## Persistence and PWA boundary
+
+Web cases are stored in IndexedDB. The service worker caches only application-shell/static assets: `/api/`, Case payloads, user text, model output, and evaluation records are excluded from the PWA cache and are not submitted through background sync. The persistent-storage API is treated only as a browser capability request, never as a backup guarantee. Explicit JSON export/import provides portability, including deterministic v1→v2 migration.
+
+The plugin surface keeps the existing explicit case-local file persistence contract at `.mind-detective/cases/<case-id>/case.json`; Web persistence does not change that contract and does not create cross-case learning or profiles.
+
+## Verifiable boundaries
+
+Normative requirements live in `REQUIREMENTS.md`, with exact traceability in `CONTRACT_MATRIX.json`. CI validates Python 3.10/3.13, API behavior, Ruff, strict Mypy, frozen pnpm installation, Vitest, production PWA build, Playwright on Chromium/WebKit, and secret scanning against the exact PR head SHA.
+
+Eval/browser fixtures demonstrate specific control paths; they are not proof of scientific validity or arbitrary live-model semantic compliance. Architectural decisions are recorded under `docs/adr/`.

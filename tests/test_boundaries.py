@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -31,6 +32,41 @@ class BoundaryTests(unittest.TestCase):
         forbidden = [plugin / "package.json", plugin / "nuxt.config.ts", plugin / "vite.config.ts"]
         self.assertFalse(any(path.exists() for path in forbidden))
 
+    def test_web_workspace_is_pinned_and_core_stays_dependency_free(self):
+        package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(package["packageManager"], "pnpm@12.3.4")
+        self.assertEqual((ROOT / ".node-version").read_text(encoding="utf-8").strip(), "24.21.0")
+        api_pyproject = (ROOT / "apps/api/pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('fastapi==0.141.1', api_pyproject)
+        self.assertIn('openai==3.8.0', api_pyproject)
+        self.assertNotIn("fastapi", (ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+        self.assertFalse((ROOT / "plugins/mind-detective/apps").exists())
+
+    def test_pnpm_build_script_allowlist_is_version_scoped(self):
+        workspace = (ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
+        self.assertIn("allowBuilds:", workspace)
+        self.assertIn("esbuild@0.28.2: true", workspace)
+        self.assertNotIn("dangerouslyAllowAllBuilds", workspace)
+
+    def test_web_ci_uses_committed_frozen_lockfile(self):
+        self.assertTrue((ROOT / "pnpm-lock.yaml").is_file())
+        ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("pnpm install --frozen-lockfile", ci)
+        self.assertNotIn("pnpm install --no-frozen-lockfile", ci)
+        self.assertNotIn("generated-pnpm-lock", ci)
+
+    def test_web_has_no_client_domain_reducer_or_case_controller_port(self):
+        forbidden = ("reduceCase", "applyCommandLocally", "class CaseController")
+        offenders: list[str] = []
+        for path in sorted((ROOT / "apps/web").rglob("*")):
+            if path.suffix not in {".ts", ".tsx", ".vue"} or "node_modules" in path.parts:
+                continue
+            text = path.read_text(encoding="utf-8")
+            for token in forbidden:
+                if token in text:
+                    offenders.append(f"{path.relative_to(ROOT)}:{token}")
+        self.assertEqual(offenders, [])
+
     def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("'3.10'", ci)
@@ -50,10 +86,12 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[tool.ruff.lint]", pyproject)
         self.assertIn('select = ["E4", "E7", "E9", "F", "B", "UP"]', pyproject)
 
-    def test_pr_ci_checks_out_and_diffs_exact_head_sha(self):
+    def test_pr_ci_checks_out_every_job_at_exact_head_sha(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         exact_ref = "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
-        self.assertEqual(ci.count(exact_ref), 2)
+        checkout_count = sum("uses: actions/checkout@" in line for line in ci.splitlines())
+        self.assertGreaterEqual(checkout_count, 3)
+        self.assertEqual(ci.count(exact_ref), checkout_count)
         self.assertIn('head="${{ github.event.pull_request.head.sha }}"', ci)
         self.assertIn('git diff --name-only "$base" "$head"', ci)
 

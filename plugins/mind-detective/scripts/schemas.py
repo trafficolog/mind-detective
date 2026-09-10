@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-CASE_SCHEMA = "mind-detective-case/v1"
+LEGACY_CASE_SCHEMA = "mind-detective-case/v1"
+CASE_SCHEMA = "mind-detective-case/v2"
 
 
 class SchemaError(ValueError):
@@ -27,6 +28,9 @@ def validate_case_payload(data: Mapping[str, object]) -> None:
         "next_action",
         "constraints",
         "outcome",
+        "current_mode",
+        "interaction_journal",
+        "action_feedback",
     }
     missing = sorted(required - set(data))
     if missing:

@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any
 
 from .case import Case, CaseLifecycle
+from .feedback import ActionFeedback, ActionFeedbackReason
+from .journal import InteractionMode, JournalAuthor, JournalEntry, JournalMode
+from .migrations import migrate_case_payload
 from .planner import (
     CandidateBasis,
     CandidateCheck,
@@ -108,6 +111,28 @@ def _next_action_to_dict(action: NextAction | None) -> dict[str, object] | None:
     }
 
 
+def _journal_to_dict(entry: JournalEntry) -> dict[str, object]:
+    return {
+        "id": entry.id,
+        "author": entry.author.value,
+        "mode": entry.mode.value,
+        "entry_type": entry.entry_type,
+        "text": entry.text,
+        "created_at": entry.created_at,
+        "statement_ids": list(entry.statement_ids),
+        "search_check_ids": list(entry.search_check_ids),
+    }
+
+
+def _feedback_to_dict(feedback: ActionFeedback) -> dict[str, object]:
+    return {
+        "id": feedback.id,
+        "candidate_id": feedback.candidate_id,
+        "reason": feedback.reason.value,
+        "recorded_at": feedback.recorded_at,
+    }
+
+
 def case_to_dict(case: Case) -> dict[str, object]:
     return {
         "schema": CASE_SCHEMA,
@@ -123,6 +148,9 @@ def case_to_dict(case: Case) -> dict[str, object]:
         "next_action": _next_action_to_dict(case.next_action),
         "constraints": list(case.constraints),
         "outcome": case.outcome,
+        "current_mode": case.current_mode.value,
+        "interaction_journal": [_journal_to_dict(item) for item in case.interaction_journal],
+        "action_feedback": [_feedback_to_dict(item) for item in case.action_feedback],
     }
 
 
@@ -157,12 +185,13 @@ def _required_str(data: dict[str, object], field: str) -> str:
 
 def case_from_dict(data: dict[str, object]) -> Case:
     try:
-        validate_case_payload(data)
+        migrated = migrate_case_payload(data)
+        validate_case_payload(migrated)
     except SchemaError as exc:
         raise StoreError(exc.code, str(exc)) from exc
 
     statements = []
-    for raw in _as_list(data["statements"], "statements"):
+    for raw in _as_list(migrated["statements"], "statements"):
         item = _as_dict(raw, "statement")
         event_time = item.get("event_time")
         statements.append(
@@ -181,7 +210,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
             )
         )
 
-    timeline_raw = data["timeline"]
+    timeline_raw = migrated["timeline"]
     timeline: Timeline | None = None
     if timeline_raw is not None:
         item = _as_dict(timeline_raw, "timeline")
@@ -209,7 +238,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
         )
 
     checks = []
-    for raw in _as_list(data["search_checks"], "search_checks"):
+    for raw in _as_list(migrated["search_checks"], "search_checks"):
         item = _as_dict(raw, "search_check")
         completed_at = item.get("completed_at")
         checks.append(
@@ -227,7 +256,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
         )
 
     candidates = []
-    for raw in _as_list(data["candidates"], "candidates"):
+    for raw in _as_list(migrated["candidates"], "candidates"):
         item = _as_dict(raw, "candidate")
         candidates.append(
             CandidateCheck(
@@ -244,7 +273,7 @@ def case_from_dict(data: dict[str, object]) -> Case:
             )
         )
 
-    next_action_raw = data["next_action"]
+    next_action_raw = migrated["next_action"]
     next_action = None
     if next_action_raw is not None:
         item = _as_dict(next_action_raw, "next_action")
@@ -254,29 +283,61 @@ def case_from_dict(data: dict[str, object]) -> Case:
             rationale_codes=_tuple_str(item.get("rationale_codes", []), "rationale_codes"),
         )
 
-    outcome = data["outcome"]
+    journal = []
+    for raw in _as_list(migrated["interaction_journal"], "interaction_journal"):
+        item = _as_dict(raw, "journal_entry")
+        journal.append(
+            JournalEntry(
+                id=_required_str(item, "id"),
+                author=JournalAuthor(_required_str(item, "author")),
+                mode=JournalMode(_required_str(item, "mode")),
+                entry_type=_required_str(item, "entry_type"),
+                text=_required_str(item, "text"),
+                created_at=_required_str(item, "created_at"),
+                statement_ids=_tuple_str(item.get("statement_ids", []), "statement_ids"),
+                search_check_ids=_tuple_str(item.get("search_check_ids", []), "search_check_ids"),
+            )
+        )
+
+    feedback_items = []
+    for raw in _as_list(migrated["action_feedback"], "action_feedback"):
+        item = _as_dict(raw, "action_feedback")
+        feedback_items.append(
+            ActionFeedback(
+                id=_required_str(item, "id"),
+                candidate_id=_required_str(item, "candidate_id"),
+                reason=ActionFeedbackReason(_required_str(item, "reason")),
+                recorded_at=_required_str(item, "recorded_at"),
+            )
+        )
+
+    outcome = migrated["outcome"]
     if outcome is not None and not isinstance(outcome, dict):
         raise StoreError("MD_STORE_SCHEMA_INVALID", "outcome must be an object or null")
 
     try:
-        lifecycle = CaseLifecycle(_required_str(data, "lifecycle"))
+        lifecycle = CaseLifecycle(_required_str(migrated, "lifecycle"))
+        current_mode = InteractionMode(_required_str(migrated, "current_mode"))
     except ValueError as exc:
-        raise StoreError("MD_STORE_SCHEMA_INVALID", "invalid lifecycle") from exc
+        raise StoreError("MD_STORE_SCHEMA_INVALID", "invalid lifecycle or interaction mode") from exc
 
     return Case(
         schema=CASE_SCHEMA,
-        case_id=_required_str(data, "case_id"),
-        item_label=_required_str(data, "item_label"),
-        created_at=_required_str(data, "created_at"),
-        updated_at=_required_str(data, "updated_at"),
+        case_id=_required_str(migrated, "case_id"),
+        item_label=_required_str(migrated, "item_label"),
+        created_at=_required_str(migrated, "created_at"),
+        updated_at=_required_str(migrated, "updated_at"),
         lifecycle=lifecycle,
         statements=tuple(statements),
         timeline=timeline,
         search_checks=tuple(checks),
         candidates=tuple(candidates),
         next_action=next_action,
-        constraints=_tuple_str(data["constraints"], "constraints"),
+        constraints=_tuple_str(migrated["constraints"], "constraints"),
         outcome=outcome,
+        current_mode=current_mode,
+        interaction_journal=tuple(journal),
+        action_feedback=tuple(feedback_items),
     )
 
 
