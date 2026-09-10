@@ -10,7 +10,18 @@ from mind_detective_api.litellm_provider import build_provider_context
 from mind_detective_api.privacy_log import PrivacyLogError, build_privacy_log
 from mind_detective_api.proposals import build_assistant_proposal
 
-from scripts.store import case_from_dict
+from scripts.controller import CaseController
+from scripts.feedback import ActionFeedback, ActionFeedbackReason
+from scripts.planner import (
+    CandidateBasis,
+    CandidateCheck,
+    CheckState,
+    Effort,
+    RouteRelation,
+    Safety,
+    UrgencyRelevance,
+)
+from scripts.store import case_from_dict, case_to_dict
 
 
 class FakeProposalClient:
@@ -77,6 +88,47 @@ class AssistantProposalTests(unittest.IsolatedAsyncioTestCase):
         result = await build_assistant_proposal(self._request("search"), fake)
         self.assertEqual(result.guard_code, "MD_G_LOCATION_PROBABILITY")
         self.assertNotIn("70%", json.dumps(result.case, ensure_ascii=False))
+
+    async def test_rejected_candidate_is_not_repeated_by_assistant(self) -> None:
+        controller = CaseController()
+        case = case_from_dict(create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z"))
+        candidate = CandidateCheck(
+            id="candidate-1",
+            target="рюкзак",
+            route_relation=RouteRelation.DIRECT,
+            check_state=CheckState.UNCHECKED,
+            effort=Effort.LOW,
+            safety=Safety.SAFE,
+            urgency_relevance=UrgencyRelevance.NORMAL,
+            basis=CandidateBasis.EPISODE,
+            based_on=(),
+            rationale=(),
+        )
+        case = controller.replace_candidates(case, (candidate,), "2026-09-10T07:00:30Z")
+        case = controller.record_action_feedback(
+            case,
+            ActionFeedback(
+                id="feedback-1",
+                candidate_id="candidate-1",
+                reason=ActionFeedbackReason.IRRELEVANT,
+                recorded_at="2026-09-10T07:00:40Z",
+            ),
+            "2026-09-10T07:00:40Z",
+        )
+        request = self._request("search").model_copy(update={"case": case_to_dict(case)})
+        fake = FakeProposalClient(
+            ProposalModel(
+                kind="next_action",
+                candidate_id="candidate-1",
+                target="рюкзак",
+                copy_key="next_action.check_target",
+            )
+        )
+
+        result = await build_assistant_proposal(request, fake)
+
+        self.assertNotEqual(result.proposal.candidate_id, "candidate-1")
+        self.assertNotEqual(result.proposal.target, "рюкзак")
 
     def test_provider_context_excludes_duplicate_journal_and_outcome_payloads(self) -> None:
         case = create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z")
