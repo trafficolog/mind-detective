@@ -102,13 +102,15 @@ The following must be identical between B and C arms:
 - persistence behavior;
 - reviewed RU/EN UI copy templates;
 - structured input controls;
-- free-text escape-hatch placement;
+- free-text escape-hatch placement and capture semantics;
 - failure and pending states.
 
 The only intended experimental difference is **how the next structured proposal is generated**:
 
 - **B — structured checklist/controller:** deterministic rules and checklist prompts generate candidates and the next action;
-- **C — checklist/controller + AI:** the LLM may interpret user input and propose structured candidates/clarifications, but all proposals are validated by the same safety/guard/controller path before the same UI templates render them.
+- **C — checklist/controller + AI:** the LLM receives the already-typed canonical Case and may propose the next candidate or neutral clarification intent; every proposal passes the same safety/guard/controller path before the same UI templates render it.
+
+User input capture is not an experimental difference. In both arms, the current deterministic interaction state defines what a structured choice or free-text escape-hatch entry means. Free text is recorded through the same typed Case command in both arms. The AI arm does not get authority to reclassify the user's source, confirmation, mode, or statement type merely because prose is ambiguous.
 
 The LLM does **not** supply arbitrary final display copy in the main shell for `0.2.0`. It supplies structured proposal data. The client renders approved localization keys and structured values. This avoids measuring prose style, animation, or chat affordances as if they were AI reasoning quality.
 
@@ -133,7 +135,7 @@ Every rendered journal entry carries immutable provenance:
 }
 ```
 
-Allowed `mode` values:
+Allowed entry `mode` values:
 
 - `reconstruction`
 - `search`
@@ -148,13 +150,33 @@ Mode presentation must not depend on color alone. Each entry uses:
 - distinct typography/treatment;
 - optional color as a redundant signal.
 
-The current mode banner is rendered by application state, never supplied as model text.
+The current mode banner is rendered from canonical Case state, never supplied as model text.
 
-### 5.1 Case schema implication
+### 5.1 Exact Case v2 additions
 
-`0.2.0` introduces `mind-detective-case/v2` with an `interaction_journal` field. This journal is canonical presentation/audit state owned by the Python controller layer, but it is not treated as independent evidence for planner decisions. Domain facts continue to come from typed statements, timeline events, checks, candidates, constraints, and outcome.
+`0.2.0` introduces `mind-detective-case/v2` with exactly these new top-level concepts beyond the compatible v1 domain data:
 
-`case/v1` must load through an explicit deterministic migration to `case/v2`; no destructive rewrite of existing `0.1.0` exports is allowed.
+```text
+current_mode
+interaction_journal[]
+action_feedback[]
+```
+
+`current_mode` values:
+
+- `reconstruction`
+- `search`
+- `unselected`
+
+A newly created Web case starts in `reconstruction`. A migrated `case/v1` receives `current_mode=unselected` because v1 did not persist mode and migration must not infer one from search history. Resume of such a migrated case shows an application-owned mode choice before accepting new mode-sensitive input.
+
+`interaction_journal` is canonical presentation/audit state owned by the Python controller layer, but it is not independent evidence for planner decisions. Domain facts continue to come from typed statements, timeline events, checks, candidates, constraints, action feedback, and outcome.
+
+`action_feedback` is the categorical record defined in §12.
+
+The browser command queue is explicitly **not** part of Case v2.
+
+`case/v1` loads through an explicit deterministic migration to `case/v2`; no destructive rewrite of existing `0.1.0` exports is allowed.
 
 ## 6. Mobile-first shell
 
@@ -226,6 +248,7 @@ Resume restores the exact case state. No statement is strengthened and no search
 Contains:
 
 - current case label;
+- application-rendered current-mode indicator;
 - lifecycle/pause control;
 - persistent checked/remaining/inaccessible summary;
 - next-action card;
@@ -298,6 +321,8 @@ Rules:
 - permanent validation failure removes the pending operation only after the user is shown the reason/fallback;
 - closing or deleting a case while commands are pending requires explicit resolution of those pending commands.
 
+Because the canonical Case is unchanged while a command is pending, replaying the same command against the same Case input is required to produce the same domain result. Command payloads therefore carry all generated ids/timestamps rather than asking the server to generate new ones on each retry.
+
 This intentionally trades immediate local mutation for a single domain implementation.
 
 A generated or fixture-validated client reducer is deferred to a future architecture gate, not hidden inside `0.2.0`.
@@ -312,7 +337,7 @@ The tap records a new `SearchCheck` with a neutral method value indicating that 
 
 The application must not silently upgrade this to `visual_systematic`, `empty_and_check`, or another more thorough method.
 
-The old concept of `inaccessible` as a search **method** is not used for new Web/PWA checks. Accessibility is orthogonal and represented through `inaccessible_parts` / partial accessibility state.
+The old `SearchMethod.INACCESSIBLE` value remains readable for backward compatibility but is not emitted by new Web/PWA checks. Migration preserves that legacy value rather than guessing a replacement method. New accessibility information is orthogonal and represented through `inaccessible_parts` / partial accessibility state.
 
 If the planner later considers the same target again and method quality materially affects whether repeating the check is useful, the app asks an inline clarification such as:
 
@@ -361,15 +386,37 @@ The next-action card includes `Не подходит` / `Not suitable`.
 
 Optional structured reasons:
 
-- already checked;
-- impossible now;
-- irrelevant;
-- unsafe/uncomfortable;
-- other.
+- `already_checked`
+- `impossible_now`
+- `irrelevant`
+- `unsafe_or_uncomfortable`
+- `other`
 
-A rejection is domain-significant feedback, not only analytics. `case/v2` therefore records candidate-action feedback so the planner does not immediately repeat the same rejected candidate without new evidence or an explicit user reset.
+`case/v2.action_feedback[]` uses this exact record:
 
-The exact representation may be a small `action_feedback` collection owned by `CaseController`; it must remain categorical and must not become a numerical preference score.
+```json
+{
+  "id": "feedback-001",
+  "candidate_id": "candidate-001",
+  "decision": "rejected",
+  "reason": "irrelevant",
+  "created_at": "..."
+}
+```
+
+Allowed `decision` values in `0.2.0`:
+
+- `started`
+- `rejected`
+
+`reason` is required for `rejected` and null for `started`.
+
+A rejection is domain-significant feedback, not only analytics. The planner excludes a candidate whose latest feedback is `rejected` until either:
+
+- the user explicitly chooses `Рассмотреть снова`; or
+- a newly generated candidate has a new candidate id because its evidence basis materially changed.
+
+Feedback remains categorical and must not become a numerical preference score.
 
 ## 13. Persistence, durability and export
 
@@ -441,17 +488,18 @@ Creates a canonical `case/v2` through Python domain code.
 
 Executes deterministic controller operations. Input includes current Case plus one typed command. Output is a complete canonical updated Case.
 
+Typed commands are also the only path for recording structured/user free-text input into canonical state. The UI interaction state determines the command type and allowed statement/search fields before the request is sent; AI does not redefine those fields.
+
 ### 14.3 `proposal/next`
 
 Input includes:
 
 - canonical current Case;
-- current interaction mode;
+- current interaction mode from that Case;
 - locale;
-- optional user input;
 - experimental arm/config.
 
-Checklist arm uses deterministic proposal generation. AI arm may call the configured LLM to produce **structured proposal objects only**. The response that reaches the client has already passed safety, guard, and controller validation.
+Checklist arm uses deterministic proposal generation. AI arm may call the configured LLM to produce **structured next-proposal objects only** from the same canonical Case. The response that reaches the client has already passed safety, guard, and controller validation.
 
 ### 14.4 `case/validate`
 
@@ -459,25 +507,24 @@ Validates/migrates an imported or locally restored Case without changing its evi
 
 ## 15. Model boundary
 
-For `0.2.0` the model is a proposal generator, not a UI copywriter or state reducer.
+For `0.2.0` the model is a next-proposal generator, not an input classifier, UI copywriter, or state reducer.
 
 Model outputs may propose:
 
-- statement classification consistent with origin rules;
 - neutral clarification intent;
 - search candidate;
-- categorical rationale references;
-- candidate action feedback interpretation when explicit user text needs mapping.
+- categorical rationale references tied to existing Case ids.
 
-Model outputs may not directly set:
+Model outputs may not directly set or reinterpret:
 
+- user statement source/type/confirmation;
 - lifecycle;
+- current mode;
 - check completion;
 - `found` outcome;
-- mode label;
 - timestamps;
-- user confirmation;
-- search method quality unless user supplied it;
+- search method quality;
+- action feedback;
 - probability/confidence score;
 - UI safety copy.
 
@@ -503,7 +550,7 @@ All application-controlled strings are localization keys with RU and EN resource
 
 This includes, at minimum:
 
-- reconstruction/search/system mode labels;
+- reconstruction/search/system/unselected mode labels;
 - guard-block copy;
 - safety limitation copy;
 - empty planner state;
@@ -583,7 +630,7 @@ No background sync of cases or queued commands is enabled in `0.2.0`. Command re
 
 `plugins/mind-detective/scripts/` remains stdlib-only.
 
-Web dependencies live under an application boundary such as:
+Web dependencies live under this application boundary:
 
 ```text
 apps/
@@ -631,11 +678,11 @@ The implementation plan should assign exact tests to at least these requirements
 
 - `MD-WEB-REQ-SHELL-01` — checklist and AI use one shell/navigation/action card.
 - `MD-WEB-REQ-MODE-01` — every journal entry persists reconstruction/search/system provenance.
-- `MD-WEB-REQ-MODE-02` — mode is represented by text/icon/typography, not color alone.
+- `MD-WEB-REQ-MODE-02` — current mode is canonical Case state and presentation uses text/icon/typography, not color alone.
 - `MD-WEB-REQ-STATE-01` — no client domain reducer exists.
 - `MD-WEB-REQ-QUEUE-01` — mutations use a sequential retryable pending-command queue.
 - `MD-WEB-REQ-CHECK-01` — one-tap check records neutral `reported_check` quality.
-- `MD-WEB-REQ-CHECK-02` — inaccessible state is orthogonal to check method.
+- `MD-WEB-REQ-CHECK-02` — inaccessible state is orthogonal to new check method capture.
 - `MD-WEB-REQ-SUMMARY-01` — checked/remaining/inaccessible summary is persistently visible.
 - `MD-WEB-REQ-CREATE-01` — first case creation is one field + one primary button.
 - `MD-WEB-REQ-RESUME-01` — active/paused cases are locally listable and resumable.
@@ -650,6 +697,7 @@ The implementation plan should assign exact tests to at least these requirements
 - `MD-WEB-REQ-I18N-01` — required RU/EN safety/product strings have parity tests.
 - `MD-WEB-REQ-EVAL-01` — shown/start/reject and found-context events are captured without raw case text.
 - `MD-WEB-REQ-CORE-01` — Web/API reuse Python CaseController; no TS port.
+- `MD-WEB-REQ-RESEARCH-01` — B/C differ only in next-proposal generation, not state capture or rendering shell.
 - `MD-WEB-REQ-RELEASE-01` — publication retains exact-main/full-SHA immutable release governance.
 
 ## 24. Acceptance criteria for 0.2.0
@@ -659,28 +707,31 @@ The implementation plan should assign exact tests to at least these requirements
 1. A user can create a case from one field and one button.
 2. Active/paused local cases can be resumed without semantic strengthening.
 3. Mobile shell always exposes search-progress summary and one next-action/empty-state card.
-4. Checklist and AI arms use the same shell and reviewed rendering templates.
+4. Checklist and AI arms use the same shell, input capture semantics, and reviewed rendering templates; only next-proposal generation differs.
 5. Reconstruction/search provenance remains visible on every historical journal entry after reload.
-6. No client-side copy of CaseController or optimistic domain reducer exists.
-7. State-mutating network actions use visible pending state and sequential retry.
-8. A one-tap check does not pretend a thorough method was performed.
-9. Inaccessible parts are captured separately from method quality.
-10. Duplicate/previous checks can be annotated inline on the current next action.
-11. Planner-empty state does not invent a location.
-12. Guard-blocked AI output is not silently shown or silently regenerated; a visible system event and safe fallback are produced.
-13. Users can reject a next action and the planner does not immediately repeat it without new evidence/reset.
-14. `found` records whether success occurred during the suggested action or elsewhere/unplanned.
-15. Browser persistence capability is checked/requested and storage limits are explained honestly.
-16. Users can explicitly export/import canonical versioned cases; invalid imports fail closed.
-17. Clearing local browser/app data is disclosed as a data-loss risk because no cloud backup exists.
-18. Service worker caches contain no case/user/model/API/evaluation payloads.
-19. RU/EN reviewed product and safety copy stay in parity.
-20. Evaluation logs include shown/start/reject/guard/pending/found-context signals without raw sensitive text.
-21. `plugins/mind-detective/scripts/` remains transport-free and stdlib-only.
-22. FastAPI/model dependencies remain outside the plugin core.
-23. Existing `case/v1` exports migrate deterministically to `case/v2`.
-24. Existing `0.1.0` immutable releases/tags remain untouched.
-25. `0.2.0` uses the existing full-SHA CI/release governance and requires explicit human publication authorization.
+6. Current mode is application-rendered from Case v2, not model prose.
+7. `case/v1` migration sets mode to `unselected` rather than inferring past context.
+8. No client-side copy of CaseController or optimistic domain reducer exists.
+9. State-mutating network actions use visible pending state and sequential retry.
+10. Replaying the same pending command uses the same ids/timestamps and is deterministic against unchanged Case input.
+11. A one-tap check does not pretend a thorough method was performed.
+12. Inaccessible parts are captured separately from new method quality capture, while legacy v1 values remain readable.
+13. Duplicate/previous checks can be annotated inline on the current next action.
+14. Planner-empty state does not invent a location.
+15. Guard-blocked AI output is not silently shown or silently regenerated; a visible system event and safe fallback are produced.
+16. Users can reject a next action and the planner does not immediately repeat it without new evidence/reset.
+17. `found` records whether success occurred during the suggested action or elsewhere/unplanned.
+18. Browser persistence capability is checked/requested and storage limits are explained honestly.
+19. Users can explicitly export/import canonical versioned cases; invalid imports fail closed.
+20. Clearing local browser/app data is disclosed as a data-loss risk because no cloud backup exists.
+21. Service worker caches contain no case/user/model/API/evaluation payloads.
+22. RU/EN reviewed product and safety copy stay in parity.
+23. Evaluation logs include shown/start/reject/guard/pending/found-context signals without raw sensitive text.
+24. `plugins/mind-detective/scripts/` remains transport-free and stdlib-only.
+25. FastAPI/model dependencies remain outside the plugin core.
+26. Existing `case/v1` exports migrate deterministically to `case/v2` without inferred evidence or mode.
+27. Existing `0.1.0` immutable releases/tags remain untouched.
+28. `0.2.0` uses the existing full-SHA CI/release governance and requires explicit human publication authorization.
 
 ## 25. Explicitly out of scope
 
@@ -731,7 +782,7 @@ always-visible search summary
         +
 create / resume / close / export flows
         +
-structured checklist-vs-AI proposal generation
+structured checklist-vs-AI next-proposal generation
         +
 existing Python CaseController
         +
