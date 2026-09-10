@@ -27,6 +27,7 @@ FORBIDDEN_IMPORT_PREFIXES: tuple[str, ...] = (
 )
 FORBIDDEN_RUNTIME_FILES: tuple[str, ...] = ("zones.py", "ach.py", "model_adapter.py")
 FORBIDDEN_PLUGIN_MANIFESTS: tuple[str, ...] = ("package.json", "nuxt.config.ts", "vite.config.ts")
+FORBIDDEN_PLUGIN_DIRECTORIES: tuple[str, ...] = ("apps",)
 
 
 def _normalized_forbidden_import(module: str) -> str | None:
@@ -67,6 +68,9 @@ def validate_boundaries(root: Path) -> list[str]:
     for name in FORBIDDEN_PLUGIN_MANIFESTS:
         if (plugin / name).exists():
             errors.append(f"MD_BOUNDARY_FORBIDDEN_FILE:plugins/mind-detective/{name}")
+    for name in FORBIDDEN_PLUGIN_DIRECTORIES:
+        if (plugin / name).exists():
+            errors.append(f"MD_BOUNDARY_FORBIDDEN_DIR:plugins/mind-detective/{name}")
     for path in sorted(runtime.glob("*.py")):
         for code in scan_source_for_forbidden_imports(path.read_text(encoding="utf-8")):
             errors.append(f"{code}:{path.relative_to(root)}")
@@ -129,10 +133,10 @@ def validate_repository(root: Path) -> list[str]:
         if not isinstance(plugins, list) or len(plugins) != 1 or not isinstance(plugins[0], dict):
             errors.append(f"MD_REPO_PLUGIN_COUNT:{label}")
             continue
-        plugin = plugins[0]
-        if plugin.get("name") != CANONICAL_NAME:
+        plugin_payload = plugins[0]
+        if plugin_payload.get("name") != CANONICAL_NAME:
             errors.append(f"MD_REPO_NAME:{label}")
-        if plugin.get("version") != CANONICAL_VERSION:
+        if plugin_payload.get("version") != CANONICAL_VERSION:
             errors.append(f"MD_REPO_VERSION:{label}")
 
     return errors
