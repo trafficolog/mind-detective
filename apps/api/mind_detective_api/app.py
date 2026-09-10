@@ -12,10 +12,12 @@ from .contracts import (
     CaseCreateRequest,
     CaseResponse,
     CaseValidateRequest,
+    ExecutionContractResponse,
     ProposalRequest,
     ProposalResponse,
 )
 from .core_bridge import create_case_payload, validate_or_migrate_case_payload
+from .execution_contract import ExecutionContractMismatch, execution_contract
 from .proposals import build_proposal
 
 _DOMAIN_ERROR = "MD_WEB_DOMAIN_ERROR"
@@ -32,17 +34,22 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_web_origins(),
     allow_credentials=False,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
 
-def _error_response(code: str, message: str) -> JSONResponse:
-    return JSONResponse(status_code=422, content={"code": code, "message": message})
+def _error_response(code: str, message: str, status_code: int = 422) -> JSONResponse:
+    return JSONResponse(status_code=status_code, content={"code": code, "message": message})
 
 
 def _domain_error(exc: ValueError) -> JSONResponse:
     return _error_response(str(getattr(exc, "code", _DOMAIN_ERROR)), str(exc))
+
+
+@app.get("/api/v1/execution/contract", response_model=ExecutionContractResponse)
+def get_execution_contract() -> ExecutionContractResponse:
+    return execution_contract()
 
 
 @app.post("/api/v1/case/create", response_model=CaseResponse)
@@ -74,5 +81,7 @@ def command_case(request: CaseCommandRequest) -> CaseResponse | JSONResponse:
 async def next_proposal(request: ProposalRequest) -> ProposalResponse | JSONResponse:
     try:
         return await build_proposal(request)
+    except ExecutionContractMismatch as exc:
+        return _error_response(exc.code, str(exc), status_code=409)
     except ValueError as exc:
         return _domain_error(exc)
