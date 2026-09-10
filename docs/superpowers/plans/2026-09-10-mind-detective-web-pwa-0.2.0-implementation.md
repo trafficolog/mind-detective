@@ -1042,7 +1042,7 @@ git commit -m "test: lock web copy and scenario accessibility"
 - Modify: `tests/test_repository_contracts.py`
 
 **Interfaces:**
-- Every `MD-WEB-REQ-*` requirement in the approved spec maps to an exact selector.
+- Every `MD-WEB-REQ-*` requirement in the approved spec maps to an exact selector, including `MD-WEB-REQ-PRIVACY-01`.
 - Add explicit privacy requirement for transient assistant-provider processing while persistence remains browser-local.
 - CI adds pinned Node/pnpm install, Vitest, Nuxt build, Playwright Chromium + WebKit, and API tests while retaining all existing Python/core/release gates.
 - Release manifest declares exactly repository `0.2.0` and plugin `mind-detective-v0.2.0`.
