@@ -189,71 +189,55 @@ def _ensure_mutable(case: dict[str, object]) -> None:
         portable_error("MD_CASE_TERMINAL", f"case is terminal: {lifecycle}")
 
 
-def _journal_mode(case: dict[str, object]) -> str:
-    mode = _required_str(case, "current_mode")
-    if mode in {"reconstruction", "search"}:
-        return mode
-    portable_error("MD_WEB_MODE_REQUIRED", "select an interaction mode before recording journal activity")
+def _primitive_copy(case: dict[str, object], now: str) -> dict[str, object]:
+    _ensure_case_shape(case)
+    _ensure_mutable(case)
+    if not now:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "now must be a non-empty string")
+    result = clone_json(case)
+    result["updated_at"] = now
+    return result
 
 
-def _normalize_candidate_target(value: str) -> str:
-    folded = unicode_casefold(value).replace("ё", "е")
-    return " ".join(split_python_whitespace(folded))
+def set_mode_json(case: dict[str, object], mode: str, now: str) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    if mode not in _INTERACTION_MODES:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid interaction mode")
+    result["current_mode"] = mode
+    return result
 
 
-def _append_search_candidate(
+def append_journal_entry_json(
     case: dict[str, object],
-    *,
-    statement_id: str,
-    target: str,
-) -> None:
-    candidates = _as_list(case["candidates"], "candidates")
-    normalized = _normalize_candidate_target(target)
-    for raw in candidates:
-        candidate = _as_dict(raw, "candidate")
-        existing_target = _required_str(candidate, "target")
-        if _normalize_candidate_target(existing_target) == normalized:
-            return
-    candidates.append(
-        {
-            "id": f"candidate-{statement_id}",
-            "target": target,
-            "route_relation": "none",
-            "check_state": "unchecked",
-            "effort": "low",
-            "safety": "caution",
-            "urgency_relevance": "normal",
-            "basis": "episode",
-            "based_on": [statement_id],
-            "rationale": ["MD_PLAN_USER_SUPPORTED"],
-        }
-    )
-
-
-def _append_journal(
-    case: dict[str, object],
-    *,
-    command_id: str,
-    mode: str,
-    entry_type: str,
-    text: str,
+    entry: dict[str, object],
     now: str,
-    statement_ids: list[str] | None = None,
-    search_check_ids: list[str] | None = None,
-) -> None:
-    journal = _as_list(case["interaction_journal"], "interaction_journal")
-    journal.append(
-        {
-            "id": f"journal-{command_id}",
-            "author": "user",
-            "mode": mode,
-            "entry_type": entry_type,
-            "text": text,
-            "created_at": now,
-            "statement_ids": statement_ids or [],
-            "search_check_ids": search_check_ids or [],
-        }
-    )
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    journal = _as_list(result["interaction_journal"], "interaction_journal")
+    journal.append(clone_json(entry))
+    return result
+
+
+def record_action_feedback_json(
+    case: dict[str, object],
+    feedback: dict[str, object],
+    now: str,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    items = _as_list(result["action_feedback"], "action_feedback")
+    items.append(clone_json(feedback))
+    return result
+
+
+def add_statement_json(
+    case: dict[str, object],
+    statement: dict[str, object],
+    now: str,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    statements = _as_list(result["statements"], "statements")
+    statements.append(clone_json(statement))
+    return result
 
 
 def _candidate_state_for_check(check: dict[str, object]) -> str:
@@ -272,115 +256,31 @@ def _apply_check_to_candidates(case: dict[str, object], check: dict[str, object]
     candidates = _as_list(case["candidates"], "candidates")
     for raw in candidates:
         candidate = _as_dict(raw, "candidate")
-        candidate_id = _required_str(candidate, "id")
-        if candidate_id in based_on:
+        if _required_str(candidate, "id") in based_on:
             candidate["check_state"] = state
 
 
-def _apply_set_mode(case: dict[str, object], payload: dict[str, object]) -> None:
-    mode = _required_str(payload, "mode")
-    if mode not in _INTERACTION_MODES:
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid interaction mode")
-    case["current_mode"] = mode
-
-
-def _apply_add_statement(
+def record_search_check_json(
     case: dict[str, object],
-    payload: dict[str, object],
-    command_id: str,
+    check: dict[str, object],
     now: str,
-) -> None:
-    mode = _journal_mode(case)
-    source = _required_str(payload, "source")
-    if source != "user":
-        portable_error("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
-    statement_type = _required_str(payload, "statement_type")
-    if statement_type not in _STATEMENT_TYPES:
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid statement_type")
-    statement_id = _required_str(payload, "statement_id")
-    original_text = _required_str(payload, "original_text")
-    statement = {
-        "id": statement_id,
-        "source": source,
-        "statement_type": statement_type,
-        "original_text": original_text,
-        "recorded_at": now,
-        "event_time": _optional_str(payload, "event_time"),
-        "user_confirmation": bool(payload.get("user_confirmation", False)),
-        "supporting_evidence_ids": _string_list(payload, "supporting_evidence_ids"),
-        "limitations": _string_list(payload, "limitations"),
-    }
-    statements = _as_list(case["statements"], "statements")
-    statements.append(statement)
-    if mode == "search" and statement_type == "search_suggestion":
-        _append_search_candidate(case, statement_id=statement_id, target=original_text)
-    _append_journal(
-        case,
-        command_id=command_id,
-        mode=mode,
-        entry_type="statement",
-        text=original_text,
-        now=now,
-        statement_ids=[statement_id],
-    )
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    checks = _as_list(result["search_checks"], "search_checks")
+    copied_check = clone_json(check)
+    checks.append(copied_check)
+    _apply_check_to_candidates(result, copied_check)
+    return result
 
 
-def _apply_record_search_check(
+def refine_search_check_json(
     case: dict[str, object],
-    payload: dict[str, object],
-    command_id: str,
+    check_id: str,
+    method: str,
+    inaccessible_parts: list[str],
     now: str,
-) -> None:
-    mode = _journal_mode(case)
-    method_raw = payload.get("method", "reported_check")
-    if not isinstance(method_raw, str):
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "method must be a string")
-    if method_raw == "inaccessible":
-        portable_error("MD_SEARCH_METHOD_INVALID", "inaccessible is not a Web check method")
-    if method_raw not in _SEARCH_METHODS:
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
-    result_raw = payload.get("result", "not_found")
-    if not isinstance(result_raw, str) or result_raw not in _SEARCH_RESULTS:
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search result")
-    started_at = payload.get("started_at", now)
-    completed_at = payload.get("completed_at", now)
-    if not isinstance(started_at, str):
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "started_at must be a string")
-    if completed_at is not None and not isinstance(completed_at, str):
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "completed_at must be a string or null")
-    check_id = _required_str(payload, "check_id")
-    target = _required_str(payload, "target")
-    check: dict[str, object] = {
-        "id": check_id,
-        "target": target,
-        "method": method_raw,
-        "started_at": started_at,
-        "completed_at": completed_at,
-        "result": result_raw,
-        "inaccessible_parts": _string_list(payload, "inaccessible_parts"),
-        "based_on": _string_list(payload, "based_on"),
-        "notes": _string_list(payload, "notes"),
-    }
-    checks = _as_list(case["search_checks"], "search_checks")
-    checks.append(check)
-    _apply_check_to_candidates(case, check)
-    _append_journal(
-        case,
-        command_id=command_id,
-        mode=mode,
-        entry_type="search_check",
-        text=target,
-        now=now,
-        search_check_ids=[check_id],
-    )
-
-
-def _apply_refine_search_check(
-    case: dict[str, object],
-    payload: dict[str, object],
-) -> None:
-    check_id = _required_str(payload, "check_id")
-    method = _required_str(payload, "method")
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
     if method == "inaccessible":
         portable_error(
             "MD_SEARCH_METHOD_INVALID",
@@ -388,61 +288,171 @@ def _apply_refine_search_check(
         )
     if method not in _SEARCH_METHODS:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
-    inaccessible_parts = _string_list(payload, "inaccessible_parts")
-    checks = _as_list(case["search_checks"], "search_checks")
+    checks = _as_list(result["search_checks"], "search_checks")
     found: dict[str, object] | None = None
     for raw in checks:
         check = _as_dict(raw, "search_check")
         if _required_str(check, "id") == check_id:
             check["method"] = method
-            check["inaccessible_parts"] = inaccessible_parts
+            check["inaccessible_parts"] = clone_json(inaccessible_parts)
             found = check
             break
     if found is None:
         portable_error("MD_SEARCH_CHECK_NOT_FOUND", f"search check not found: {check_id}")
-    _apply_check_to_candidates(case, found)
+    _apply_check_to_candidates(result, found)
+    return result
 
 
-def _apply_reject_next_action(
+def pause_json(case: dict[str, object], now: str) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    if _required_str(case, "lifecycle") != "active":
+        portable_error("MD_CASE_STATE", "only active cases can be paused")
+    result["lifecycle"] = "paused"
+    return result
+
+
+def resume_json(case: dict[str, object], now: str) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    if _required_str(case, "lifecycle") != "paused":
+        portable_error("MD_CASE_STATE", "only paused cases can be resumed")
+    result["lifecycle"] = "active"
+    return result
+
+
+def close_found_json(
     case: dict[str, object],
-    payload: dict[str, object],
     now: str,
-) -> None:
-    reason = _required_str(payload, "reason")
-    if reason not in _FEEDBACK_REASONS:
-        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid action feedback reason")
-    feedback = _as_list(case["action_feedback"], "action_feedback")
-    feedback.append(
+    outcome: dict[str, object] | None = None,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    result["lifecycle"] = "closed_found"
+    result["outcome"] = clone_json(outcome)
+    return result
+
+
+def close_unresolved_json(
+    case: dict[str, object],
+    now: str,
+    outcome: dict[str, object] | None = None,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    result["lifecycle"] = "closed_unresolved"
+    result["outcome"] = clone_json(outcome)
+    return result
+
+
+def _journal_mode(case: dict[str, object]) -> str:
+    mode = _required_str(case, "current_mode")
+    if mode in {"reconstruction", "search"}:
+        return mode
+    portable_error("MD_WEB_MODE_REQUIRED", "select an interaction mode before recording journal activity")
+
+
+def _normalize_candidate_target(value: str) -> str:
+    folded = unicode_casefold(value).replace("ё", "е")
+    return " ".join(split_python_whitespace(folded))
+
+
+def _append_search_candidate(
+    case: dict[str, object],
+    *,
+    statement_id: str,
+    target: str,
+) -> dict[str, object]:
+    result = clone_json(case)
+    candidates = _as_list(result["candidates"], "candidates")
+    normalized = _normalize_candidate_target(target)
+    for raw in candidates:
+        candidate = _as_dict(raw, "candidate")
+        if _normalize_candidate_target(_required_str(candidate, "target")) == normalized:
+            return result
+    candidates.append(
         {
-            "id": _required_str(payload, "feedback_id"),
-            "candidate_id": _required_str(payload, "candidate_id"),
-            "reason": reason,
-            "recorded_at": now,
+            "id": f"candidate-{statement_id}",
+            "target": target,
+            "route_relation": "none",
+            "check_state": "unchecked",
+            "effort": "low",
+            "safety": "caution",
+            "urgency_relevance": "normal",
+            "basis": "episode",
+            "based_on": [statement_id],
+            "rationale": ["MD_PLAN_USER_SUPPORTED"],
         }
     )
+    return result
 
 
-def _apply_lifecycle(case: dict[str, object], command_type: str, payload: dict[str, object]) -> None:
-    lifecycle = _required_str(case, "lifecycle")
-    if command_type == "pause":
-        if lifecycle != "active":
-            portable_error("MD_CASE_STATE", "only active cases can be paused")
-        case["lifecycle"] = "paused"
-        return
-    if command_type == "resume":
-        if lifecycle != "paused":
-            portable_error("MD_CASE_STATE", "only paused cases can be resumed")
-        case["lifecycle"] = "active"
-        return
-    if command_type == "close_found":
-        case["lifecycle"] = "closed_found"
-        case["outcome"] = _outcome(payload)
-        return
-    if command_type == "close_unresolved":
-        case["lifecycle"] = "closed_unresolved"
-        case["outcome"] = _outcome(payload)
-        return
-    portable_error("MD_WEB_COMMAND_TYPE", f"unsupported lifecycle command: {command_type}")
+def _web_journal_entry(
+    *,
+    command_id: str,
+    mode: str,
+    entry_type: str,
+    text: str,
+    now: str,
+    statement_ids: list[str] | None = None,
+    search_check_ids: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "id": f"journal-{command_id}",
+        "author": "user",
+        "mode": mode,
+        "entry_type": entry_type,
+        "text": text,
+        "created_at": now,
+        "statement_ids": statement_ids or [],
+        "search_check_ids": search_check_ids or [],
+    }
+
+
+def _statement_from_payload(payload: dict[str, object], now: str) -> dict[str, object]:
+    source = _required_str(payload, "source")
+    if source != "user":
+        portable_error("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
+    statement_type = _required_str(payload, "statement_type")
+    if statement_type not in _STATEMENT_TYPES:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid statement_type")
+    return {
+        "id": _required_str(payload, "statement_id"),
+        "source": source,
+        "statement_type": statement_type,
+        "original_text": _required_str(payload, "original_text"),
+        "recorded_at": now,
+        "event_time": _optional_str(payload, "event_time"),
+        "user_confirmation": bool(payload.get("user_confirmation", False)),
+        "supporting_evidence_ids": _string_list(payload, "supporting_evidence_ids"),
+        "limitations": _string_list(payload, "limitations"),
+    }
+
+
+def _check_from_payload(payload: dict[str, object], now: str) -> dict[str, object]:
+    method = payload.get("method", "reported_check")
+    if not isinstance(method, str):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "method must be a string")
+    if method == "inaccessible":
+        portable_error("MD_SEARCH_METHOD_INVALID", "inaccessible is not a Web check method")
+    if method not in _SEARCH_METHODS:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
+    search_result = payload.get("result", "not_found")
+    if not isinstance(search_result, str) or search_result not in _SEARCH_RESULTS:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search result")
+    started_at = payload.get("started_at", now)
+    completed_at = payload.get("completed_at", now)
+    if not isinstance(started_at, str):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "started_at must be a string")
+    if completed_at is not None and not isinstance(completed_at, str):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "completed_at must be a string or null")
+    return {
+        "id": _required_str(payload, "check_id"),
+        "target": _required_str(payload, "target"),
+        "method": method,
+        "started_at": started_at,
+        "completed_at": completed_at,
+        "result": search_result,
+        "inaccessible_parts": _string_list(payload, "inaccessible_parts"),
+        "based_on": _string_list(payload, "based_on"),
+        "notes": _string_list(payload, "notes"),
+    }
 
 
 def apply_command(
@@ -460,25 +470,89 @@ def apply_command(
     if _required_str(case, "updated_at") != expected_updated_at:
         portable_error("MD_WEB_STALE_COMMAND", "command was created for an older case state")
     _validate_payload(command_type, payload)
-    _ensure_mutable(case)
 
-    result = clone_json(case)
     if command_type == "set_mode":
-        _apply_set_mode(result, payload)
-    elif command_type == "add_statement":
-        _apply_add_statement(result, payload, command_id, now)
-    elif command_type == "record_search_check":
-        _apply_record_search_check(result, payload, command_id, now)
-    elif command_type == "refine_search_check":
-        _apply_refine_search_check(result, payload)
-    elif command_type == "reject_next_action":
-        _apply_reject_next_action(result, payload, now)
-    elif command_type in {"pause", "resume", "close_found", "close_unresolved"}:
-        _apply_lifecycle(result, command_type, payload)
-    else:
-        portable_error("MD_WEB_COMMAND_TYPE", f"unsupported command: {command_type}")
-    result["updated_at"] = now
-    return result
+        return set_mode_json(case, _required_str(payload, "mode"), now)
+    if command_type == "add_statement":
+        mode = _journal_mode(case)
+        statement = _statement_from_payload(payload, now)
+        result = add_statement_json(case, statement, now)
+        if mode == "search" and statement["statement_type"] == "search_suggestion":
+            result = _append_search_candidate(
+                result,
+                statement_id=_required_str(statement, "id"),
+                target=_required_str(statement, "original_text"),
+            )
+        return append_journal_entry_json(
+            result,
+            _web_journal_entry(
+                command_id=command_id,
+                mode=mode,
+                entry_type="statement",
+                text=_required_str(statement, "original_text"),
+                now=now,
+                statement_ids=[_required_str(statement, "id")],
+            ),
+            now,
+        )
+    if command_type == "record_search_check":
+        mode = _journal_mode(case)
+        check = _check_from_payload(payload, now)
+        result = record_search_check_json(case, check, now)
+        return append_journal_entry_json(
+            result,
+            _web_journal_entry(
+                command_id=command_id,
+                mode=mode,
+                entry_type="search_check",
+                text=_required_str(check, "target"),
+                now=now,
+                search_check_ids=[_required_str(check, "id")],
+            ),
+            now,
+        )
+    if command_type == "refine_search_check":
+        return refine_search_check_json(
+            case,
+            _required_str(payload, "check_id"),
+            _required_str(payload, "method"),
+            _string_list(payload, "inaccessible_parts"),
+            now,
+        )
+    if command_type == "reject_next_action":
+        reason = _required_str(payload, "reason")
+        if reason not in _FEEDBACK_REASONS:
+            portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid action feedback reason")
+        feedback: dict[str, object] = {
+            "id": _required_str(payload, "feedback_id"),
+            "candidate_id": _required_str(payload, "candidate_id"),
+            "reason": reason,
+            "recorded_at": now,
+        }
+        return record_action_feedback_json(case, feedback, now)
+    if command_type == "pause":
+        return pause_json(case, now)
+    if command_type == "resume":
+        return resume_json(case, now)
+    if command_type == "close_found":
+        return close_found_json(case, now, _outcome(payload))
+    if command_type == "close_unresolved":
+        return close_unresolved_json(case, now, _outcome(payload))
+    portable_error("MD_WEB_COMMAND_TYPE", f"unsupported command: {command_type}")
 
 
-__all__ = ["PortableKernelError", "apply_command", "create_case"]
+__all__ = [
+    "PortableKernelError",
+    "add_statement_json",
+    "append_journal_entry_json",
+    "apply_command",
+    "close_found_json",
+    "close_unresolved_json",
+    "create_case",
+    "pause_json",
+    "record_action_feedback_json",
+    "record_search_check_json",
+    "refine_search_check_json",
+    "resume_json",
+    "set_mode_json",
+]
