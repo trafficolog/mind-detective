@@ -96,11 +96,11 @@ def _vector(vector_id: str, operation: str, input_value: dict[str, object]) -> d
             command[key] = value
         expected = _capture(lambda: apply_command(case, command))
     elif operation == "proposal":
-        case = input_value["case"]
+        proposal_case = input_value["case"]
         mode = input_value["mode"]
-        if not isinstance(case, dict) or not isinstance(mode, str):
+        if not isinstance(proposal_case, dict) or not isinstance(mode, str):
             raise AssertionError("proposal vector shape")
-        expected = _capture(lambda: build_checklist_proposal_json(case, mode))
+        expected = _capture(lambda: build_checklist_proposal_json(proposal_case, mode))
     elif operation == "planner":
         candidates = input_value["candidates"]
         if not isinstance(candidates, list):
