@@ -9,6 +9,7 @@ sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.case import CaseLifecycle  # noqa: E402
 from scripts.controller import CaseController  # noqa: E402
+from scripts.journal import InteractionMode  # noqa: E402
 from scripts.planner import (  # noqa: E402
     CandidateBasis,
     CandidateCheck,
@@ -75,6 +76,8 @@ class StoreTests(unittest.TestCase):
             loaded = load_case("case-1", root)
             self.assertEqual(path, root / ".mind-detective/cases/case-1/case.json")
             self.assertEqual(loaded, case)
+            self.assertEqual(loaded.schema, "mind-detective-case/v2")
+            self.assertEqual(loaded.current_mode, InteractionMode.UNSELECTED)
             self.assertEqual(loaded.lifecycle, CaseLifecycle.PAUSED)
 
     def test_save_creates_no_profile_or_cross_case_index(self):
