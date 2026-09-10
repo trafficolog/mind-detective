@@ -20,13 +20,13 @@ from scripts.store import case_from_dict, case_to_dict
 
 
 class ChecklistProposalTests(unittest.TestCase):
-    def test_empty_search_case_returns_information_needed_without_location(self):
+    def test_empty_search_case_returns_information_needed_without_location(self) -> None:
         case = create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z")
         proposal = build_checklist_proposal(case, "search")
         self.assertEqual(proposal.kind, "need_more_information")
         self.assertIsNone(proposal.target)
 
-    def test_existing_safe_candidate_becomes_structured_next_action(self):
+    def test_existing_safe_candidate_becomes_structured_next_action(self) -> None:
         controller = CaseController()
         case = case_from_dict(create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z"))
         candidate = CandidateCheck(
@@ -48,7 +48,7 @@ class ChecklistProposalTests(unittest.TestCase):
         self.assertEqual(proposal.target, "карманы куртки")
         self.assertFalse(hasattr(proposal, "probability"))
 
-    def test_rejected_candidate_is_not_immediately_repeated(self):
+    def test_rejected_candidate_is_not_immediately_repeated(self) -> None:
         controller = CaseController()
         case = case_from_dict(create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z"))
         first = CandidateCheck(
@@ -89,7 +89,7 @@ class ChecklistProposalTests(unittest.TestCase):
         proposal = build_checklist_proposal(case_to_dict(case), "search")
         self.assertEqual(proposal.candidate_id, "candidate-2")
 
-    def test_reconstruction_never_generates_location_target(self):
+    def test_reconstruction_never_generates_location_target(self) -> None:
         case = create_case_payload("case-1", "ключи", "2026-09-10T07:00:00Z")
         proposal = build_checklist_proposal(case, "reconstruction")
         self.assertEqual(proposal.kind, "clarification")
