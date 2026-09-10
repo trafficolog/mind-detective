@@ -1,6 +1,9 @@
 import { readonly, type DeepReadonly, type Ref } from 'vue'
 import type { CaseV2 } from '~/lib/api/contracts'
-import { createIndexedDbCaseRepository } from '~/lib/storage/indexeddb'
+import {
+  createIndexedDbCaseRepository,
+  type ExecutionReceipt,
+} from '~/lib/storage/indexeddb'
 
 const repository = createIndexedDbCaseRepository()
 
@@ -9,6 +12,9 @@ export interface CaseRepositoryComposable {
   refresh(): Promise<CaseV2[]>
   get(caseId: string): Promise<CaseV2 | null>
   put(caseValue: CaseV2): Promise<void>
+  createOnly(caseValue: CaseV2): Promise<CaseV2>
+  getReceipt(commandId: string): Promise<ExecutionReceipt | null>
+  applyWithReceipt(caseValue: CaseV2, receipt: ExecutionReceipt): Promise<CaseV2>
   remove(caseId: string): Promise<void>
 }
 
@@ -29,6 +35,22 @@ export function useCaseRepository(): CaseRepositoryComposable {
     await refresh()
   }
 
+  async function createOnly(caseValue: CaseV2): Promise<CaseV2> {
+    const created = await repository.createOnly(caseValue)
+    await refresh()
+    return created
+  }
+
+  async function getReceipt(commandId: string): Promise<ExecutionReceipt | null> {
+    return await repository.getReceipt(commandId)
+  }
+
+  async function applyWithReceipt(caseValue: CaseV2, receipt: ExecutionReceipt): Promise<CaseV2> {
+    const applied = await repository.applyWithReceipt(caseValue, receipt)
+    await refresh()
+    return applied
+  }
+
   async function remove(caseId: string): Promise<void> {
     await repository.delete(caseId)
     await refresh()
@@ -39,6 +61,9 @@ export function useCaseRepository(): CaseRepositoryComposable {
     refresh,
     get,
     put,
+    createOnly,
+    getReceipt,
+    applyWithReceipt,
     remove,
   }
 }
