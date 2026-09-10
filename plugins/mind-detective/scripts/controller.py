@@ -6,7 +6,12 @@ from .case import Case, CaseError, CaseLifecycle
 from .feedback import ActionFeedback
 from .journal import InteractionMode, JournalEntry
 from .planner import CandidateCheck, select_next_action
-from .search_log import SearchCheck, find_duplicate_checks
+from .search_log import (
+    SearchCheck,
+    SearchMethod,
+    find_duplicate_checks,
+    refine_search_check_method,
+)
 from .statements import Statement
 from .timeline import Timeline
 
@@ -74,6 +79,24 @@ class CaseController:
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
         self._ensure_mutable(case)
         return replace(case, search_checks=case.search_checks + (check,), updated_at=now)
+
+    def refine_search_check(
+        self,
+        case: Case,
+        check_id: str,
+        method: SearchMethod,
+        inaccessible_parts: tuple[str, ...],
+        now: str,
+    ) -> Case:
+        self._ensure_mutable(case)
+        checks = refine_search_check_method(case.search_checks, check_id, method)
+        checks = tuple(
+            replace(check, inaccessible_parts=tuple(inaccessible_parts))
+            if check.id == check_id
+            else check
+            for check in checks
+        )
+        return replace(case, search_checks=checks, updated_at=now)
 
     def find_duplicate_search_checks(self, case: Case, target: str) -> tuple[SearchCheck, ...]:
         return find_duplicate_checks(case.search_checks, target)
