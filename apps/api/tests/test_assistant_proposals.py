@@ -6,7 +6,7 @@ from typing import Literal
 
 from mind_detective_api.contracts import ProposalModel, ProposalRequest
 from mind_detective_api.core_bridge import create_case_payload
-from mind_detective_api.openai_provider import build_provider_context
+from mind_detective_api.litellm_provider import build_provider_context
 from mind_detective_api.privacy_log import PrivacyLogError, build_privacy_log
 from mind_detective_api.proposals import build_assistant_proposal
 
