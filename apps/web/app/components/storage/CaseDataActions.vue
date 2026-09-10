@@ -28,7 +28,7 @@ async function deleteCase(): Promise<void> {
   if (deleting.value) return
   deleting.value = true
   try {
-    await repository.delete(props.caseValue.case_id)
+    await repository.remove(props.caseValue.case_id)
     emit('deleted')
   } finally {
     deleting.value = false
