@@ -5,7 +5,7 @@ const emit = defineEmits<{
   created: [caseValue: CaseV2]
 }>()
 
-const api = useCaseApi()
+const localExecution = useLocalExecution()
 const itemLabel = ref('')
 const pending = ref(false)
 const errorCode = ref<string | null>(null)
@@ -15,8 +15,10 @@ async function submit(): Promise<void> {
   if (!label || pending.value) return
   pending.value = true
   errorCode.value = null
+  const caseId = crypto.randomUUID()
+  const now = new Date().toISOString()
   try {
-    const caseValue = await api.createCase(crypto.randomUUID(), label, new Date().toISOString())
+    const caseValue = await localExecution.createCase(caseId, label, now)
     emit('created', caseValue)
     itemLabel.value = ''
   } catch {
