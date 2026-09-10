@@ -4,7 +4,7 @@
 
 **Goal:** Build the `0.2.0` mobile-first Web/PWA vertical slice over the released Python Case Controller while preserving one deterministic domain implementation, local case ownership, checklist/AI shell equivalence, and exact release governance.
 
-**Architecture:** Nuxt 4 is a static mobile-first PWA that stores canonical Case v2 payloads in IndexedDB and never performs domain reduction. A stateless FastAPI adapter receives the current Case plus typed commands, executes the existing Python core, and returns the complete updated Case. Checklist and AI arms share one shell; the only intended experimental difference is the server-side next-proposal engine.
+**Architecture:** Nuxt 4 is a static PWA that stores canonical Case v2 payloads in IndexedDB and never performs domain reduction. A stateless FastAPI adapter receives the current Case plus typed commands, executes the existing Python core, and returns the complete updated Case. Checklist and AI arms share one shell; the only intended experimental difference is the server-side next-proposal engine.
 
 **Tech Stack:** Python 3.10/3.13; FastAPI 0.141.1; Pydantic 2.13.5; Uvicorn 0.52.1; HTTPX 0.28.1; OpenAI Python SDK 3.8.0; Node.js 24.21.0 LTS; pnpm 12.3.4; Nuxt 4.5.2; TypeScript; Vitest 5.0.0; Playwright 1.63.0; `@vite-pwa/nuxt` 1.1.1; IndexedDB; existing stdlib-first plugin runtime.
 
@@ -24,7 +24,7 @@
 - Experimental arm selection is deployment/test configuration, not a user choice on the first-case screen.
 - LLM output is structured proposal data only; it cannot directly set lifecycle, search completion, found outcome, mode labels, timestamps, user confirmation, or UI safety copy.
 - Assistant mode may send only the proposal context required for the current request to the configured model provider; privacy copy must distinguish transient model processing from local persistence and must not claim that assistant data never leaves the device.
-- OpenAI is the single live provider implementation in `0.2.0`; model name is required through `MIND_DETECTIVE_OPENAI_MODEL`, API key through `OPENAI_API_KEY`, and no provider secret enters Nuxt.
+- OpenAI is the single live provider implementation in `0.2.0`; `MIND_DETECTIVE_OPENAI_MODEL` and `OPENAI_API_KEY` are required only when assistant proposals are invoked; no provider secret enters Nuxt.
 - Reconstruction/search/system provenance is immutable per journal entry and survives reload.
 - `case/v1` imports migrate deterministically to `case/v2` with `current_mode=unselected`; migration never invents historical journal entries.
 - One-tap `Проверил` records neutral `reported_check`; inaccessible parts are orthogonal to check method.
@@ -38,7 +38,7 @@
 
 ## File Structure
 
-### Domain core changes
+### Domain core
 
 - `plugins/mind-detective/scripts/journal.py` — interaction mode and immutable journal-entry types.
 - `plugins/mind-detective/scripts/feedback.py` — categorical next-action feedback.
@@ -49,9 +49,10 @@
 - `plugins/mind-detective/scripts/schemas.py` — Case v2 validation contract.
 - `plugins/mind-detective/scripts/store.py` — v1/v2 loading and v2 serialization.
 
-### API application
+### API app
 
 - `apps/api/pyproject.toml` — web-adapter dependencies only.
+- `apps/api/run.py` — local ASGI runner with explicit plugin-core import path.
 - `apps/api/mind_detective_api/contracts.py` — Pydantic request/response models.
 - `apps/api/mind_detective_api/core_bridge.py` — import boundary to existing plugin core.
 - `apps/api/mind_detective_api/commands.py` — typed stateless command execution.
@@ -59,42 +60,42 @@
 - `apps/api/mind_detective_api/openai_provider.py` — single OpenAI structured-proposal implementation.
 - `apps/api/mind_detective_api/proposals.py` — common proposal validation, guard and fallback pipeline.
 - `apps/api/mind_detective_api/app.py` — four FastAPI endpoints.
-- `apps/api/mind_detective_api/privacy_log.py` — metadata-only application logging helpers.
+- `apps/api/mind_detective_api/privacy_log.py` — metadata-only application logging.
 
-### Web application
+### Web app
 
-- `package.json`, `pnpm-workspace.yaml`, `.node-version` — pinned JavaScript workspace.
+- `package.json`, `pnpm-workspace.yaml`, `.node-version` — pinned JS workspace.
 - `apps/web/package.json`, `apps/web/nuxt.config.ts` — Nuxt/PWA build.
-- `apps/web/app.vue`, `apps/web/pages/index.vue`, `apps/web/pages/cases/[id].vue` — create/list/active routes.
-- `apps/web/components/case/*` — shared shell components.
-- `apps/web/components/input/InteractionDock.vue` — identical input placement in both research arms.
+- `apps/web/app.vue`, `apps/web/pages/index.vue`, `apps/web/pages/cases/[id].vue` — production routes.
+- `apps/web/components/case/*` — shared case-state shell.
+- `apps/web/components/input/InteractionDock.vue` — identical input placement in B/C.
 - `apps/web/composables/useCaseRepository.ts` — local Case persistence API.
 - `apps/web/composables/useCommandQueue.ts` — transport-only sequential queue.
 - `apps/web/composables/useCaseApi.ts` — typed API client.
-- `apps/web/composables/useExperimentalArm.ts` — immutable build/test arm config.
-- `apps/web/lib/case/derived.ts` — read-only counters/annotations derived from Case.
+- `apps/web/composables/useExperimentalArm.ts` — immutable deployment/test arm config.
+- `apps/web/lib/case/derived.ts` — read-only counters/annotations.
 - `apps/web/lib/storage/indexeddb.ts` — IndexedDB implementation.
 - `apps/web/lib/storage/exportImport.ts` — local JSON export/import.
 - `apps/web/lib/eval/log.ts` — privacy-preserving local evaluation events.
-- `apps/web/lib/i18n/{ru,en}.ts` — reviewed copy maps.
-- `apps/web/assets/css/{tokens,app}.css` — prototype-derived visual system.
-- `apps/web/tests/unit/*` — Vitest pure/unit contracts.
-- `apps/web/tests/e2e/*` — Playwright browser workflows and accessibility/state tests.
+- `apps/web/lib/i18n/ru.ts`, `apps/web/lib/i18n/en.ts` — reviewed copy maps.
+- `apps/web/assets/css/tokens.css`, `apps/web/assets/css/app.css` — prototype-derived visual system.
+- `apps/web/tests/unit/*` — Vitest contracts.
+- `apps/web/tests/e2e/*` — Playwright browser workflows.
 
 ### Repository contracts
 
 - `docs/REQUIREMENTS.md`, `docs/CONTRACT_MATRIX.json`, `docs/EVAL_TOKEN_REGISTRY.json` — Web requirements and exact selectors.
-- `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`, `docs/PRIVACY.md`, `docs/PRODUCT_EVALUATION.md` — Web/API/privacy/research documentation.
-- `docs/adr/008-web-pwa-domain-boundary.md` — no client reducer/stateless API decision.
-- `docs/adr/009-web-local-persistence.md` — IndexedDB/persist/export decision.
-- `docs/adr/010-web-experiment-shell.md` — one-shell B/C research invariant.
-- `docs/adr/011-web-model-data-boundary.md` — transient assistant-provider processing boundary.
-- `.github/workflows/ci.yml` — Python + Web + API matrix.
-- `.github/releases/0.2.0.md`, `.github/releases/release.json` — declared `0.2.0` release set.
+- `docs/ARCHITECTURE.md`, `docs/ARCHITECTURE.en.md`, `docs/PRIVACY.md`, `docs/PRODUCT_EVALUATION.md` — Web/API/privacy/research docs.
+- `docs/adr/008-web-pwa-domain-boundary.md` — no client reducer/stateless API.
+- `docs/adr/009-web-local-persistence.md` — IndexedDB/persist/export.
+- `docs/adr/010-web-experiment-shell.md` — one-shell B/C invariant.
+- `docs/adr/011-web-model-data-boundary.md` — transient model-provider processing.
+- `.github/workflows/ci.yml` — Python + Web + API verification.
+- `.github/releases/0.2.0.md`, `.github/releases/release.json` — declared release set.
 
 ---
 
-### Task 1: Pin the Web/API workspace and extend repository boundaries
+### Task 1: Pin Web/API workspace and extend repository boundaries
 
 **Files:**
 - Create: `.node-version`
@@ -106,14 +107,15 @@
 - Modify: `scripts/validate_repo.py`
 
 **Interfaces:**
-- Produces JavaScript workspace `apps/web` under Node `24.21.0` and pnpm `12.3.4`.
-- Produces Python API package `mind_detective_api` with dependencies outside plugin core.
-- Repository validator must still reject web/API dependencies imported from `plugins/mind-detective/scripts/`.
+- Node `24.21.0`, pnpm `12.3.4`.
+- API runtime pins `fastapi==0.141.1`, `pydantic==2.13.5`, `uvicorn==0.52.1`, `httpx==0.28.1`, `openai==3.8.0`.
+- Web pins Nuxt `4.5.2`, `@vite-pwa/nuxt` `1.1.1`, Vitest `5.0.0`, Playwright `1.63.0`.
+- Existing root Python package remains free of Web/API runtime dependencies.
 
-- [ ] **Step 1: Write failing repository-boundary tests**
+- [ ] **Step 1: Write failing boundary test**
 
 ```python
-def test_web_workspace_is_pinned_and_plugin_core_stays_dependency_free(self):
+def test_web_workspace_is_pinned_and_core_stays_dependency_free(self):
     root = Path(__file__).resolve().parents[1]
     package = json.loads((root / "package.json").read_text())
     self.assertEqual(package["packageManager"], "pnpm@12.3.4")
@@ -126,13 +128,13 @@ def test_web_workspace_is_pinned_and_plugin_core_stays_dependency_free(self):
 
 - [ ] **Step 2: Run RED**
 
-Run: `python -m unittest tests.test_boundaries.BoundaryTests.test_web_workspace_is_pinned_and_plugin_core_stays_dependency_free -v`
+Run: `python -m unittest discover -s tests -p 'test_boundaries.py' -v`
 
 Expected: FAIL because workspace/API files do not exist.
 
-- [ ] **Step 3: Add the pinned workspace**
+- [ ] **Step 3: Add pinned manifests and validator rules**
 
-Root `package.json` must contain:
+Root `package.json`:
 
 ```json
 {
@@ -148,7 +150,7 @@ Root `package.json` must contain:
 }
 ```
 
-`apps/api/pyproject.toml` runtime pins:
+`apps/api/pyproject.toml`:
 
 ```toml
 [project]
@@ -164,11 +166,9 @@ dependencies = [
 ]
 ```
 
-`apps/web/package.json` pins Nuxt `4.5.2`, `@vite-pwa/nuxt` `1.1.1`, Vitest `5.0.0`, and `@playwright/test` `1.63.0`.
+- [ ] **Step 4: Run GREEN**
 
-- [ ] **Step 4: Run GREEN and repository validator**
-
-Run: `python -m unittest tests.test_boundaries -v && python scripts/validate_repo.py`
+Run: `python -m unittest discover -s tests -p 'test_boundaries.py' -v && python scripts/validate_repo.py`
 
 Expected: PASS.
 
@@ -188,21 +188,23 @@ git commit -m "build: add web and api workspace contracts"
 - Create: `plugins/mind-detective/scripts/feedback.py`
 - Modify: `plugins/mind-detective/scripts/case.py`
 - Modify: `plugins/mind-detective/scripts/controller.py`
-- Test: `plugins/mind-detective/tests/test_case_v2.py`
+- Create: `plugins/mind-detective/tests/test_case_v2.py`
 
 **Interfaces:**
-- `InteractionMode`: `unselected | reconstruction | search`.
-- `JournalMode`: `reconstruction | search | system`.
-- `JournalAuthor`: `user | assistant | system`.
-- `JournalEntry(id, author, mode, entry_type, text, created_at, statement_ids, search_check_ids)`.
-- `ActionFeedbackReason`: `already_checked | impossible_now | irrelevant | unsafe_or_uncomfortable | other`.
-- `ActionFeedback(id, candidate_id, reason, recorded_at)`.
-- `Case.schema` becomes `mind-detective-case/v2` for newly created cases.
+- `InteractionMode`: `unselected`, `reconstruction`, `search`.
+- `JournalMode`: `reconstruction`, `search`, `system`.
+- `JournalAuthor`: `user`, `assistant`, `system`.
+- `JournalEntry`: `id`, `author`, `mode`, `entry_type`, `text`, `created_at`, `statement_ids`, `search_check_ids`.
+- `ActionFeedbackReason`: `already_checked`, `impossible_now`, `irrelevant`, `unsafe_or_uncomfortable`, `other`.
+- `ActionFeedback`: `id`, `candidate_id`, `reason`, `recorded_at`.
+- `CaseController.set_mode(case, mode, now) -> Case`.
+- `CaseController.append_journal_entry(case, entry, now) -> Case`.
+- `CaseController.record_action_feedback(case, feedback, now) -> Case`.
 
-- [ ] **Step 1: Write RED tests**
+- [ ] **Step 1: Write RED test**
 
 ```python
-def test_new_case_is_v2_with_unselected_mode_and_empty_journal(self):
+def test_new_case_is_v2_with_unselected_mode_and_empty_audit_state(self):
     case = CaseController().create_case("c1", "ключи", "2026-09-10T07:00:00Z")
     self.assertEqual(case.schema, "mind-detective-case/v2")
     self.assertEqual(case.current_mode, InteractionMode.UNSELECTED)
@@ -210,31 +212,21 @@ def test_new_case_is_v2_with_unselected_mode_and_empty_journal(self):
     self.assertEqual(case.action_feedback, ())
 ```
 
-Also test that `set_mode`, `append_journal_entry`, and `record_action_feedback` reject terminal cases through `MD_CASE_TERMINAL`.
+Add tests that all three new controller mutations reject terminal cases with `MD_CASE_TERMINAL`.
 
 - [ ] **Step 2: Run RED**
 
-Run: `python -m unittest plugins.mind-detective.tests.test_case_v2 -v`
+Run: `python -m unittest discover -s plugins/mind-detective/tests -p 'test_case_v2.py' -v`
 
-Expected: FAIL because Case v2 types do not exist.
+Expected: FAIL because Case v2 types are missing.
 
-- [ ] **Step 3: Implement minimal immutable domain types and controller transitions**
+- [ ] **Step 3: Implement immutable dataclasses/enums and controller transitions**
 
-Controller signatures:
-
-```python
-def set_mode(self, case: Case, mode: InteractionMode, now: str) -> Case: ...
-def append_journal_entry(self, case: Case, entry: JournalEntry, now: str) -> Case: ...
-def record_action_feedback(self, case: Case, feedback: ActionFeedback, now: str) -> Case: ...
-```
-
-`record_action_feedback` must preserve categorical history and must not create a score/weight.
+Every transition returns a new frozen Case via `dataclasses.replace`. `record_action_feedback` stores categorical history only and creates no score.
 
 - [ ] **Step 4: Run GREEN**
 
-Run: `python -m unittest plugins.mind-detective.tests.test_case_v2 -v`
-
-Expected: PASS.
+Run the same discovery command; expected PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -251,23 +243,24 @@ git commit -m "feat: add case v2 interaction state"
 - Create: `plugins/mind-detective/scripts/migrations.py`
 - Modify: `plugins/mind-detective/scripts/schemas.py`
 - Modify: `plugins/mind-detective/scripts/store.py`
-- Modify: `plugins/mind-detective/schemas/mind-detective-case-v1.schema.json`
 - Create: `plugins/mind-detective/schemas/mind-detective-case-v2.schema.json`
-- Test: `plugins/mind-detective/tests/test_migrations.py`
+- Create: `plugins/mind-detective/tests/fixtures/case-v1-active.json`
+- Create: `plugins/mind-detective/tests/test_migrations.py`
 - Modify: `plugins/mind-detective/tests/test_store.py`
 
 **Interfaces:**
 - `migrate_case_payload(data: dict[str, object]) -> dict[str, object]`.
-- v1 migration sets `schema="mind-detective-case/v2"`, `current_mode="unselected"`, `interaction_journal=[]`, and `action_feedback=[]`.
-- v1 migration preserves all existing statements/timeline/search checks/candidates/constraints/outcome byte-semantically after parsing; it does not fabricate journal history.
+- v1 → v2 adds exactly `current_mode="unselected"`, `interaction_journal=[]`, `action_feedback=[]`, and changes schema id to `mind-detective-case/v2`.
+- Migration does not fabricate historical journal entries or reinterpret evidence.
 - `case_from_dict()` accepts v1 or v2 and returns Case v2.
 - `case_to_dict()` emits v2 only.
 
-- [ ] **Step 1: Write failing migration test using a complete v1 fixture**
+- [ ] **Step 1: Write RED migration test**
 
 ```python
 def test_v1_migration_never_infers_historical_mode(self):
-    migrated = migrate_case_payload(load_fixture("case-v1-active.json"))
+    source = json.loads((FIXTURES / "case-v1-active.json").read_text())
+    migrated = migrate_case_payload(source)
     self.assertEqual(migrated["current_mode"], "unselected")
     self.assertEqual(migrated["interaction_journal"], [])
     self.assertEqual(migrated["action_feedback"], [])
@@ -275,24 +268,27 @@ def test_v1_migration_never_infers_historical_mode(self):
 
 - [ ] **Step 2: Run RED**
 
-Run: `python -m unittest plugins.mind-detective.tests.test_migrations -v`
+Run: `python -m unittest discover -s plugins/mind-detective/tests -p 'test_migrations.py' -v`
 
 Expected: FAIL because migration module is missing.
 
-- [ ] **Step 3: Implement explicit schema-version dispatch**
+- [ ] **Step 3: Implement schema dispatch and store integration**
 
-Do not mutate the caller's dictionary. Use a copied payload and reject unknown/future schema with `MD_STORE_SCHEMA_VERSION`.
+Copy the input dictionary before migration. Reject unknown/future schemas with `MD_STORE_SCHEMA_VERSION`.
 
-- [ ] **Step 4: Run GREEN plus store regression suite**
+- [ ] **Step 4: Run GREEN plus store regression**
 
-Run: `python -m unittest plugins.mind-detective.tests.test_migrations plugins.mind-detective.tests.test_store -v`
+```bash
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_migrations.py' -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_store.py' -v
+```
 
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add plugins/mind-detective/scripts/migrations.py plugins/mind-detective/scripts/schemas.py plugins/mind-detective/scripts/store.py plugins/mind-detective/schemas plugins/mind-detective/tests/test_migrations.py plugins/mind-detective/tests/test_store.py
+git add plugins/mind-detective/scripts/migrations.py plugins/mind-detective/scripts/schemas.py plugins/mind-detective/scripts/store.py plugins/mind-detective/schemas plugins/mind-detective/tests/fixtures/case-v1-active.json plugins/mind-detective/tests/test_migrations.py plugins/mind-detective/tests/test_store.py
 git commit -m "feat: migrate case v1 payloads to v2"
 ```
 
@@ -303,18 +299,16 @@ git commit -m "feat: migrate case v1 payloads to v2"
 **Files:**
 - Modify: `plugins/mind-detective/scripts/search_log.py`
 - Modify: `plugins/mind-detective/scripts/controller.py`
-- Test: `plugins/mind-detective/tests/test_search_log.py`
-- Test: `plugins/mind-detective/tests/test_controller.py`
+- Modify: `plugins/mind-detective/tests/test_search_log.py`
+- Modify: `plugins/mind-detective/tests/test_controller.py`
 
 **Interfaces:**
 - `SearchMethod.REPORTED_CHECK = "reported_check"`.
-- Existing `INACCESSIBLE` remains deserializable for v1 compatibility but is not produced by Web commands.
-- `refine_search_check_method(checks, check_id, method) -> tuple[SearchCheck, ...]` replaces only the named check while preserving id/timestamps/result/based_on/notes/inaccessible parts.
+- Legacy `INACCESSIBLE` remains readable but Web commands never create it.
+- `refine_search_check_method(checks, check_id, method) -> tuple[SearchCheck, ...]`.
 - `CaseController.refine_search_check(case, check_id, method, inaccessible_parts, now) -> Case`.
 
-- [ ] **Step 1: Write RED tests**
-
-Test one-tap neutral check and refinement preserving check identity.
+- [ ] **Step 1: Write RED test**
 
 ```python
 def test_refinement_preserves_original_check_identity_and_time(self):
@@ -326,17 +320,20 @@ def test_refinement_preserves_original_check_identity_and_time(self):
 
 - [ ] **Step 2: Run RED**
 
-Run: `python -m unittest plugins.mind-detective.tests.test_search_log plugins.mind-detective.tests.test_controller -v`
+```bash
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_search_log.py' -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_controller.py' -v
+```
 
-Expected: FAIL on missing enum/method.
+Expected: FAIL on missing method/refinement.
 
 - [ ] **Step 3: Implement neutral method and refinement**
 
-Reject refinement to `INACCESSIBLE` with `MD_SEARCH_METHOD_INVALID`; inaccessible portions are supplied separately.
+Reject refinement to `INACCESSIBLE` with `MD_SEARCH_METHOD_INVALID`; inaccessible portions are represented separately.
 
 - [ ] **Step 4: Run GREEN**
 
-Run the same two modules; expected PASS.
+Run both commands again; expected PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -347,53 +344,48 @@ git commit -m "feat: support neutral web search checks"
 
 ---
 
-### Task 5: Define stateless API contracts and core bridge
+### Task 5: Define stateless API create/validate contracts and core bridge
 
 **Files:**
 - Create: `apps/api/mind_detective_api/__init__.py`
 - Create: `apps/api/mind_detective_api/contracts.py`
 - Create: `apps/api/mind_detective_api/core_bridge.py`
 - Create: `apps/api/mind_detective_api/app.py`
-- Test: `apps/api/tests/test_contracts.py`
+- Create: `apps/api/run.py`
+- Create: `apps/api/tests/test_contracts.py`
 
 **Interfaces:**
+- `CaseCreateRequest(case_id: str, item_label: str, now: str)`.
+- `CaseValidateRequest(case: dict[str, object])`.
+- `CaseResponse(case: dict[str, object])`.
+- `create_case_payload(case_id, item_label, now) -> dict[str, object]`.
+- `validate_or_migrate_case_payload(payload) -> dict[str, object]`.
+- Endpoints: `POST /api/v1/case/create`, `POST /api/v1/case/validate`.
 
-Pydantic models:
+- [ ] **Step 1: Write RED API test**
 
 ```python
-class CaseCreateRequest(BaseModel):
-    case_id: str
-    item_label: str
-    now: str
-
-class CaseValidateRequest(BaseModel):
-    case: dict[str, object]
-
-class CaseResponse(BaseModel):
-    case: dict[str, object]
+def test_create_returns_case_v2(self):
+    response = self.client.post("/api/v1/case/create", json={
+        "case_id": "case-1",
+        "item_label": "ключи",
+        "now": "2026-09-10T07:00:00Z",
+    })
+    self.assertEqual(response.status_code, 200)
+    self.assertEqual(response.json()["case"]["schema"], "mind-detective-case/v2")
 ```
 
-Endpoints implemented in this task:
-- `POST /api/v1/case/create`
-- `POST /api/v1/case/validate`
-
-`core_bridge.py` exposes `create_case_payload(...)` and `validate_or_migrate_case_payload(...)` by importing the existing plugin runtime; it must not copy domain rules.
-
-- [ ] **Step 1: Write failing API contract tests**
-
-Use `fastapi.testclient.TestClient` and assert create returns Case v2 with no journal history and validate migrates a v1 fixture.
+Also test v1 validate/migrate and invalid schema 422 response.
 
 - [ ] **Step 2: Run RED**
 
-Run from repo root with plugin root on `PYTHONPATH`:
+Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/api/tests -p 'test_contracts.py' -v`
 
-`PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/api/tests -p 'test_contracts.py' -v`
+Expected: FAIL because API modules are missing.
 
-Expected: FAIL because API modules are absent.
+- [ ] **Step 3: Implement bridge and endpoints**
 
-- [ ] **Step 3: Implement the two endpoints**
-
-Map domain `StoreError`/`CaseError` codes to HTTP 422 with body `{"code": <machine-code>, "message": <safe-message>}`. Do not log request bodies.
+`core_bridge.py` resolves repo root from `Path(__file__)`, prepends `plugins/mind-detective` once, then imports `scripts.controller` and `scripts.store`. Domain errors map to HTTP 422 with `{code, message}`. No request body logging.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -402,62 +394,51 @@ Run the same command; expected PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/api/mind_detective_api apps/api/tests/test_contracts.py
+git add apps/api/mind_detective_api apps/api/run.py apps/api/tests/test_contracts.py
 git commit -m "feat: add stateless case api contracts"
 ```
 
 ---
 
-### Task 6: Implement typed sequential command execution on the server
+### Task 6: Implement typed deterministic command execution
 
 **Files:**
 - Create: `apps/api/mind_detective_api/commands.py`
 - Modify: `apps/api/mind_detective_api/contracts.py`
 - Modify: `apps/api/mind_detective_api/app.py`
-- Test: `apps/api/tests/test_commands.py`
+- Create: `apps/api/tests/test_commands.py`
 
 **Interfaces:**
-
-```python
-class CommandEnvelope(BaseModel):
-    command_id: str
-    expected_updated_at: str
-    command_type: Literal[
-        "set_mode", "add_statement", "record_search_check", "refine_search_check",
-        "reject_next_action", "pause", "resume", "close_found", "close_unresolved"
-    ]
-    now: str
-    payload: dict[str, object]
-
-class CaseCommandRequest(BaseModel):
-    case: dict[str, object]
-    command: CommandEnvelope
-```
-
-`execute_command(case_payload, envelope) -> dict[str, object]` must first require `case.updated_at == expected_updated_at`; mismatch returns `MD_WEB_STALE_COMMAND`.
+- `CommandEnvelope`: `command_id`, `expected_updated_at`, `command_type`, `now`, `payload`.
+- Allowed command types: `set_mode`, `add_statement`, `record_search_check`, `refine_search_check`, `reject_next_action`, `pause`, `resume`, `close_found`, `close_unresolved`.
+- `CaseCommandRequest`: `case`, `command`.
+- `execute_command(case_payload, envelope) -> dict[str, object]`.
+- `POST /api/v1/case/command`.
 
 - [ ] **Step 1: Write RED tests**
 
-Cover:
-- retrying the same command with the same input Case produces byte-equivalent output;
-- stale `expected_updated_at` fails closed;
-- `record_search_check` creates `reported_check` when no method is supplied;
-- `reject_next_action` appends categorical ActionFeedback;
-- no command accepts a probability field.
+```python
+def test_retrying_same_command_against_same_case_is_deterministic(self):
+    first = execute_command(self.case_payload, self.command)
+    second = execute_command(self.case_payload, self.command)
+    self.assertEqual(first, second)
+```
+
+Also cover stale `expected_updated_at -> MD_WEB_STALE_COMMAND`, neutral `reported_check`, categorical rejection feedback, and command payload allowlists rejecting `probability`.
 
 - [ ] **Step 2: Run RED**
 
-Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest apps.api.tests.test_commands -v`
+Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/api/tests -p 'test_commands.py' -v`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement command dispatch without server state**
+- [ ] **Step 3: Implement dispatch**
 
-All entity IDs and timestamps that affect output must come from the command payload/envelope so a retry is deterministic. Never generate a second id/time during retry.
+IDs and timestamps that affect output come from the envelope/payload so retries are deterministic. The server stores no command history.
 
 - [ ] **Step 4: Run GREEN**
 
-Run the same module; expected PASS.
+Run the same command; expected PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -468,48 +449,40 @@ git commit -m "feat: execute deterministic web commands"
 
 ---
 
-### Task 7: Add deterministic checklist proposals and explicit empty-planner state
+### Task 7: Add deterministic checklist proposals and empty-planner state
 
 **Files:**
 - Create: `apps/api/mind_detective_api/checklist.py`
 - Create: `apps/api/mind_detective_api/proposals.py`
 - Modify: `apps/api/mind_detective_api/contracts.py`
 - Modify: `apps/api/mind_detective_api/app.py`
-- Test: `apps/api/tests/test_checklist_proposals.py`
+- Create: `apps/api/tests/test_checklist_proposals.py`
 
 **Interfaces:**
-
-```python
-class Proposal(BaseModel):
-    kind: Literal["next_action", "clarification", "need_more_information", "fallback"]
-    candidate_id: str | None = None
-    target: str | None = None
-    copy_key: str
-    rationale_codes: list[str] = []
-    related_statement_ids: list[str] = []
-
-class ProposalRequest(BaseModel):
-    case: dict[str, object]
-    mode: Literal["reconstruction", "search"]
-    locale: Literal["ru", "en"]
-    experimental_arm: Literal["checklist", "assistant"]
-```
-
-Checklist engine rules use the existing planner/case state. If no safe candidate exists, return `need_more_information` with reviewed `copy_key`; do not invent a location.
+- `Proposal.kind`: `next_action`, `clarification`, `need_more_information`, `fallback`.
+- Proposal fields: `candidate_id`, `target`, `copy_key`, `rationale_codes`, `related_statement_ids`.
+- `ProposalRequest`: `case`, `mode`, `locale`, `experimental_arm`.
+- `POST /api/v1/proposal/next`.
+- Checklist engine never invents a target when no safe candidate exists.
 
 - [ ] **Step 1: Write RED tests**
 
-Assert empty candidates never produce `target`, and an existing `case.next_action` is rendered as structured proposal without new probability metadata.
+```python
+def test_empty_case_returns_information_needed_without_location(self):
+    proposal = build_checklist_proposal(self.empty_case, "reconstruction")
+    self.assertEqual(proposal.kind, "need_more_information")
+    self.assertIsNone(proposal.target)
+```
 
 - [ ] **Step 2: Run RED**
 
-Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest apps.api.tests.test_checklist_proposals -v`
+Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/api/tests -p 'test_checklist_proposals.py' -v`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement checklist proposal engine and `POST /api/v1/proposal/next` for checklist arm**
+- [ ] **Step 3: Implement deterministic proposal selection**
 
-`copy_key` values are identifiers such as `next_action.check_target`, `empty.clarify_last_supported_interaction`, and `empty.resolve_partial_check`; no arbitrary final prose is returned.
+Use existing `case.next_action`, timeline unknowns, partial/inaccessible checks and urgency constraints. Final display text is represented by reviewed localization `copy_key` values.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -524,48 +497,52 @@ git commit -m "feat: add deterministic checklist proposals"
 
 ---
 
-### Task 8: Add the single OpenAI structured-proposal provider and guard fallback
+### Task 8: Add OpenAI Responses structured proposals, guard fallback and privacy logging
 
 **Files:**
 - Create: `apps/api/mind_detective_api/openai_provider.py`
 - Create: `apps/api/mind_detective_api/privacy_log.py`
 - Modify: `apps/api/mind_detective_api/proposals.py`
-- Test: `apps/api/tests/test_assistant_proposals.py`
+- Create: `apps/api/tests/test_assistant_proposals.py`
 
 **Interfaces:**
+- `OpenAIProposalClient.propose(case: dict[str, object], mode: str) -> Proposal` is asynchronous.
+- Uses `AsyncOpenAI.responses.parse(model=model_name, input=model_input, text_format=ProposalModel)`.
+- `OPENAI_API_KEY` and `MIND_DETECTIVE_OPENAI_MODEL` are read server-side only.
+- Blocked proposals never enter user-facing journal text; a reviewed system event plus deterministic fallback is returned.
+
+- [ ] **Step 1: Write RED tests with injected fake provider**
 
 ```python
-class OpenAIProposalClient:
-    async def propose(self, case: dict[str, object], mode: str) -> Proposal: ...
+async def test_reconstruction_location_injection_is_blocked(self):
+    fake = FakeProposalClient(ProposalModel(
+        kind="next_action",
+        candidate_id="candidate-car",
+        target="машина",
+        copy_key="next_action.check_target",
+        rationale_codes=[],
+        related_statement_ids=[],
+    ))
+    result = await build_assistant_proposal(self.case_without_car, "reconstruction", fake)
+    self.assertEqual(result.proposal.kind, "fallback")
+    self.assertEqual(result.guard_code, "MD_G_RECON_NEW_LOCATION")
 ```
 
-Configuration:
-- `OPENAI_API_KEY` required only when assistant engine is invoked.
-- `MIND_DETECTIVE_OPENAI_MODEL` required only when assistant engine is invoked.
-- Responses API uses strict JSON Schema matching the `Proposal` contract.
-
-- [ ] **Step 1: Write RED tests with a fake OpenAI client**
-
-Cover:
-- assistant proposal is structured, not display prose;
-- reconstruction proposal that injects a new location is blocked;
-- percentage/location-probability claim is blocked;
-- blocked proposal creates a `system` journal event with a machine reason code and returns deterministic fallback;
-- raw rejected proposal text never enters the Case or privacy log.
+Add tests for percentage claims, raw rejected text exclusion, and privacy log allowlist.
 
 - [ ] **Step 2: Run RED**
 
-Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest apps.api.tests.test_assistant_proposals -v`
+Run: `PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/api/tests -p 'test_assistant_proposals.py' -v`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement provider and guard pipeline**
+- [ ] **Step 3: Implement provider and guarded proposal pipeline**
 
-The OpenAI request contains only the current typed Case data required to choose/clarify the next proposal. `privacy_log.py` may log event name, request id, arm, outcome code, latency bucket and model identifier; it must not log item label, user text, target text, full Case JSON, or raw model output.
+Tests must not require a live API key. Application metadata logs may contain request id, arm, outcome code, latency bucket and configured model id; they must not contain item label, user text, target text, full Case JSON, or raw model output.
 
 - [ ] **Step 4: Run GREEN**
 
-Expected PASS without a live API key because tests inject the fake client.
+Expected PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -576,7 +553,7 @@ git commit -m "feat: add guarded assistant proposal engine"
 
 ---
 
-### Task 9: Bootstrap Nuxt and enforce a read-only Case view model
+### Task 9: Bootstrap Nuxt, typed Case contracts and read-only derived state
 
 **Files:**
 - Create: `apps/web/nuxt.config.ts`
@@ -584,20 +561,21 @@ git commit -m "feat: add guarded assistant proposal engine"
 - Create: `apps/web/lib/api/contracts.ts`
 - Create: `apps/web/lib/case/derived.ts`
 - Create: `apps/web/composables/useExperimentalArm.ts`
-- Create: `apps/web/tests/unit/derived.spec.ts`
 - Create: `apps/web/vitest.config.ts`
+- Create: `apps/web/playwright.config.ts`
+- Create: `apps/web/tests/unit/derived.spec.ts`
 
 **Interfaces:**
-- `CaseV2` TypeScript interface mirrors serialized Python fields only.
-- `deriveProgress(case) -> { checked: number; remaining: number; inaccessible: number }` reads state only.
-- `derivePriorCheckAnnotation(case, candidateId) -> PriorCheckAnnotation | null` reads history only.
-- No exported function accepts `CaseV2` and returns mutated `CaseV2`.
-- `useExperimentalArm()` reads `runtimeConfig.public.experimentalArm` and returns readonly `checklist | assistant`.
+- `CaseV2` mirrors serialized Python Case v2.
+- `deriveProgress(caseValue) -> {checked, remaining, inaccessible}`.
+- `derivePriorCheckAnnotation(caseValue, candidateId) -> PriorCheckAnnotation | null`.
+- `useExperimentalArm()` returns readonly `checklist | assistant` from `NUXT_PUBLIC_MIND_DETECTIVE_ARM`.
+- No client function accepts a Case and returns a domain-mutated Case.
 
-- [ ] **Step 1: Write RED unit tests**
+- [ ] **Step 1: Write RED unit test**
 
 ```ts
-it('derives progress without changing the case', () => {
+it('derives progress without mutating the case', () => {
   const before = structuredClone(caseFixture)
   expect(deriveProgress(caseFixture)).toEqual({ checked: 4, remaining: 3, inaccessible: 1 })
   expect(caseFixture).toEqual(before)
@@ -606,24 +584,27 @@ it('derives progress without changing the case', () => {
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web vitest run tests/unit/derived.spec.ts`
+Run: `pnpm --dir apps/web exec vitest run tests/unit/derived.spec.ts`
 
-Expected: FAIL because modules are missing.
+Expected: FAIL.
 
-- [ ] **Step 3: Implement Nuxt base and read-only derivations**
+- [ ] **Step 3: Implement Nuxt base and test runners**
 
-Set `ssr: false`. Default experiment arm is configured through `NUXT_PUBLIC_MIND_DETECTIVE_ARM`; do not render an end-user engine picker.
+Set `ssr: false`. Playwright starts API with `python ../api/run.py` and Nuxt dev server on `127.0.0.1:3000`. No engine picker is present in production pages.
 
 - [ ] **Step 4: Run GREEN and build**
 
-Run: `pnpm --dir apps/web vitest run && pnpm --dir apps/web build`
+```bash
+pnpm --dir apps/web exec vitest run
+pnpm --dir apps/web build
+```
 
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add apps/web/nuxt.config.ts apps/web/app.vue apps/web/lib apps/web/composables/useExperimentalArm.ts apps/web/tests/unit apps/web/vitest.config.ts
+git add apps/web/nuxt.config.ts apps/web/app.vue apps/web/lib apps/web/composables/useExperimentalArm.ts apps/web/vitest.config.ts apps/web/playwright.config.ts apps/web/tests/unit/derived.spec.ts
 git commit -m "feat: bootstrap read-only web case model"
 ```
 
@@ -638,35 +619,25 @@ git commit -m "feat: bootstrap read-only web case model"
 - Create: `apps/web/tests/e2e/storage.spec.ts`
 
 **Interfaces:**
+- IndexedDB database `mind-detective`, store `cases`, key path `case_id`.
+- `CaseRepository.list/get/put/delete`.
+- `requestPersistentStorage() -> granted | denied | unsupported`.
+- `exportCase(caseValue) -> Blob`.
+- `importCase(file, validate) -> CaseV2`.
 
-```ts
-interface CaseRepository {
-  list(): Promise<CaseV2[]>
-  get(caseId: string): Promise<CaseV2 | null>
-  put(caseValue: CaseV2): Promise<void>
-  delete(caseId: string): Promise<void>
-}
+- [ ] **Step 1: Write RED browser test**
 
-async function requestPersistentStorage(): Promise<'granted' | 'denied' | 'unsupported'>
-async function exportCase(caseValue: CaseV2): Promise<Blob>
-async function importCase(file: File, validate: (payload: unknown) => Promise<CaseV2>): Promise<CaseV2>
-```
-
-IndexedDB database: `mind-detective`, object store `cases`, key path `case_id`.
-
-- [ ] **Step 1: Write RED Playwright storage tests**
-
-Test create/put/reload/list, delete isolation, valid export, v1 import sent through `/case/validate`, invalid/future schema rejection, and storage capability copy for denied/unsupported states.
+Test put/reload/list, delete isolation, valid export, v1 import through `/case/validate`, invalid/future schema rejection, and denied/unsupported persistence states.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web playwright test tests/e2e/storage.spec.ts`
+Run: `pnpm --dir apps/web exec playwright test tests/e2e/storage.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement storage without localStorage Case copies**
+- [ ] **Step 3: Implement storage**
 
-Only non-sensitive UI preferences/capability state may use localStorage. Case payloads and evaluation payloads must remain outside Cache Storage.
+Case payloads never go into localStorage or Cache Storage. localStorage may contain only non-sensitive presentation/capability flags.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -681,7 +652,7 @@ git commit -m "feat: add local case persistence and export"
 
 ---
 
-### Task 11: Implement the transport-only command queue with no optimistic reducer
+### Task 11: Implement transport-only sequential command queue
 
 **Files:**
 - Create: `apps/web/composables/useCaseApi.ts`
@@ -689,41 +660,36 @@ git commit -m "feat: add local case persistence and export"
 - Create: `apps/web/tests/unit/commandQueue.spec.ts`
 
 **Interfaces:**
+- `PendingCommand`: `command_id`, `case_id`, `command_type`, `expected_updated_at`, `now`, `payload`, `status`, `attempt_count`.
+- `enqueue(caseValue, command) -> Promise<CaseV2>`.
+- `retry(commandId) -> Promise<CaseV2>`.
+- Queue is transport state only and never feeds planner logic.
+
+- [ ] **Step 1: Write RED tests**
 
 ```ts
-interface PendingCommand {
-  command_id: string
-  case_id: string
-  command_type: CommandType
-  expected_updated_at: string
-  now: string
-  payload: Record<string, unknown>
-  status: 'pending' | 'retrying' | 'failed'
-  attempt_count: number
-}
-
-function enqueue(caseValue: CaseV2, command: PendingCommand): Promise<CaseV2>
-function retry(commandId: string): Promise<CaseV2>
+it('does not mutate canonical case while request is pending', async () => {
+  const api = deferredApi()
+  const queue = makeCommandQueue(api, repository)
+  const pending = queue.enqueue(caseFixture, commandFixture)
+  expect(repository.current()).toEqual(caseFixture)
+  api.resolve(updatedCaseFixture)
+  await pending
+  expect(repository.current()).toEqual(updatedCaseFixture)
+})
 ```
 
-- [ ] **Step 1: Write RED tests with a fake API transport**
-
-Assert:
-- Case ref remains unchanged while request is pending;
-- two commands for one case are sent sequentially;
-- retry sends byte-equivalent command envelope;
-- failed validation does not mutate Case;
-- successful response replaces local canonical Case and only then persists it.
+Also assert sequential send order, byte-equivalent retry envelope, and no mutation after validation failure.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web vitest run tests/unit/commandQueue.spec.ts`
+Run: `pnpm --dir apps/web exec vitest run tests/unit/commandQueue.spec.ts`
 
 Expected: FAIL.
 
 - [ ] **Step 3: Implement queue and API client**
 
-Do not expose a `reduceCase`, `applyCommandLocally`, or equivalent domain mutation helper.
+Do not create `reduceCase`, `applyCommandLocally`, or equivalent mutation helper.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -738,7 +704,7 @@ git commit -m "feat: add pending web command queue"
 
 ---
 
-### Task 12: Build first-case creation and local case-list/resume screens
+### Task 12: Build one-field case creation and local case list/resume
 
 **Files:**
 - Create: `apps/web/pages/index.vue`
@@ -747,23 +713,23 @@ git commit -m "feat: add pending web command queue"
 - Create: `apps/web/tests/e2e/create-resume.spec.ts`
 
 **Interfaces:**
-- Empty/new flow has exactly one user-input field `item_label` and one primary `Start search` action.
-- Engine arm is absent from production creation UI.
-- Case list sorts active/paused cases by `updated_at` descending and shows item label, lifecycle, derived compact summary and local update time.
+- First-case flow has one `item_label` field and one primary Start action.
+- Engine arm is absent from user-facing creation UI.
+- Active/paused cases sort by `updated_at` descending.
 
-- [ ] **Step 1: Write RED E2E tests**
+- [ ] **Step 1: Write RED E2E test**
 
-Assert no engine picker exists; create calls `/case/create`, persists returned Case only after response, then navigates to `/cases/<id>`; paused case resumes exact stored Case without strengthening statements/checks.
+Assert no engine picker, create waits for `/case/create`, persists returned Case, navigates to `/cases/<id>`, and paused resume preserves exact statements/checks.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web playwright test tests/e2e/create-resume.spec.ts`
+Run: `pnpm --dir apps/web exec playwright test tests/e2e/create-resume.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement screens using prototype density/visual direction**
+- [ ] **Step 3: Implement screens using prototype density**
 
-Keep storage warning and export/install education contextual after meaningful engagement, not as a pre-creation gate.
+Storage/install education appears after meaningful engagement, not as an onboarding gate.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -778,7 +744,7 @@ git commit -m "feat: add web case creation and resume"
 
 ---
 
-### Task 13: Build the one-shell active case UI and immutable journal mode presentation
+### Task 13: Build the unified active-case shell and immutable mode-marked journal
 
 **Files:**
 - Create: `apps/web/pages/cases/[id].vue`
@@ -790,29 +756,29 @@ git commit -m "feat: add web case creation and resume"
 - Create: `apps/web/components/input/InteractionDock.vue`
 - Create: `apps/web/assets/css/tokens.css`
 - Create: `apps/web/assets/css/app.css`
-- Test: `apps/web/tests/e2e/shell-equivalence.spec.ts`
+- Create: `apps/web/tests/e2e/shell-equivalence.spec.ts`
 
 **Interfaces:**
-- `CaseShell` receives `caseValue`, `experimentalArm`, `pendingState`, and emitted structured actions.
-- Checklist and assistant arms render the same component tree for shell, journal and input dock.
-- Journal entry mode is rendered from persisted `entry.mode`; current screen mode never rewrites historical tags.
-- Mode representation includes text label + SVG icon + distinct type treatment; color is optional redundancy.
+- `CaseShell` receives canonical Case, experimental arm and pending state; it emits typed UI intents only.
+- B/C render the same shell/journal/input component tree.
+- Historical entry tag comes only from `entry.mode`.
+- Mode uses label + SVG icon + typography; color is redundant.
 
-- [ ] **Step 1: Write RED equivalence tests**
+- [ ] **Step 1: Write RED equivalence test**
 
-Render identical Case fixture under both arms and assert identical landmark/component test IDs. Allow only proposal-source metadata to differ; do not hide the journal or replace the dock.
+Render the same Case fixture under checklist and assistant deployments and compare stable landmark/test-id sets. Journal and `InteractionDock` must exist in both.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web playwright test tests/e2e/shell-equivalence.spec.ts`
+Run: `pnpm --dir apps/web exec playwright test tests/e2e/shell-equivalence.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement the shared shell using prototype tokens**
+- [ ] **Step 3: Implement shared shell and prototype-derived tokens**
 
-Use the supplied prototype's 4px spacing scale, 44px minimum targets, safe-area handling, system font stack, glass/readability floors, reduced-motion and increased-contrast fallbacks. Do not include the external control rail in production.
+Carry forward 4px spacing, 44px minimum hit targets, safe-area handling, system font stack, readable glass floors, reduced-motion and increased-contrast fallbacks. Do not ship the prototype control rail.
 
-- [ ] **Step 4: Run GREEN at 320px, 405px and desktop viewport widths**
+- [ ] **Step 4: Run GREEN at 320px, 405px and desktop widths**
 
 Expected: PASS with no horizontal overflow.
 
@@ -831,26 +797,27 @@ git commit -m "feat: build unified mobile case shell"
 - Create: `apps/web/components/case/CheckQualityDialog.vue`
 - Modify: `apps/web/components/case/NextActionCard.vue`
 - Modify: `apps/web/pages/cases/[id].vue`
-- Test: `apps/web/tests/e2e/check-flow.spec.ts`
+- Create: `apps/web/tests/e2e/check-flow.spec.ts`
 
 **Interfaces:**
-- `Проверил` enqueues `record_search_check` with `reported_check` and never opens quality dialog merely because the first check completed.
-- Quality dialog appears only when returned proposal/controller state marks prior quality as decision-relevant.
-- `inaccessible_parts` is a separate checkbox/list input, never a method radio value.
+- `Проверил` enqueues `record_search_check` with `reported_check`.
+- No progress counter changes before canonical API response.
+- Quality dialog appears only when returned state says prior method quality is decision-relevant.
+- `inaccessible_parts` is separate from method choice.
 
-- [ ] **Step 1: Write RED tests**
+- [ ] **Step 1: Write RED E2E test**
 
-Cover pending spinner/`aria-busy`, no counter change before API response, returned Case updates progress, delayed quality clarification, and refinement preserving original check id.
+Cover `aria-busy`, unchanged counters during pending state, returned Case progress, no immediate quality dialog, later refinement, and preserved check id.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web playwright test tests/e2e/check-flow.spec.ts`
+Run: `pnpm --dir apps/web exec playwright test tests/e2e/check-flow.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement flow through command queue only**
+- [ ] **Step 3: Implement through command queue only**
 
-The progress strip always derives values from the returned/persisted Case; never increment a local `done` variable as the prototype demo does.
+Progress always comes from `deriveProgress(returnedCase)`; never increment a demo-local `done` variable.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -865,34 +832,34 @@ git commit -m "feat: add one-tap web check flow"
 
 ---
 
-### Task 15: Add empty-planner, visible guard block and next-action rejection UX
+### Task 15: Add empty planner, visible guard block and next-action rejection
 
 **Files:**
 - Create: `apps/web/components/case/SystemJournalEvent.vue`
 - Create: `apps/web/components/case/ActionRejectDialog.vue`
 - Modify: `apps/web/components/case/NextActionCard.vue`
 - Modify: `apps/web/pages/cases/[id].vue`
-- Test: `apps/web/tests/e2e/proposal-states.spec.ts`
+- Create: `apps/web/tests/e2e/proposal-states.spec.ts`
 
 **Interfaces:**
-- `need_more_information` proposal renders a neutral non-location card.
-- `ai_guard_blocked` returns a system journal event using reviewed copy key plus deterministic fallback; rejected raw proposal is never rendered.
+- `need_more_information` is a non-location card.
+- Guard block renders reviewed system copy plus deterministic fallback; raw rejected proposal is absent.
 - `Not suitable` enqueues `reject_next_action` with one categorical reason.
-- Planner must not immediately return the rejected candidate unless new evidence or an explicit reset changes the Case.
+- Delete remains outside primary search actions.
 
-- [ ] **Step 1: Write RED tests for all three states**
+- [ ] **Step 1: Write RED state tests**
 
-Also assert `Delete case` is absent from the primary next-action button group.
+Test empty planner, guard block, rejected candidate non-repeat, and primary-action delete absence.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web playwright test tests/e2e/proposal-states.spec.ts`
+Run: `pnpm --dir apps/web exec playwright test tests/e2e/proposal-states.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement reviewed state components**
+- [ ] **Step 3: Implement reviewed states**
 
-Machine guard codes may appear only in a details/diagnostic affordance, not as primary UX copy.
+Machine guard code may appear only in optional details, never as primary UX copy.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -907,7 +874,7 @@ git commit -m "feat: surface proposal safety states"
 
 ---
 
-### Task 16: Implement found/unresolved closing and privacy-preserving evaluation log
+### Task 16: Implement close outcomes and privacy-preserving local evaluation log
 
 **Files:**
 - Create: `apps/web/components/case/CloseCaseDialog.vue`
@@ -917,33 +884,37 @@ git commit -m "feat: surface proposal safety states"
 - Create: `apps/web/tests/e2e/close-flow.spec.ts`
 
 **Interfaces:**
-- `found_context`: `current_suggested_action | elsewhere_unplanned | after_previous_check | unknown`.
-- Local evaluation events include `case_started`, `next_action_shown`, `next_action_started`, `next_action_rejected`, `check_started`, `check_finished`, `duplicate_check_detected`, `check_quality_clarified`, `ai_guard_blocked`, `pending_command_started`, `pending_command_retried`, `pending_command_failed`, `pause`, `resume`, `found`, `case_closed_unresolved`, `case_abandoned`, `found_context_recorded`.
-- Event payload allowlist excludes item label, location/target text, journal text, statement text, raw model text and complete Case payload.
+- `found_context`: `current_suggested_action`, `elsewhere_unplanned`, `after_previous_check`, `unknown`.
+- Required events: `case_started`, `next_action_shown`, `next_action_started`, `next_action_rejected`, `check_started`, `check_finished`, `duplicate_check_detected`, `check_quality_clarified`, `ai_guard_blocked`, `pending_command_started`, `pending_command_retried`, `pending_command_failed`, `pause`, `resume`, `found`, `case_closed_unresolved`, `case_abandoned`, `found_context_recorded`.
+- Evaluation allowlist excludes item/location/journal/statement/model text and full Case payload.
 
-- [ ] **Step 1: Write RED privacy tests**
+- [ ] **Step 1: Write RED privacy test**
 
 ```ts
 it('rejects sensitive evaluation keys', () => {
-  expect(() => appendEvalEvent('found', { item_label: 'ключи' } as never)).toThrow('MD_WEB_EVAL_SENSITIVE_FIELD')
+  expect(() => appendEvalEvent('found', { item_label: 'ключи' } as never))
+    .toThrow('MD_WEB_EVAL_SENSITIVE_FIELD')
 })
 ```
 
-E2E must distinguish found-on-current-action from found-elsewhere/unplanned and unresolved close.
+E2E covers found on current action, found elsewhere/unplanned and unresolved close.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web vitest run tests/unit/evalLog.spec.ts && pnpm --dir apps/web playwright test tests/e2e/close-flow.spec.ts`
+```bash
+pnpm --dir apps/web exec vitest run tests/unit/evalLog.spec.ts
+pnpm --dir apps/web exec playwright test tests/e2e/close-flow.spec.ts
+```
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement close flow and local JSON/CSV evaluation export**
+- [ ] **Step 3: Implement close and explicit JSON/CSV evaluation export**
 
-Evaluation export is explicit user action and never background-uploaded.
+No background telemetry upload exists.
 
 - [ ] **Step 4: Run GREEN**
 
-Expected PASS.
+Run both commands again; expected PASS.
 
 - [ ] **Step 5: Commit**
 
@@ -954,35 +925,35 @@ git commit -m "feat: add outcome and local evaluation flow"
 
 ---
 
-### Task 17: Add PWA shell caching, offline behavior, install education and storage-loss copy
+### Task 17: Add PWA shell caching, offline behavior and durability UX
 
 **Files:**
 - Modify: `apps/web/nuxt.config.ts`
 - Create: `apps/web/public/manifest.webmanifest`
 - Create: `apps/web/components/storage/StorageNotice.vue`
 - Create: `apps/web/components/storage/InstallEducation.vue`
-- Test: `apps/web/tests/e2e/pwa-storage.spec.ts`
+- Create: `apps/web/tests/e2e/pwa-storage.spec.ts`
 
 **Interfaces:**
 - Service worker precaches shell/static assets only.
-- Runtime caching has no route for `/api/`.
-- No background sync plugin is enabled.
-- Offline mutation stays queued/failed visibly and canonical Case remains unchanged.
-- Storage copy says cases are local, cloud backup is absent, site-data clearing can delete cases, persistence is not a backup, export is the recovery path.
+- No `/api/` runtime cache.
+- No background sync.
+- Offline mutation remains visibly pending/failed and canonical Case remains unchanged.
+- Storage copy explains local-only cases, no cloud backup, possible site-data loss, persistence limits and export recovery.
 
 - [ ] **Step 1: Write RED PWA tests**
 
-Inspect generated service worker/Workbox manifest and assert API patterns, Case JSON routes and background sync are absent. Simulate offline check action and assert no progress change before reconnection/retry.
+Inspect generated worker/manifest and assert no API route, Case payload route or background sync registration. Simulate offline check and assert no progress mutation before retry succeeds.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web build && pnpm --dir apps/web playwright test tests/e2e/pwa-storage.spec.ts`
+Run: `pnpm --dir apps/web build && pnpm --dir apps/web exec playwright test tests/e2e/pwa-storage.spec.ts`
 
 Expected: FAIL.
 
-- [ ] **Step 3: Configure `@vite-pwa/nuxt` 1.1.1 and storage UX**
+- [ ] **Step 3: Configure `@vite-pwa/nuxt` and durability UX**
 
-Call `navigator.storage.persisted()` then `persist()` after first meaningful case interaction. Show capability state honestly.
+After first meaningful case interaction, call `navigator.storage.persisted()` and then `navigator.storage.persist()` when needed. Render granted/denied/unsupported honestly.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -997,7 +968,7 @@ git commit -m "feat: add privacy-safe pwa behavior"
 
 ---
 
-### Task 18: Lock RU/EN copy, accessibility and the prototype scenario matrix
+### Task 18: Lock RU/EN copy, accessibility and prototype scenario coverage
 
 **Files:**
 - Create: `apps/web/lib/i18n/ru.ts`
@@ -1008,25 +979,28 @@ git commit -m "feat: add privacy-safe pwa behavior"
 - Create: `apps/web/tests/e2e/scenario-matrix.spec.ts`
 
 **Interfaces:**
-- Locale keys cover mode labels, guard/safety states, empty planner, storage warnings, pending/retry/error states, create/resume/close, check quality, export/import and assistant-provider privacy disclosure.
-- Both locale maps have identical key sets.
+- Locale keys cover mode labels, guard/safety, empty planner, storage warnings, pending/retry/error, create/resume/close, check quality, export/import and assistant-provider privacy disclosure.
+- RU/EN key sets are identical.
 - No keyboard autofocus on active-case load.
-- Dialogs trap focus, close on Escape, restore trigger focus and mark background inert.
+- Dialogs trap focus, close on Escape, restore trigger focus and make background inert.
 - Minimum interactive hit area is 44px.
 
-- [ ] **Step 1: Write RED parity/accessibility/scenario tests**
+- [ ] **Step 1: Write RED tests**
 
-Scenario matrix must cover the 20 states in `docs/prototypes/2026-09-10-mind-detective-ui-prototype-review.md`, including both arms, both phases, pending/retry, guard block, partial/inaccessible, quality clarification, planner empty, rejection, pause, both found contexts, unresolved, persistence states, v1 migration, invalid import, light/dark/reduced-motion/increased-contrast.
+Scenario matrix must cover all 20 states in `docs/prototypes/2026-09-10-mind-detective-ui-prototype-review.md`, including both arms/phases, pending/retry, guard block, partial/inaccessible, quality clarification, planner empty, rejection, pause, both found contexts, unresolved, persistence states, v1 migration, invalid import, light/dark/reduced-motion/increased-contrast.
 
 - [ ] **Step 2: Run RED**
 
-Run: `pnpm --dir apps/web vitest run tests/unit/i18n.spec.ts && pnpm --dir apps/web playwright test tests/e2e/accessibility.spec.ts tests/e2e/scenario-matrix.spec.ts`
+```bash
+pnpm --dir apps/web exec vitest run tests/unit/i18n.spec.ts
+pnpm --dir apps/web exec playwright test tests/e2e/accessibility.spec.ts tests/e2e/scenario-matrix.spec.ts
+```
 
 Expected: FAIL.
 
-- [ ] **Step 3: Implement complete reviewed RU/EN resources and accessibility fixes**
+- [ ] **Step 3: Implement reviewed locale maps and accessibility behavior**
 
-The scenario controls are test fixtures/developer tooling only; no production engine picker/control rail is introduced.
+Prototype scenario controls remain test/developer fixtures only; production gets no control rail or engine chooser.
 
 - [ ] **Step 4: Run GREEN**
 
@@ -1041,7 +1015,7 @@ git commit -m "test: lock web copy and scenario accessibility"
 
 ---
 
-### Task 19: Trace requirements, extend CI/docs, prepare and verify the 0.2.0 release set
+### Task 19: Trace requirements, extend CI/docs and prepare the 0.2.0 release set
 
 **Files:**
 - Modify: `docs/REQUIREMENTS.md`
@@ -1062,41 +1036,31 @@ git commit -m "test: lock web copy and scenario accessibility"
 - Modify: `.github/workflows/ci.yml`
 - Create: `.github/releases/0.2.0.md`
 - Modify: `.github/releases/release.json`
-- Modify: plugin descriptors/marketplace version fields for `0.2.0`
+- Modify: plugin descriptor and marketplace version fields
 - Modify: `tests/test_contract_matrix.py`
 - Modify: `tests/test_release_contract.py`
 - Modify: `tests/test_repository_contracts.py`
 
 **Interfaces:**
-- Activate all `MD-WEB-REQ-*` IDs from the spec with exact test selectors.
-- Add explicit privacy requirement that assistant arm transiently sends minimal proposal context to the configured model provider while local persistence remains browser-only.
-- CI jobs:
-  - Python 3.10/3.13 existing core/repo/API tests;
-  - pinned Node 24.21.0 + pnpm 12.3.4 install with frozen lockfile;
-  - Web Vitest;
-  - Nuxt build;
-  - Playwright Chromium + WebKit mobile-critical suite;
-  - existing Ruff, strict Mypy, freshness, boundaries, bilingual contracts, secret scan and release checks.
-- Release manifest declares exactly repository tag `0.2.0` and plugin tag `mind-detective-v0.2.0`.
-- Existing `publish-current-release.yml` remains the only active publisher and keeps manual full-40-hex `target_sha`, exact-main CI, detached-worktree, immutable release and tag-SHA checks.
+- Every `MD-WEB-REQ-*` requirement in the approved spec maps to an exact selector.
+- Add explicit privacy requirement for transient assistant-provider processing while persistence remains browser-local.
+- CI adds pinned Node/pnpm install, Vitest, Nuxt build, Playwright Chromium + WebKit, and API tests while retaining all existing Python/core/release gates.
+- Release manifest declares exactly repository `0.2.0` and plugin `mind-detective-v0.2.0`.
+- `publish-current-release.yml` remains the only publisher and is not replaced by a second release framework.
 
-- [ ] **Step 1: Write RED contract/release tests first**
+- [ ] **Step 1: Write RED contract/version tests**
 
-Add selectors for every `MD-WEB-REQ-*` requirement and assert manifest/descriptors still show `0.1.0` before release preparation, causing the new version-parity test to fail.
+Add Web selectors first and a version-parity assertion expecting `0.2.0`; current descriptors/manifest must fail before release preparation.
 
 - [ ] **Step 2: Run RED**
 
-Run:
-
-```bash
-python -m unittest tests.test_contract_matrix tests.test_release_contract tests.test_repository_contracts -v
-```
+Run: `python -m unittest discover -s tests -p 'test_contract_matrix.py' -v && python -m unittest discover -s tests -p 'test_release_contract.py' -v && python -m unittest discover -s tests -p 'test_repository_contracts.py' -v`
 
 Expected: FAIL on missing Web requirements/version `0.2.0`.
 
-- [ ] **Step 3: Update requirements, docs, CI, descriptors and declarative release manifest**
+- [ ] **Step 3: Update contracts/docs/CI/descriptors/release manifest**
 
-Release JSON must normalize to exactly:
+`release.json` must normalize to exactly:
 
 ```json
 {
@@ -1119,9 +1083,9 @@ Release JSON must normalize to exactly:
 }
 ```
 
-Do not edit `.github/releases/0.1.0.md`, tag `0.1.0`, or tag `mind-detective-v0.1.0`.
+Do not edit `.github/releases/0.1.0.md` or any published `0.1.0` tag/release.
 
-- [ ] **Step 4: Run the complete local verification set**
+- [ ] **Step 4: Run complete verification**
 
 ```bash
 python scripts/validate_repo.py
@@ -1132,9 +1096,9 @@ PYTHONPATH=plugins/mind-detective:apps/api python -m unittest discover -s apps/a
 ruff check .
 mypy --strict scripts tests plugins/mind-detective/scripts plugins/mind-detective/tests apps/api/mind_detective_api apps/api/tests
 pnpm install --frozen-lockfile
-pnpm --dir apps/web vitest run
+pnpm --dir apps/web exec vitest run
 pnpm --dir apps/web build
-pnpm --dir apps/web playwright test
+pnpm --dir apps/web exec playwright test
 ```
 
 Expected: all PASS.
@@ -1146,16 +1110,16 @@ git add docs README.md README.en.md CHANGELOG.md CHANGELOG.en.md .github apps pl
 git commit -m "release: prepare MIND Detective 0.2.0"
 ```
 
-- [ ] **Step 6: Integration and publication gates**
+- [ ] **Step 6: Preserve human integration/release gates**
 
-1. Push implementation branch and open a separate implementation PR against the approved documentation/design base or `main`, depending on whether the docs PR has already merged.
+1. Push a separate implementation branch and open an implementation PR.
 2. Require exact PR-head CI success.
 3. Obtain explicit human authorization before merge.
 4. Merge with expected-head protection.
 5. Require exact post-merge `main` push CI success.
 6. Obtain separate explicit human authorization for publication at the full 40-hex `main` SHA.
 7. Run only `publish-current-release.yml` with that SHA.
-8. Verify both `0.2.0` and `mind-detective-v0.2.0` are non-draft, immutable, and their tag refs resolve to the exact approved release SHA.
+8. Verify `0.2.0` and `mind-detective-v0.2.0` are non-draft, immutable, and both tag refs resolve to the exact approved release SHA.
 
 ---
 
@@ -1163,34 +1127,33 @@ git commit -m "release: prepare MIND Detective 0.2.0"
 
 ### Spec coverage
 
-- One shell / one navigation / same input structure: Tasks 9, 13, 18.
-- Message-level mode provenance and app-owned mode banner: Tasks 2, 3, 13.
-- No client reducer / pending sequential retry: Tasks 6, 11, 14.
-- One-tap neutral check / delayed refinement / orthogonal inaccessible state: Tasks 4, 14.
-- Persistent progress and prior-check context: Tasks 9, 13, 14.
-- First create / local cases / resume: Tasks 10, 12.
-- Empty planner / visible guard block / action rejection: Tasks 7, 8, 15.
-- Found-context and unresolved close: Task 16.
-- IndexedDB, `persist()`, install education, export/import: Tasks 10, 17.
-- Service-worker privacy boundary: Task 17.
-- RU/EN copy, accessibility and scenario harness: Task 18.
-- Checklist-vs-AI research validity and local evaluation metrics: Tasks 7, 8, 13, 16, 18.
-- Existing Python core reuse and stdlib boundary: Tasks 1, 5, 19.
-- Assistant-provider transient data boundary: Tasks 8, 18, 19.
-- Exact release governance and immutable `0.1.0`: Task 19.
+- Same B/C shell and input structure: Tasks 9, 13, 18.
+- Message-level mode provenance: Tasks 2, 3, 13.
+- No client reducer and sequential pending queue: Tasks 6, 11, 14.
+- One-tap neutral check and delayed refinement: Tasks 4, 14.
+- Persistent progress/prior-check context: Tasks 9, 13, 14.
+- Create/list/resume: Tasks 10, 12.
+- Empty planner, guard block and action rejection: Tasks 7, 8, 15.
+- Found context/unresolved close and evaluation events: Task 16.
+- IndexedDB, persistence request, install education and export/import: Tasks 10, 17.
+- Service-worker data boundary: Task 17.
+- RU/EN, accessibility and prototype state coverage: Task 18.
+- Existing Python core reuse/stdlib boundary: Tasks 1, 5, 19.
+- Assistant-provider privacy boundary: Tasks 8, 18, 19.
+- Exact immutable release governance: Task 19.
 
 ### Placeholder scan
 
-No `TBD`, `TODO`, deferred implementation placeholders, undefined function names, or unspecified test steps are present. Features explicitly outside `0.2.0` remain outside the plan rather than appearing as future-work steps.
+The plan contains no `TBD`, `TODO`, implementation-later markers, Python Ellipsis placeholders, undefined command names, or invalid dotted test-module paths through `mind-detective`.
 
 ### Type consistency
 
-- Python Case v2 types originate in Tasks 2–4 and are serialized/migrated in Task 3 before API use.
-- API contracts in Tasks 5–8 return the same full Case v2 payload consumed by the Web interfaces introduced in Task 9.
-- Pending command fields are identical between server `CommandEnvelope` in Task 6 and client `PendingCommand` in Task 11.
-- Proposal kinds defined in Task 7 are the same states rendered in Tasks 13 and 15.
-- `found_context` values in Task 16 match the canonical spec.
+- Case v2 types originate in Tasks 2–4 and serialize/migrate before API use.
+- API Tasks 5–8 return the same full Case v2 payload consumed by Web Task 9.
+- Server CommandEnvelope fields match client PendingCommand fields introduced in Task 11.
+- Proposal kinds from Task 7 are exactly the states rendered in Tasks 13 and 15.
+- `found_context` values in Task 16 match the approved spec.
 
 ## Execution Handoff
 
-Implementation must occur on a separate production branch/PR; the documentation/design branch remains the reviewed specification/plan artifact. At execution time create an isolated worktree using `superpowers:using-git-worktrees`, then execute this plan with `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. No implementation merge or release is authorized by approval of this plan.
+Production implementation must happen on a separate branch/PR. At execution time create an isolated worktree using `superpowers:using-git-worktrees`, then execute task-by-task with `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans`. Approval of this plan does not authorize implementation merge or release publication.
