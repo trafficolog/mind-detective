@@ -2,6 +2,12 @@ export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: false },
   modules: ['@vite-pwa/nuxt'],
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+  ],
   css: ['~/assets/css/tokens.css', '~/assets/css/app.css'],
   app: {
     head: {
