@@ -42,6 +42,12 @@ class BoundaryTests(unittest.TestCase):
         self.assertNotIn("fastapi", (ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         self.assertFalse((ROOT / "plugins/mind-detective/apps").exists())
 
+    def test_pnpm_build_script_allowlist_is_version_scoped(self):
+        workspace = (ROOT / "pnpm-workspace.yaml").read_text(encoding="utf-8")
+        self.assertIn("allowBuilds:", workspace)
+        self.assertIn("esbuild@0.28.2: true", workspace)
+        self.assertNotIn("dangerouslyAllowAllBuilds", workspace)
+
     def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn("'3.10'", ci)
@@ -61,10 +67,12 @@ class BoundaryTests(unittest.TestCase):
         self.assertIn("[tool.ruff.lint]", pyproject)
         self.assertIn('select = ["E4", "E7", "E9", "F", "B", "UP"]', pyproject)
 
-    def test_pr_ci_checks_out_and_diffs_exact_head_sha(self):
+    def test_pr_ci_checks_out_every_job_at_exact_head_sha(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         exact_ref = "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
-        self.assertEqual(ci.count(exact_ref), 2)
+        checkout_count = sum("uses: actions/checkout@" in line for line in ci.splitlines())
+        self.assertGreaterEqual(checkout_count, 3)
+        self.assertEqual(ci.count(exact_ref), checkout_count)
         self.assertIn('head="${{ github.event.pull_request.head.sha }}"', ci)
         self.assertIn('git diff --name-only "$base" "$head"', ci)
 
