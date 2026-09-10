@@ -14,7 +14,8 @@ test('generated PWA precaches shell assets without API case or background-sync d
 
   expect(manifest.display).toBe('standalone')
   expect(manifest.start_url).toBe('/')
-  expect(worker).toContain('index.html')
+  expect(worker).toContain('url:"/"')
+  expect(worker).toContain('createHandlerBoundToURL("/")')
   expect(worker).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync|backgroundSync/)
   expect(worker).not.toMatch(/"url":"\/api\//)
   expect(worker).not.toMatch(/mind-detective-case\/v2|item_label|interaction_journal|evaluation-export/)

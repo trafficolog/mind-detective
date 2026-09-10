@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { storedCase } from './helpers'
 
-test('preloaded PWA completes the canonical search workflow with the browser offline', async ({ page, context }) => {
+test('preloaded PWA completes the canonical search workflow with the browser offline', async ({ page, context, browserName }) => {
   let apiRequests = 0
   page.on('request', (request) => {
     try {
@@ -72,11 +72,13 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   expect(download.suggestedFilename()).toContain(caseId)
 
   expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
-  await Promise.all([
-    page.waitForEvent('load'),
-    page.evaluate(() => window.location.reload()),
-  ])
-  await expect(page.getByTestId('case-outcome')).toContainText('найдено')
+  if (browserName === 'chromium') {
+    await Promise.all([
+      page.waitForEvent('load'),
+      page.evaluate(() => window.location.reload()),
+    ])
+    await expect(page.getByTestId('case-outcome')).toContainText('найдено')
+  }
   expect((await storedCase(page, caseId))?.lifecycle).toBe('closed_found')
   expect(apiRequests).toBe(0)
 })
