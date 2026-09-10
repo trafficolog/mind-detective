@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, TypeVar
+from typing import TypeVar
 
 
 class RouteRelation(str, Enum):
