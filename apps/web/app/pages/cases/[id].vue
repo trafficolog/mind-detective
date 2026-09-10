@@ -115,6 +115,11 @@ async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
   await runCommand(envelope('set_mode', { mode }))
 }
 
+async function pauseCase(): Promise<void> {
+  const returned = await runCommand(envelope('pause', {}))
+  if (returned) logEvent('pause', { case_id: returned.case_id })
+}
+
 async function resumeCase(): Promise<void> {
   const returned = await runCommand(envelope('resume', {}))
   if (returned) logEvent('resume', { case_id: returned.case_id })
@@ -126,8 +131,9 @@ async function markChecked(): Promise<void> {
   if (!action?.target || !current) return
   logEvent('check_started', { case_id: current.case_id, candidate_id: action.candidate_id })
   const now = new Date().toISOString()
+  const checkId = crypto.randomUUID()
   const returned = await runCommand(envelope('record_search_check', {
-    check_id: crypto.randomUUID(),
+    check_id: checkId,
     target: action.target,
     method: 'reported_check',
     started_at: now,
@@ -137,7 +143,10 @@ async function markChecked(): Promise<void> {
     based_on: action.candidate_id ? [action.candidate_id] : [],
     notes: [],
   }))
-  if (returned) logEvent('check_finished', { case_id: returned.case_id, candidate_id: action.candidate_id })
+  if (returned) {
+    suppressedQualityCheckId.value = checkId
+    logEvent('check_finished', { case_id: returned.case_id, candidate_id: action.candidate_id })
+  }
 }
 
 async function refineQuality(payload: { checkId: string; method: RefinedMethod; inaccessibleParts: string[] }): Promise<void> {
@@ -282,6 +291,7 @@ onMounted(async () => {
         @write="showComposer = true"
         @journal="scrollJournal"
         @found="showClose = true"
+        @pause="pauseCase"
       />
 
       <StorageNotice :engaged="engaged" />
