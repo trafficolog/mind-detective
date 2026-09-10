@@ -11,7 +11,7 @@ class ApiContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.client = TestClient(app)
 
-    def test_create_returns_case_v2(self):
+    def test_create_returns_case_v2(self) -> None:
         response = self.client.post(
             "/api/v1/case/create",
             json={
@@ -27,8 +27,8 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(payload["interaction_journal"], [])
         self.assertEqual(payload["action_feedback"], [])
 
-    def test_validate_migrates_v1_without_inventing_history(self):
-        legacy = {
+    def test_validate_migrates_v1_without_inventing_history(self) -> None:
+        legacy: dict[str, object] = {
             "schema": "mind-detective-case/v1",
             "case_id": "legacy-1",
             "item_label": "паспорт",
@@ -50,7 +50,7 @@ class ApiContractTests(unittest.TestCase):
         self.assertEqual(payload["current_mode"], "unselected")
         self.assertEqual(payload["interaction_journal"], [])
 
-    def test_validate_rejects_future_schema_with_machine_code(self):
+    def test_validate_rejects_future_schema_with_machine_code(self) -> None:
         response = self.client.post(
             "/api/v1/case/validate",
             json={"case": {"schema": "mind-detective-case/v999"}},
