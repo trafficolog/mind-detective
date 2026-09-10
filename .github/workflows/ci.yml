@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install quality tools
+        run: python -m pip install ruff==0.16.6 mypy==2.3.1
+      - name: Compute validation change scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > /tmp/changed-files.txt
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          else
+            git ls-files > /tmp/changed-files.txt
+            exit 0
+          fi
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            git ls-files > /tmp/changed-files.txt
+          else
+            git diff --name-only "$base" "$head" > /tmp/changed-files.txt
+          fi
+      - name: Validate repository contracts
+        run: python scripts/validate_repo.py
+      - name: Validate path-aware reference freshness
+        run: python scripts/check_reference_freshness.py --changed-files-file /tmp/changed-files.txt
+      - name: Run repository tests
+        run: python -m unittest discover -s tests -v
+      - name: Run plugin tests
+        run: python -m unittest discover -s plugins/mind-detective/tests -v
+      - name: Compile Python
+        run: python -m compileall -q plugins/mind-detective/scripts scripts
+      - name: Ruff
+        run: ruff check .
+      - name: Mypy
+        run: mypy plugins/mind-detective/scripts scripts
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
