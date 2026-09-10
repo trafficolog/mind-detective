@@ -33,6 +33,28 @@ def _known_reconstruction_locations(case_payload: dict[str, object]) -> set[str]
     }
 
 
+def _normalize_target(value: str) -> str:
+    return " ".join(value.casefold().replace("ё", "е").split())
+
+
+def _proposal_repeats_rejected_candidate(
+    case_payload: dict[str, object],
+    proposal: ProposalModel,
+) -> bool:
+    case = case_from_dict(case_payload)
+    rejected_ids = {feedback.candidate_id for feedback in case.action_feedback}
+    if proposal.candidate_id is not None and proposal.candidate_id in rejected_ids:
+        return True
+    if proposal.target is None:
+        return False
+    rejected_targets = {
+        _normalize_target(candidate.target)
+        for candidate in case.candidates
+        if candidate.id in rejected_ids
+    }
+    return _normalize_target(proposal.target) in rejected_targets
+
+
 def _append_guard_event(
     case_payload: dict[str, object],
     request: ProposalRequest,
@@ -70,6 +92,11 @@ async def build_assistant_proposal(
         known_locations=_known_reconstruction_locations(canonical),
     )
     if guard.allowed:
+        if _proposal_repeats_rejected_candidate(canonical, proposed):
+            return ProposalResponse(
+                case=canonical,
+                proposal=build_checklist_proposal(canonical, request.mode),
+            )
         return ProposalResponse(case=canonical, proposal=proposed)
 
     fallback = build_checklist_proposal(canonical, request.mode)

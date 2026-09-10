@@ -5,12 +5,13 @@ const emit = defineEmits<{
   journal: []
   found: []
 }>()
+const { t } = useCopy()
 </script>
 
 <template>
-  <nav class="interaction-dock" aria-label="Действия дела" data-testid="interaction-dock">
-    <button class="secondary-action" type="button" :disabled="pending" @click="emit('journal')">Журнал</button>
-    <button class="secondary-action" type="button" :disabled="pending" @click="emit('write')">Написать</button>
-    <button class="primary-action" type="button" :disabled="pending" @click="emit('found')">Нашёл</button>
+  <nav class="interaction-dock" :aria-label="t('journal.title')" data-testid="interaction-dock">
+    <button class="secondary-action" type="button" :disabled="pending" @click="emit('journal')">{{ t('dock.journal') }}</button>
+    <button class="secondary-action" type="button" :disabled="pending" @click="emit('write')">{{ t('dock.write') }}</button>
+    <button class="primary-action" type="button" :disabled="pending" @click="emit('found')">{{ t('dock.found') }}</button>
   </nav>
 </template>

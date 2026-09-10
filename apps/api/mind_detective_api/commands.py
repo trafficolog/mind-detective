@@ -5,9 +5,19 @@ from collections.abc import Mapping
 from .contracts import CommandEnvelope
 from .core_bridge import validate_or_migrate_case_payload
 
+from scripts.case import Case
 from scripts.controller import CaseController
 from scripts.feedback import ActionFeedback, ActionFeedbackReason
 from scripts.journal import InteractionMode, JournalAuthor, JournalEntry, JournalMode
+from scripts.planner import (
+    CandidateBasis,
+    CandidateCheck,
+    CheckState,
+    Effort,
+    RouteRelation,
+    Safety,
+    UrgencyRelevance,
+)
 from scripts.search_log import SearchCheck, SearchMethod, SearchResult
 from scripts.statements import StatementSource, StatementType, create_statement
 from scripts.store import case_from_dict, case_to_dict
@@ -124,6 +134,39 @@ def _journal_mode(mode: InteractionMode) -> JournalMode:
     raise CommandError("MD_WEB_MODE_REQUIRED", "select an interaction mode before recording journal activity")
 
 
+def _normalize_candidate_target(value: str) -> str:
+    return " ".join(value.casefold().replace("ё", "е").split())
+
+
+def _append_supported_search_candidate(
+    controller: CaseController,
+    case: Case,
+    *,
+    statement_id: str,
+    target: str,
+    now: str,
+) -> Case:
+    # Kept in this adapter because it translates an explicit Web input into the
+    # existing controller-owned CandidateCheck contract; it does not parse or
+    # infer a location from free-form prose.
+    normalized = _normalize_candidate_target(target)
+    if any(_normalize_candidate_target(candidate.target) == normalized for candidate in case.candidates):
+        return case
+    candidate = CandidateCheck(
+        id=f"candidate-{statement_id}",
+        target=target,
+        route_relation=RouteRelation.NONE,
+        check_state=CheckState.UNCHECKED,
+        effort=Effort.LOW,
+        safety=Safety.CAUTION,
+        urgency_relevance=UrgencyRelevance.NORMAL,
+        basis=CandidateBasis.EPISODE,
+        based_on=(statement_id,),
+        rationale=("MD_PLAN_USER_SUPPORTED",),
+    )
+    return controller.replace_candidates(case, case.candidates + (candidate,), now)
+
+
 def execute_command(
     case_payload: dict[str, object],
     envelope: CommandEnvelope,
@@ -154,10 +197,11 @@ def execute_command(
             raise CommandError("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
         statement_id = _required_str(payload, "statement_id")
         original_text = _required_str(payload, "original_text")
+        statement_type = StatementType(_required_str(payload, "statement_type"))
         statement = create_statement(
             statement_id=statement_id,
             source=source,
-            statement_type=StatementType(_required_str(payload, "statement_type")),
+            statement_type=statement_type,
             original_text=original_text,
             recorded_at=envelope.now,
             event_time=_optional_str(payload, "event_time"),
@@ -166,6 +210,14 @@ def execute_command(
             limitations=_string_tuple(payload, "limitations"),
         )
         case = controller.add_statement(case, statement, envelope.now)
+        if mode is JournalMode.SEARCH and statement_type is StatementType.SEARCH_SUGGESTION:
+            case = _append_supported_search_candidate(
+                controller,
+                case,
+                statement_id=statement_id,
+                target=original_text,
+                now=envelope.now,
+            )
         case = controller.append_journal_entry(
             case,
             JournalEntry(

@@ -11,6 +11,7 @@ const repository = useCaseRepository()
 const api = useCaseApi()
 const arm = useExperimentalArm()
 const queue = useCommandQueue()
+const { locale, t } = useCopy()
 
 const caseValue = ref<CaseV2 | null>(null)
 const proposal = ref<ProposalModel | null>(null)
@@ -71,7 +72,7 @@ async function refreshProposal(): Promise<void> {
       crypto.randomUUID(),
       new Date().toISOString(),
       current.current_mode,
-      'ru',
+      locale.value,
       arm.value,
     )
     if (response.case.updated_at !== current.updated_at || response.case.interaction_journal.length !== current.interaction_journal.length) {
@@ -202,7 +203,7 @@ async function submitComposer(): Promise<void> {
   const returned = await runCommand(envelope('add_statement', {
     statement_id: crypto.randomUUID(),
     source: 'user',
-    statement_type: current.current_mode === 'search' ? 'observation' : 'recollection',
+    statement_type: current.current_mode === 'search' ? 'search_suggestion' : 'recollection',
     original_text: text,
     event_time: null,
     user_confirmation: true,
@@ -232,6 +233,11 @@ async function retryFailed(): Promise<void> {
   }
 }
 
+function handleDeleted(): void {
+  caseValue.value = null
+  proposal.value = null
+}
+
 function scrollJournal(): void {
   document.querySelector('[data-testid="interaction-journal"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -248,39 +254,46 @@ onMounted(async () => {
 
 <template>
   <main class="case-page" data-testid="case-page">
-    <p v-if="loading" class="muted" aria-live="polite">Загружаем дело…</p>
+    <p v-if="loading" class="muted" aria-live="polite">{{ t('case.loading') }}</p>
     <section v-else-if="!caseValue" class="hero-panel">
-      <h1>Дело не найдено</h1>
-      <p class="lede">Оно могло быть удалено из локального хранилища этого браузера.</p>
-      <NuxtLink class="primary-action" to="/">К списку дел</NuxtLink>
+      <h1>{{ t('case.not_found') }}</h1>
+      <p class="lede">{{ t('case.not_found_help') }}</p>
+      <NuxtLink class="primary-action" to="/">{{ t('case.to_list') }}</NuxtLink>
     </section>
 
-    <CaseOutcome v-else-if="caseValue.lifecycle === 'closed_found' || caseValue.lifecycle === 'closed_unresolved'" :case-value="caseValue" />
+    <template v-else-if="caseValue.lifecycle === 'closed_found' || caseValue.lifecycle === 'closed_unresolved'">
+      <CaseOutcome :case-value="caseValue" />
+      <CaseDataActions :case-value="caseValue" :allow-delete="true" @deleted="handleDeleted" />
+    </template>
 
     <template v-else>
       <div v-if="caseValue.lifecycle === 'paused'" class="privacy-note" data-testid="paused-banner">
-        Поиск приостановлен. История сохранена без изменений.
-        <button class="primary-action" type="button" :disabled="busy" @click="resumeCase">Продолжить</button>
+        {{ t('case.paused_copy') }}
+        <button class="primary-action" type="button" :disabled="busy" @click="resumeCase">{{ t('case.resume') }}</button>
       </div>
 
       <div v-if="caseValue.current_mode === 'unselected' && caseValue.lifecycle === 'active'" class="privacy-note" data-testid="mode-choice">
-        <strong>С чего полезнее продолжить?</strong>
-        <p>Можно сначала восстановить подтверждённую последовательность или перейти к физическому поиску.</p>
+        <strong>{{ t('case.mode_question') }}</strong>
+        <p>{{ t('case.mode_help') }}</p>
         <div class="dialog-actions">
-          <button class="secondary-action" type="button" :disabled="busy" @click="chooseMode('reconstruction')">Восстановить последовательность</button>
-          <button class="primary-action" type="button" :disabled="busy" @click="chooseMode('search')">Перейти к поиску</button>
+          <button class="secondary-action" type="button" :disabled="busy" @click="chooseMode('reconstruction')">{{ t('case.mode_reconstruct_action') }}</button>
+          <button class="primary-action" type="button" :disabled="busy" @click="chooseMode('search')">{{ t('case.mode_search_action') }}</button>
         </div>
       </div>
 
       <div v-if="errorCode" class="privacy-note" role="alert" data-testid="command-error">
-        Изменение не сохранено. Каноническое состояние дела не менялось.
-        <button v-if="failedCommand" class="secondary-action" type="button" :disabled="busy" @click="retryFailed">Повторить ту же команду</button>
+        {{ t('case.command_error') }}
+        <button v-if="failedCommand" class="secondary-action" type="button" :disabled="busy" @click="retryFailed">{{ t('case.command_retry') }}</button>
       </div>
 
       <div v-if="guardCode" class="system-event" data-testid="guard-block">
-        Предложение помощника не прошло проверку безопасности. Показан безопасный резервный шаг.
-        <details><summary>Техническая причина</summary><code>{{ guardCode }}</code></details>
+        {{ t('guard.banner') }}
+        <details><summary>{{ t('common.details') }}</summary><code>{{ guardCode }}</code></details>
       </div>
+
+      <aside v-if="arm === 'assistant'" class="privacy-note" data-testid="provider-disclosure">
+        {{ t('privacy.assistant_provider') }}
+      </aside>
 
       <CaseShell
         :case-value="caseValue"
@@ -326,13 +339,15 @@ onMounted(async () => {
 
       <div v-if="showComposer" class="dialog-backdrop" data-testid="composer-dialog" @click.self="showComposer = false">
         <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="composer-title">
-          <h2 id="composer-title">Добавить подтверждённую информацию</h2>
+          <h2 id="composer-title">{{ t('composer.title') }}</h2>
           <form @submit.prevent="submitComposer">
-            <label class="field-label" for="composer-text">Что вы помните или наблюдаете?</label>
+            <label class="field-label" for="composer-text">
+              {{ caseValue.current_mode === 'search' ? t('composer.search_label') : t('composer.label') }}
+            </label>
             <textarea id="composer-text" v-model="composerText" rows="4" required />
             <div class="dialog-actions">
-              <button class="secondary-action" type="button" @click="showComposer = false">Отмена</button>
-              <button class="primary-action" type="submit" :disabled="busy || !composerText.trim()">Сохранить</button>
+              <button class="secondary-action" type="button" @click="showComposer = false">{{ t('common.cancel') }}</button>
+              <button class="primary-action" type="submit" :disabled="busy || !composerText.trim()">{{ t('common.save') }}</button>
             </div>
           </form>
         </section>
