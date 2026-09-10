@@ -62,6 +62,29 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(updated.interaction_journal[0].statement_ids, ("statement-1",))
         self.assertEqual(updated.interaction_journal[0].text, "Я уже проверил стол.")
 
+    def test_search_suggestion_statement_creates_supported_candidate(self) -> None:
+        command = CommandEnvelope(
+            command_id="cmd-candidate",
+            expected_updated_at="2026-09-10T07:00:00Z",
+            command_type="add_statement",
+            now="2026-09-10T07:01:30Z",
+            payload={
+                "statement_id": "statement-candidate",
+                "source": "user",
+                "statement_type": "search_suggestion",
+                "original_text": "карманы куртки",
+                "event_time": None,
+                "user_confirmation": True,
+                "supporting_evidence_ids": [],
+                "limitations": [],
+            },
+        )
+        updated = case_from_dict(execute_command(self.case_payload, command))
+        self.assertEqual(len(updated.candidates), 1)
+        self.assertEqual(updated.candidates[0].target, "карманы куртки")
+        self.assertEqual(updated.candidates[0].based_on, ("statement-candidate",))
+        self.assertEqual(updated.candidates[0].check_state.value, "unchecked")
+
     def test_unselected_case_rejects_journal_activity(self) -> None:
         unselected = create_case_payload("case-2", "паспорт", "2026-09-10T07:00:00Z")
         with self.assertRaises(CommandError) as ctx:
