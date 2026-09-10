@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 
 
 class SearchMethod(str, Enum):
+    REPORTED_CHECK = "reported_check"
     GLANCE = "glance"
     VISUAL_SYSTEMATIC = "visual_systematic"
     EMPTY_AND_CHECK = "empty_and_check"
@@ -18,6 +19,12 @@ class SearchResult(str, Enum):
     NOT_FOUND = "not_found"
     PARTIAL = "partial"
     INACCESSIBLE = "inaccessible"
+
+
+class SearchLogError(ValueError):
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(message)
+        self.code = code
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,6 +65,29 @@ def find_duplicate_checks(
     target: str,
 ) -> tuple[SearchCheck, ...]:
     return tuple(check for check in checks if is_duplicate_target(check.target, target))
+
+
+def refine_search_check_method(
+    checks: tuple[SearchCheck, ...],
+    check_id: str,
+    method: SearchMethod,
+) -> tuple[SearchCheck, ...]:
+    if method is SearchMethod.INACCESSIBLE:
+        raise SearchLogError(
+            "MD_SEARCH_METHOD_INVALID",
+            "inaccessible is a legacy compatibility value, not a refinement method",
+        )
+    found = False
+    refined: list[SearchCheck] = []
+    for check in checks:
+        if check.id == check_id:
+            found = True
+            refined.append(replace(check, method=method))
+        else:
+            refined.append(check)
+    if not found:
+        raise SearchLogError("MD_SEARCH_CHECK_NOT_FOUND", f"search check not found: {check_id}")
+    return tuple(refined)
 
 
 @dataclass(slots=True)
