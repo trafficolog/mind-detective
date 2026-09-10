@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from .commands import execute_command
@@ -16,8 +19,22 @@ from .core_bridge import create_case_payload, validate_or_migrate_case_payload
 from .proposals import build_proposal
 
 _DOMAIN_ERROR = "MD_WEB_DOMAIN_ERROR"
+_DEFAULT_WEB_ORIGIN = "http://127.0.0.1:3000"
+
+
+def _web_origins() -> list[str]:
+    configured = os.environ.get("MIND_DETECTIVE_WEB_ORIGINS", _DEFAULT_WEB_ORIGIN)
+    return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
 
 app = FastAPI(title="MIND Detective API", version="0.2.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_web_origins(),
+    allow_credentials=False,
+    allow_methods=["POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
+)
 
 
 def _error_response(code: str, message: str) -> JSONResponse:
