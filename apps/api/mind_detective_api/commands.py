@@ -124,18 +124,6 @@ def _journal_mode(mode: InteractionMode) -> JournalMode:
     raise CommandError("MD_WEB_MODE_REQUIRED", "select an interaction mode before recording journal activity")
 
 
-def _append_statement_journal(
-    controller: CaseController,
-    case: object,
-    envelope: CommandEnvelope,
-    statement_id: str,
-    text: str,
-) -> object:
-    # `case` is deliberately kept internal to execute_command; the typed helper is
-    # inlined through controller calls below so Web never supplies journal provenance.
-    raise AssertionError("unreachable")
-
-
 def execute_command(
     case_payload: dict[str, object],
     envelope: CommandEnvelope,
