@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MIND Detective">
+  <rect width="512" height="512" rx="112" fill="#175c52"/>
+  <circle cx="226" cy="218" r="116" fill="none" stroke="#ffffff" stroke-width="34"/>
+  <path d="M308 302 410 404" fill="none" stroke="#ffffff" stroke-width="42" stroke-linecap="round"/>
+  <path d="M172 218h108M226 164v108" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round"/>
+</svg>
