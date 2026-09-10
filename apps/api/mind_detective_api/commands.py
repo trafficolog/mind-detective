@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from .contracts import CommandEnvelope
 from .core_bridge import validate_or_migrate_case_payload
 
+from scripts.case import Case
 from scripts.controller import CaseController
 from scripts.feedback import ActionFeedback, ActionFeedbackReason
 from scripts.journal import InteractionMode, JournalAuthor, JournalEntry, JournalMode
@@ -139,19 +140,18 @@ def _normalize_candidate_target(value: str) -> str:
 
 def _append_supported_search_candidate(
     controller: CaseController,
-    case: object,
+    case: Case,
     *,
     statement_id: str,
     target: str,
     now: str,
-) -> object:
+) -> Case:
     # Kept in this adapter because it translates an explicit Web input into the
     # existing controller-owned CandidateCheck contract; it does not parse or
     # infer a location from free-form prose.
-    typed_case = case
     normalized = _normalize_candidate_target(target)
-    if any(_normalize_candidate_target(candidate.target) == normalized for candidate in typed_case.candidates):
-        return typed_case
+    if any(_normalize_candidate_target(candidate.target) == normalized for candidate in case.candidates):
+        return case
     candidate = CandidateCheck(
         id=f"candidate-{statement_id}",
         target=target,
@@ -164,7 +164,7 @@ def _append_supported_search_candidate(
         based_on=(statement_id,),
         rationale=("MD_PLAN_USER_SUPPORTED",),
     )
-    return controller.replace_candidates(typed_case, typed_case.candidates + (candidate,), now)
+    return controller.replace_candidates(case, case.candidates + (candidate,), now)
 
 
 def execute_command(
