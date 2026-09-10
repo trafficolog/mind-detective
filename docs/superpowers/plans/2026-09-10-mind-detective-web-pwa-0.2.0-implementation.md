@@ -507,7 +507,7 @@ git commit -m "feat: add deterministic checklist proposals"
 
 **Interfaces:**
 - `OpenAIProposalClient.propose(case: dict[str, object], mode: str) -> Proposal` is asynchronous.
-- OpenAI SDK `3.8.0` uses the Responses structured-output parser with a Pydantic class passed as `text_format`.
+- OpenAI SDK `3.8.0` uses `responses.parse(..., text_format=ProposalModel)` for Responses structured output; publication calls set `store=False` for this transient proposal flow.
 - `OPENAI_API_KEY` and `MIND_DETECTIVE_OPENAI_MODEL` are read server-side only.
 - Blocked proposals never enter user-facing journal text; a reviewed system event plus deterministic fallback is returned.
 
@@ -538,7 +538,7 @@ Expected: FAIL.
 
 - [ ] **Step 3: Implement provider and guarded proposal pipeline**
 
-The provider uses this verified SDK shape:
+The provider call is:
 
 ```python
 response = await self.client.responses.parse(
@@ -556,7 +556,7 @@ if content.type != "output_text" or content.parsed is None:
 proposal = content.parsed
 ```
 
-Tests must not require a live API key. Application metadata logs may contain request id, arm, outcome code, latency bucket and configured model id; they must not contain item label, user text, target text, full Case JSON, or raw model output.
+The shape follows the official OpenAI Python Responses structured-output example; use the async client equivalent. Tests must not require a live API key. Application metadata logs may contain request id, arm, outcome code, latency bucket and configured model id; they must not contain item label, user text, target text, full Case JSON, or raw model output.
 
 - [ ] **Step 4: Run GREEN**
 
