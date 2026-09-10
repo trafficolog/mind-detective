@@ -189,6 +189,213 @@
       "helper": "scripts/release_manifest.py",
       "test": "tests/test_release_contract.py::ReleaseContractTests.test_repository_manifest_is_valid",
       "reference": "docs/RELEASE_POLICY.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-SHELL-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/CaseShell.vue",
+      "test": "apps/web/tests/e2e/shell-equivalence.spec.ts::experimental arms expose the same product shell and do not reveal arm identity",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-MODE-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/InteractionJournal.vue",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::journal provenance partial accessibility and persistent summary survive in one shell",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-MODE-02",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/ModeBanner.vue",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::journal provenance partial accessibility and persistent summary survive in one shell",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-STATE-01",
+      "status": "active",
+      "enforcement": "repository_validator",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/api/mind_detective_api/core_bridge.py",
+      "test": "tests/test_boundaries.py::BoundaryTests.test_web_has_no_client_domain_reducer_or_case_controller_port",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-QUEUE-01",
+      "status": "active",
+      "enforcement": "unit+browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/composables/useCommandQueue.ts",
+      "test": "apps/web/tests/unit/commandQueue.spec.ts::retries byte-equivalent case snapshot and envelope after failure",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-CHECK-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/pages/cases/[id].vue",
+      "test": "apps/web/tests/e2e/check-flow.spec.ts::one-tap check stays pending without optimistic canonical progress",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-CHECK-02",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/lib/case/derived.ts",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::journal provenance partial accessibility and persistent summary survive in one shell",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-SUMMARY-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/ProgressStrip.vue",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::journal provenance partial accessibility and persistent summary survive in one shell",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-CREATE-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/CreateCaseForm.vue",
+      "test": "apps/web/tests/e2e/create-resume.spec.ts::production creation is one field and preserves a paused case for resume",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-RESUME-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/lib/storage/indexeddb.ts",
+      "test": "apps/web/tests/e2e/create-resume.spec.ts::production creation is one field and preserves a paused case for resume",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-EMPTY-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/NextActionCard.vue",
+      "test": "apps/web/tests/e2e/proposal-states.spec.ts::empty planner asks for more information without inventing a location",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-GUARD-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/api/mind_detective_api/proposals.py",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::blocked reconstruction proposal is not carried into a newly loaded search-mode proposal",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-ACTION-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/api/mind_detective_api/commands.py",
+      "test": "apps/web/tests/e2e/proposal-states.spec.ts::rejected candidate is not immediately proposed again",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-CLOSE-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/case/CloseCaseDialog.vue",
+      "test": "apps/web/tests/e2e/close-flow.spec.ts::found elsewhere closes case with explicit research context",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-STORE-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/lib/storage/indexeddb.ts",
+      "test": "apps/web/tests/e2e/storage.spec.ts::valid v1 import is server-migrated to canonical v2 and future schema is rejected",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-STORE-02",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/storage/StorageNotice.vue",
+      "test": "apps/web/tests/e2e/scenario-matrix.spec.ts::persistence capability states are disclosed without claiming guaranteed backup",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-EXPORT-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/components/storage/CaseDataActions.vue",
+      "test": "apps/web/tests/e2e/storage.spec.ts::engaged case exposes durability warning install education and explicit JSON export",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-PWA-01",
+      "status": "active",
+      "enforcement": "browser_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/nuxt.config.ts",
+      "test": "apps/web/tests/e2e/pwa-storage.spec.ts::generated PWA precaches shell assets without API case or background-sync data",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-I18N-01",
+      "status": "active",
+      "enforcement": "unit_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/lib/i18n/index.ts",
+      "test": "apps/web/tests/unit/i18n.spec.ts::keeps exact key parity",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-EVAL-01",
+      "status": "active",
+      "enforcement": "unit_contract",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/web/app/lib/eval/log.ts",
+      "test": "apps/web/tests/unit/evalLog.spec.ts::rejects sensitive evaluation keys synchronously",
+      "reference": "docs/PRODUCT_EVALUATION.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-CORE-01",
+      "status": "active",
+      "enforcement": "repository_validator",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "plugins/mind-detective/scripts/controller.py",
+      "test": "tests/test_boundaries.py::BoundaryTests.test_web_has_no_client_domain_reducer_or_case_controller_port",
+      "reference": "docs/superpowers/specs/2026-09-10-mind-detective-web-pwa-0.2.0-design.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-PRIVACY-01",
+      "status": "active",
+      "enforcement": "unit_contract+boundary",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "apps/api/mind_detective_api/litellm_provider.py",
+      "test": "apps/web/tests/unit/i18n.spec.ts::preserves required safety and provider-processing semantics in both locales",
+      "reference": "docs/PRIVACY.md"
+    },
+    {
+      "requirement_id": "MD-WEB-REQ-RELEASE-01",
+      "status": "active",
+      "enforcement": "publisher+human_gate",
+      "skill": "plugins/mind-detective/skills/mind-detective/SKILL.md",
+      "helper": "scripts/release_manifest.py",
+      "test": "tests/test_release_contract.py::ReleaseContractTests.test_publisher_requires_manual_full_sha_human_gate",
+      "reference": "docs/RELEASE_POLICY.md"
     }
   ]
 }
