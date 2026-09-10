@@ -25,6 +25,7 @@ export const ru = {
   'mode.system': 'Система',
   'arm.assistant': 'AI-предложение',
   'arm.checklist': 'Контрольный список',
+  'assistant.offline_fallback': 'Связь с AI-сервисом сейчас недоступна. Используется локальный детерминированный план; история не будет автоматически отправлена модели после восстановления связи.',
   'progress.label': 'Состояние поиска',
   'progress.checked': 'Проверено',
   'progress.remaining': 'Осталось',
