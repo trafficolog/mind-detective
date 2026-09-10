@@ -7,7 +7,7 @@ from .core_bridge import validate_or_migrate_case_payload
 
 from scripts.controller import CaseController
 from scripts.feedback import ActionFeedback, ActionFeedbackReason
-from scripts.journal import InteractionMode
+from scripts.journal import InteractionMode, JournalAuthor, JournalEntry, JournalMode
 from scripts.search_log import SearchCheck, SearchMethod, SearchResult
 from scripts.statements import StatementSource, StatementType, create_statement
 from scripts.store import case_from_dict, case_to_dict
@@ -116,6 +116,26 @@ def _outcome(payload: dict[str, object]) -> dict[str, object] | None:
     return value
 
 
+def _journal_mode(mode: InteractionMode) -> JournalMode:
+    if mode is InteractionMode.RECONSTRUCTION:
+        return JournalMode.RECONSTRUCTION
+    if mode is InteractionMode.SEARCH:
+        return JournalMode.SEARCH
+    raise CommandError("MD_WEB_MODE_REQUIRED", "select an interaction mode before recording journal activity")
+
+
+def _append_statement_journal(
+    controller: CaseController,
+    case: object,
+    envelope: CommandEnvelope,
+    statement_id: str,
+    text: str,
+) -> object:
+    # `case` is deliberately kept internal to execute_command; the typed helper is
+    # inlined through controller calls below so Web never supplies journal provenance.
+    raise AssertionError("unreachable")
+
+
 def execute_command(
     case_payload: dict[str, object],
     envelope: CommandEnvelope,
@@ -140,11 +160,17 @@ def execute_command(
             envelope.now,
         )
     elif command_type == "add_statement":
+        mode = _journal_mode(case.current_mode)
+        source = StatementSource(_required_str(payload, "source"))
+        if source is not StatementSource.USER:
+            raise CommandError("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
+        statement_id = _required_str(payload, "statement_id")
+        original_text = _required_str(payload, "original_text")
         statement = create_statement(
-            statement_id=_required_str(payload, "statement_id"),
-            source=StatementSource(_required_str(payload, "source")),
+            statement_id=statement_id,
+            source=source,
             statement_type=StatementType(_required_str(payload, "statement_type")),
-            original_text=_required_str(payload, "original_text"),
+            original_text=original_text,
             recorded_at=envelope.now,
             event_time=_optional_str(payload, "event_time"),
             user_confirmation=bool(payload.get("user_confirmation", False)),
@@ -152,7 +178,21 @@ def execute_command(
             limitations=_string_tuple(payload, "limitations"),
         )
         case = controller.add_statement(case, statement, envelope.now)
+        case = controller.append_journal_entry(
+            case,
+            JournalEntry(
+                id=f"journal-{envelope.command_id}",
+                author=JournalAuthor.USER,
+                mode=mode,
+                entry_type="statement",
+                text=original_text,
+                created_at=envelope.now,
+                statement_ids=(statement_id,),
+            ),
+            envelope.now,
+        )
     elif command_type == "record_search_check":
+        mode = _journal_mode(case.current_mode)
         method_raw = payload.get("method", SearchMethod.REPORTED_CHECK.value)
         if not isinstance(method_raw, str):
             raise CommandError("MD_WEB_COMMAND_PAYLOAD", "method must be a string")
@@ -170,9 +210,11 @@ def execute_command(
             raise CommandError("MD_WEB_COMMAND_PAYLOAD", "started_at must be a string")
         if completed_at is not None and not isinstance(completed_at, str):
             raise CommandError("MD_WEB_COMMAND_PAYLOAD", "completed_at must be a string or null")
+        check_id = _required_str(payload, "check_id")
+        target = _required_str(payload, "target")
         check = SearchCheck(
-            id=_required_str(payload, "check_id"),
-            target=_required_str(payload, "target"),
+            id=check_id,
+            target=target,
             method=SearchMethod(method_raw),
             started_at=started_at,
             completed_at=completed_at,
@@ -182,6 +224,19 @@ def execute_command(
             notes=_string_tuple(payload, "notes"),
         )
         case = controller.record_search_check(case, check, envelope.now)
+        case = controller.append_journal_entry(
+            case,
+            JournalEntry(
+                id=f"journal-{envelope.command_id}",
+                author=JournalAuthor.USER,
+                mode=mode,
+                entry_type="search_check",
+                text=target,
+                created_at=envelope.now,
+                search_check_ids=(check_id,),
+            ),
+            envelope.now,
+        )
     elif command_type == "refine_search_check":
         case = controller.refine_search_check(
             case,
