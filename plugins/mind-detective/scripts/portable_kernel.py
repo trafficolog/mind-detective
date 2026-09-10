@@ -6,6 +6,7 @@ from .portable_contract import SUPPORTED_COMMAND_TYPES
 from .portable_intrinsics import (
     PortableKernelError,
     clone_json,
+    compare_python_strings,
     portable_error,
     split_python_whitespace,
     unicode_casefold,
@@ -541,11 +542,160 @@ def apply_command(
     portable_error("MD_WEB_COMMAND_TYPE", f"unsupported command: {command_type}")
 
 
+_URGENCY_ORDER = ("high", "normal")
+_BASIS_ORDER = ("episode", "habit", "generic")
+_ROUTE_ORDER = ("direct", "indirect", "none")
+_CHECK_STATE_ORDER = ("unchecked", "partial", "checked")
+_EFFORT_ORDER = ("low", "medium", "high")
+
+
+def _candidate_field(candidate: dict[str, object], field: str) -> str:
+    value = _required_str(candidate, field)
+    return value
+
+
+def _keep_best_candidates(
+    candidates: list[dict[str, object]],
+    field: str,
+    order: tuple[str, ...],
+) -> list[dict[str, object]]:
+    for preferred in order:
+        matched: list[dict[str, object]] = []
+        for candidate in candidates:
+            if _candidate_field(candidate, field) == preferred:
+                matched.append(candidate)
+        if matched:
+            return matched
+    return candidates
+
+
+def select_next_action_json(candidates: list[object]) -> dict[str, object] | None:
+    pool: list[dict[str, object]] = []
+    for raw in candidates:
+        candidate = _as_dict(raw, "candidate")
+        if _candidate_field(candidate, "safety") != "unsafe":
+            pool.append(candidate)
+    if not pool:
+        return None
+
+    pool = _keep_best_candidates(pool, "urgency_relevance", _URGENCY_ORDER)
+    pool = _keep_best_candidates(pool, "basis", _BASIS_ORDER)
+    pool = _keep_best_candidates(pool, "route_relation", _ROUTE_ORDER)
+    pool = _keep_best_candidates(pool, "check_state", _CHECK_STATE_ORDER)
+    pool = _keep_best_candidates(pool, "effort", _EFFORT_ORDER)
+
+    chosen = pool[0]
+    for candidate in pool[1:]:
+        if compare_python_strings(
+            _candidate_field(candidate, "id"),
+            _candidate_field(chosen, "id"),
+        ) < 0:
+            chosen = candidate
+
+    urgency = _candidate_field(chosen, "urgency_relevance")
+    basis = _candidate_field(chosen, "basis")
+    route = _candidate_field(chosen, "route_relation")
+    check_state = _candidate_field(chosen, "check_state")
+    effort = _candidate_field(chosen, "effort")
+    safety = _candidate_field(chosen, "safety")
+    codes: list[str] = []
+    if urgency == "high":
+        codes.append("MD_PLAN_URGENT")
+    codes.append(f"MD_PLAN_BASIS_{basis.upper()}")
+    codes.append(f"MD_PLAN_{route.upper()}_ROUTE")
+    codes.append(f"MD_PLAN_{check_state.upper()}")
+    codes.append(f"MD_PLAN_{effort.upper()}_EFFORT")
+    if safety == "caution":
+        codes.append("MD_PLAN_CAUTION")
+
+    return {
+        "candidate_id": _candidate_field(chosen, "id"),
+        "target": _candidate_field(chosen, "target"),
+        "rationale_codes": codes,
+    }
+
+
+def _proposal(
+    kind: str,
+    copy_key: str,
+    *,
+    candidate_id: str | None = None,
+    target: str | None = None,
+    rationale_codes: list[str] | None = None,
+    related_statement_ids: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "kind": kind,
+        "candidate_id": candidate_id,
+        "target": target,
+        "copy_key": copy_key,
+        "rationale_codes": rationale_codes or [],
+        "related_statement_ids": related_statement_ids or [],
+    }
+
+
+def build_checklist_proposal_json(case: dict[str, object], mode: str) -> dict[str, object]:
+    _ensure_case_shape(case)
+    if mode == "reconstruction":
+        statements = _as_list(case["statements"], "statements")
+        related: list[str] = []
+        for raw in statements[-3:]:
+            statement = _as_dict(raw, "statement")
+            related.append(_required_str(statement, "id"))
+        return _proposal(
+            "clarification",
+            "reconstruction.clarify_supported_sequence",
+            related_statement_ids=related,
+        )
+    if mode != "search":
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid proposal mode")
+
+    rejected: set[str] = set()
+    for raw in _as_list(case["action_feedback"], "action_feedback"):
+        feedback = _as_dict(raw, "action_feedback")
+        rejected.add(_required_str(feedback, "candidate_id"))
+    available: list[object] = []
+    for raw in _as_list(case["candidates"], "candidates"):
+        candidate = _as_dict(raw, "candidate")
+        if _required_str(candidate, "id") not in rejected:
+            available.append(candidate)
+    action = select_next_action_json(available)
+    if action is not None:
+        rationale = _as_list(action["rationale_codes"], "rationale_codes")
+        rationale_codes: list[str] = []
+        for value in rationale:
+            if not isinstance(value, str):
+                portable_error("MD_WEB_COMMAND_PAYLOAD", "rationale code must be a string")
+            rationale_codes.append(value)
+        return _proposal(
+            "next_action",
+            "next_action.check_target",
+            candidate_id=_required_str(action, "candidate_id"),
+            target=_required_str(action, "target"),
+            rationale_codes=rationale_codes,
+        )
+
+    checks = _as_list(case["search_checks"], "search_checks")
+    for raw in checks[::-1]:
+        check = _as_dict(raw, "search_check")
+        result = _required_str(check, "result")
+        inaccessible = _as_list(check.get("inaccessible_parts", []), "inaccessible_parts")
+        if result in {"partial", "inaccessible"} or inaccessible:
+            return _proposal(
+                "clarification",
+                "empty.resolve_partial_check",
+                target=_required_str(check, "target"),
+            )
+
+    return _proposal("need_more_information", "empty.add_supported_place_or_reconstruct")
+
+
 __all__ = [
     "PortableKernelError",
     "add_statement_json",
     "append_journal_entry_json",
     "apply_command",
+    "build_checklist_proposal_json",
     "close_found_json",
     "close_unresolved_json",
     "create_case",
@@ -554,5 +704,6 @@ __all__ = [
     "record_search_check_json",
     "refine_search_check_json",
     "resume_json",
+    "select_next_action_json",
     "set_mode_json",
 ]
