@@ -1,16 +1,20 @@
 <script setup lang="ts">
+import { shallowRef, toRaw } from 'vue'
+import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCaseApi'
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
+import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
 import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import { appendEvalEvent } from '~/lib/eval/log'
 
 type FoundContext = 'current_suggested_action' | 'elsewhere_unplanned' | 'after_previous_check' | 'unknown'
 type RefinedMethod = Exclude<SearchMethod, 'reported_check' | 'inaccessible'>
+type RetryableCommand = { caseSnapshot: CaseV2; command: CommandEnvelope }
 
 const route = useRoute()
 const repository = useCaseRepository()
 const api = useCaseApi()
 const arm = useExperimentalArm()
-const queue = useCommandQueue()
+const localExecution = useLocalExecution()
 const { locale, t } = useCopy()
 
 const caseValue = ref<CaseV2 | null>(null)
@@ -19,14 +23,16 @@ const loading = ref(true)
 const busy = ref(false)
 const errorCode = ref<string | null>(null)
 const guardCode = ref<string | null>(null)
+const assistantOfflineFallback = ref(false)
 const showComposer = ref(false)
 const showReject = ref(false)
 const showClose = ref(false)
 const suppressedQualityCheckId = ref<string | null>(null)
+const retryCommandState = shallowRef<RetryableCommand | null>(null)
 const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
-const failedCommand = computed(() => [...queue.commands.value].reverse().find(command => command.status === 'failed') ?? null)
+const executionContractMismatch = computed(() => errorCode.value === EXECUTION_CONTRACT_MISMATCH)
 const engaged = computed(() => {
   const current = caseValue.value
   if (!current) return false
@@ -44,8 +50,19 @@ const qualityContext = computed(() => {
   return { ...prior, target: proposal.value.target ?? current.candidates.find(candidate => candidate.id === candidateId)?.target ?? '' }
 })
 
+watch(
+  () => proposal.value?.candidate_id ?? null,
+  (nextCandidateId, previousCandidateId) => {
+    if (nextCandidateId !== previousCandidateId) suppressedQualityCheckId.value = null
+  },
+)
+
 function logEvent(event: Parameters<typeof appendEvalEvent>[0], metadata: Record<string, unknown> = {}): void {
   void appendEvalEvent(event, metadata).catch(() => undefined)
+}
+
+function snapshotCase(current: CaseV2): CaseV2 {
+  return structuredClone(toRaw(current))
 }
 
 function envelope(commandType: CommandEnvelope['command_type'], payload: Record<string, unknown>): CommandEnvelope {
@@ -59,13 +76,53 @@ function envelope(commandType: CommandEnvelope['command_type'], payload: Record<
   }
 }
 
+function setLocalProposal(current: CaseV2): void {
+  if (current.current_mode === 'unselected') {
+    proposal.value = null
+    return
+  }
+  const next = localExecution.checklistProposal(current, current.current_mode)
+  proposal.value = next
+  guardCode.value = null
+  if (next.kind === 'next_action') {
+    logEvent('next_action_shown', {
+      case_id: current.case_id,
+      arm: arm.value,
+      mode: current.current_mode,
+      candidate_id: next.candidate_id,
+    })
+  }
+}
+
+function useAssistantFallback(current: CaseV2): void {
+  assistantOfflineFallback.value = true
+  setLocalProposal(current)
+  logEvent('assistant_offline_fallback', {
+    case_id: current.case_id,
+    arm: arm.value,
+    mode: current.current_mode,
+  })
+}
+
 async function refreshProposal(): Promise<void> {
   const current = caseValue.value
+  assistantOfflineFallback.value = false
   if (!current || current.lifecycle !== 'active' || current.current_mode === 'unselected') {
     proposal.value = null
     guardCode.value = null
     return
   }
+
+  if (arm.value === 'checklist') {
+    setLocalProposal(current)
+    return
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    useAssistantFallback(current)
+    return
+  }
+
   try {
     const response = await api.nextProposal(
       current,
@@ -82,34 +139,77 @@ async function refreshProposal(): Promise<void> {
     proposal.value = response.proposal
     guardCode.value = response.guard_code
     if (response.proposal.kind === 'next_action') {
-      logEvent('next_action_shown', { case_id: current.case_id, arm: arm.value, mode: current.current_mode, candidate_id: response.proposal.candidate_id })
+      logEvent('next_action_shown', {
+        case_id: current.case_id,
+        arm: arm.value,
+        mode: current.current_mode,
+        candidate_id: response.proposal.candidate_id,
+      })
     }
     if (response.guard_code) {
-      logEvent('ai_guard_blocked', { case_id: current.case_id, arm: arm.value, mode: current.current_mode, guard_code: response.guard_code })
+      logEvent('ai_guard_blocked', {
+        case_id: current.case_id,
+        arm: arm.value,
+        mode: current.current_mode,
+        guard_code: response.guard_code,
+      })
     }
-  } catch {
+  } catch (error: unknown) {
+    if ((typeof navigator !== 'undefined' && !navigator.onLine) || isCaseApiTransportError(error)) {
+      useAssistantFallback(current)
+      return
+    }
+    const apiCode = caseApiErrorCode(error)
+    if (apiCode === EXECUTION_CONTRACT_MISMATCH) {
+      errorCode.value = apiCode
+      proposal.value = null
+      guardCode.value = null
+      return
+    }
     errorCode.value = 'MD_WEB_PROPOSAL_FAILED'
     proposal.value = null
   }
 }
 
-async function runCommand(command: CommandEnvelope): Promise<CaseV2 | null> {
-  if (!caseValue.value) return null
+async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2): Promise<CaseV2 | null> {
+  const current = caseValue.value
+  if (!current) return null
+  const inputCase = retryCaseSnapshot ? snapshotCase(retryCaseSnapshot) : snapshotCase(current)
   busy.value = true
   errorCode.value = null
-  logEvent('pending_command_started', { case_id: caseValue.value.case_id, command_id: command.command_id })
   try {
-    const returned = await queue.enqueue(caseValue.value, command)
+    const returned = await localExecution.sendCommand(inputCase, command)
+    retryCommandState.value = null
     caseValue.value = returned
     await refreshProposal()
     return returned
-  } catch {
-    errorCode.value = failedCommand.value?.error_code ?? 'MD_WEB_COMMAND_FAILED'
-    logEvent('pending_command_failed', { case_id: caseValue.value.case_id, command_id: command.command_id, outcome_code: errorCode.value })
+  } catch (error: unknown) {
+    const code = error instanceof Error ? error.message : 'MD_WEB_LOCAL_EXECUTION_FAILED'
+    const normalizedCode = code.startsWith('MD_') ? code : 'MD_WEB_LOCAL_EXECUTION_FAILED'
+    errorCode.value = normalizedCode
+    if (normalizedCode === 'MD_WEB_LOCAL_EXECUTION_FAILED' || normalizedCode.startsWith('MD_WEB_IDB_')) {
+      retryCommandState.value = {
+        caseSnapshot: structuredClone(inputCase),
+        command: structuredClone(command),
+      }
+    } else {
+      retryCommandState.value = null
+    }
+    logEvent('local_execution_failed', {
+      case_id: current.case_id,
+      command_id: command.command_id,
+      outcome_code: normalizedCode,
+    })
     return null
   } finally {
     busy.value = false
   }
+}
+
+async function retryLastCommand(): Promise<void> {
+  const retry = retryCommandState.value
+  if (!retry) return
+  await runCommand(retry.command, retry.caseSnapshot)
 }
 
 async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
@@ -133,6 +233,7 @@ async function markChecked(): Promise<void> {
   logEvent('check_started', { case_id: current.case_id, candidate_id: action.candidate_id })
   const now = new Date().toISOString()
   const checkId = crypto.randomUUID()
+  suppressedQualityCheckId.value = checkId
   const returned = await runCommand(envelope('record_search_check', {
     check_id: checkId,
     target: action.target,
@@ -145,7 +246,6 @@ async function markChecked(): Promise<void> {
     notes: [],
   }))
   if (returned) {
-    suppressedQualityCheckId.value = checkId
     logEvent('check_finished', { case_id: returned.case_id, candidate_id: action.candidate_id })
   }
 }
@@ -216,26 +316,10 @@ async function submitComposer(): Promise<void> {
   }
 }
 
-async function retryFailed(): Promise<void> {
-  const failed = failedCommand.value
-  if (!failed) return
-  busy.value = true
-  errorCode.value = null
-  logEvent('pending_command_retried', { case_id: failed.case_id, command_id: failed.command_id })
-  try {
-    const returned = await queue.retry(failed.command_id)
-    caseValue.value = returned
-    await refreshProposal()
-  } catch {
-    errorCode.value = failed.error_code ?? 'MD_WEB_COMMAND_FAILED'
-  } finally {
-    busy.value = false
-  }
-}
-
 function handleDeleted(): void {
   caseValue.value = null
   proposal.value = null
+  retryCommandState.value = null
 }
 
 function scrollJournal(): void {
@@ -281,15 +365,35 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="errorCode" class="privacy-note" role="alert" data-testid="command-error">
+      <div v-if="errorCode && !executionContractMismatch" class="privacy-note" role="alert" data-testid="command-error">
         {{ t('case.command_error') }}
-        <button v-if="failedCommand" class="secondary-action" type="button" :disabled="busy" @click="retryFailed">{{ t('case.command_retry') }}</button>
+        <button
+          v-if="retryCommandState"
+          class="secondary-action"
+          data-testid="retry-command"
+          type="button"
+          :disabled="busy"
+          @click="retryLastCommand"
+        >
+          {{ locale === 'ru' ? 'Повторить ту же команду' : 'Retry the same command' }}
+        </button>
+        <details><summary>{{ t('common.details') }}</summary><code>{{ errorCode }}</code></details>
       </div>
 
       <div v-if="guardCode" class="system-event" data-testid="guard-block">
         {{ t('guard.banner') }}
         <details><summary>{{ t('common.details') }}</summary><code>{{ guardCode }}</code></details>
       </div>
+
+      <aside v-if="executionContractMismatch" class="system-event" role="status" data-testid="execution-contract-mismatch">
+        {{ locale === 'ru'
+          ? 'Версия приложения и AI-сервиса временно не совпадает. Локальный поиск продолжает работать; восстановите связь и обновите страницу перед следующим AI-предложением.'
+          : 'The app and AI service versions are temporarily out of sync. Local search still works; reconnect and refresh before requesting another AI proposal.' }}
+      </aside>
+
+      <aside v-if="assistantOfflineFallback" class="system-event" data-testid="assistant-offline-fallback">
+        {{ t('assistant.offline_fallback') }}
+      </aside>
 
       <aside v-if="arm === 'assistant'" class="privacy-note" data-testid="provider-disclosure">
         {{ t('privacy.assistant_provider') }}

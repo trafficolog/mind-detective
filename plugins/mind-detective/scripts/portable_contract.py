@@ -1,0 +1,28 @@
+from __future__ import annotations
+
+LOCAL_EXECUTION_CONTRACT = "mind-detective-local-execution/v1"
+GENERATOR_VERSION = "local-execution-generator/v1"
+
+SUPPORTED_CASE_SCHEMAS: tuple[str, ...] = ("mind-detective-case/v2",)
+SUPPORTED_COMMAND_TYPES: tuple[str, ...] = (
+    "set_mode",
+    "add_statement",
+    "record_search_check",
+    "refine_search_check",
+    "reject_next_action",
+    "pause",
+    "resume",
+    "close_found",
+    "close_unresolved",
+)
+
+STABLE_LOCAL_ERRORS: frozenset[str] = frozenset(
+    {
+        "MD_WEB_STALE_COMMAND",
+        "MD_WEB_FORBIDDEN_FIELD",
+        "MD_WEB_COMMAND_PAYLOAD",
+        "MD_WEB_COMMAND_ID_CONFLICT",
+        "MD_WEB_CASE_ID_CONFLICT",
+        "MD_WEB_EXECUTION_CONTRACT_MISMATCH",
+    }
+)

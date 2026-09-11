@@ -27,6 +27,7 @@ export const en = {
   'mode.system': 'System',
   'arm.assistant': 'AI proposal',
   'arm.checklist': 'Checklist',
+  'assistant.offline_fallback': 'The assistant service is currently unavailable. The local deterministic plan is being used; history will not be automatically sent to the model when connectivity returns.',
   'progress.label': 'Search status',
   'progress.checked': 'Checked',
   'progress.remaining': 'Remaining',

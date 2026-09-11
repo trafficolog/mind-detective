@@ -2,6 +2,23 @@
 
 [English](CHANGELOG.en.md)
 
+## [0.3.0] — 2026-09-11
+
+### Добавлено
+- restricted portable Python kernel как authoritative executable semantics для local execution;
+- certified Python→TypeScript generator, committed generated executor и identity metadata;
+- deterministic conformance corpus для Python↔TypeScript observable parity;
+- local-first Case creation, deterministic commands и checklist proposals;
+- atomic IndexedDB Case + execution receipt commit, idempotent retry и command-id conflict protection;
+- assistant transport fallback без reconnect replay и execution-contract skew guard;
+- full offline PWA vertical slice после предварительной загрузки shell;
+- 16 active `MD-OFFLINE-REQ-*` contracts с exact traceability.
+
+### Изменено
+- FastAPI остаётся stateless compatibility/proposal boundary, но больше не является обязательным mutation path для deterministic Web commands;
+- Web не содержит hand-maintained Case reducer: выполняется только generated certified artifact;
+- release intent обновлён до repository `0.3.0` и plugin `mind-detective-v0.3.0`.
+
 ## [0.2.0] — 2026-09-10
 
 ### Добавлено
@@ -29,11 +46,6 @@
 - раскрытие experimental arm identity в production UI;
 - guard journal identity, storage controls и modal focus contracts.
 
-### Релиз
-- declarative release intent: repository `0.2.0`, plugin `mind-detective-v0.2.0`;
-- существующий hardened publisher остаётся единственным publication path;
-- публикация возможна только после human-authorized merge, exact post-merge `main` CI и отдельного human-approved **полного 40-hex target SHA**.
-
 ## [0.1.0] — 2026-09-09
 
 ### Добавлено
@@ -45,5 +57,3 @@
 - handoff/outcome artifacts;
 - ровно пять production skills;
 - exact CONTRACT_MATRIX и adversarial eval v2.
-
-Релиз становится опубликованным только после human-authorized merge, exact-main CI и отдельного human-approved publisher gate.

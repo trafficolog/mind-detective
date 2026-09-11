@@ -5,6 +5,7 @@ from typing import Protocol
 from .checklist import build_checklist_proposal
 from .contracts import ProposalModel, ProposalRequest, ProposalResponse
 from .core_bridge import validate_or_migrate_case_payload
+from .execution_contract import require_matching_execution_identity
 
 from scripts.controller import CaseController
 from scripts.guard import InteractionMode as GuardMode
@@ -118,6 +119,8 @@ async def build_proposal(
             case=canonical,
             proposal=build_checklist_proposal(canonical, request.mode),
         )
+
+    require_matching_execution_identity(request.execution_identity)
     if client is None:
         from .litellm_provider import LiteLLMProposalClient
 

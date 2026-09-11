@@ -1,66 +1,62 @@
 # MIND Detective / Детектив памяти
 
-<!-- release-0.2.0 -->
+<!-- release-0.3.0 -->
 
 [English](README.en.md)
 
-**MIND Detective — помощник систематического поиска потерянных вещей.** Он помогает разгрузить рабочую память во время поиска: аккуратно фиксирует воспоминания пользователя без превращения их в «факты», ведёт журнал физических проверок, предлагает одно полезное следующее действие и позволяет продолжить сохранённый кейс после паузы.
+**MIND Detective — помощник систематического поиска потерянных вещей.** Он разгружает рабочую память во время поиска: отделяет воспоминания пользователя от гипотез, ведёт журнал физических проверок, предлагает одно следующее действие и сохраняет кейс для продолжения.
 
-## Что добавляет 0.2.0
+## Что добавляет 0.3.0
 
-Версия 0.2.0 сохраняет пять production skills плагина и добавляет mobile-first **Nuxt 4 Web/PWA** поверх того же Python `CaseController`:
+Версия `0.3.0` делает детерминированный Web/PWA контур local-first, не создавая второй вручную поддерживаемый domain reducer:
 
-- один production shell для checklist и AI arms без отдельной arm-идентичности;
-- canonical browser persistence в IndexedDB, явный JSON export/import и deterministic v1→v2 migration;
-- stateless FastAPI adapter без server-side Case database;
-- sequential retryable command queue без optimistic canonical mutation;
-- one-tap `Проверил` как нейтральный `reported_check`, с отложенным уточнением качества;
-- reviewed guard fallback без сохранения/показа заблокированного raw proposal;
-- PWA shell caching без `/api/`, Case/user/model/evaluation data и без Background Sync;
-- RU/EN reviewed copy, keyboard/focus contracts, dark/reduced-motion/increased-contrast support;
-- privacy-filtered browser-local evaluation events для сравнения checklist и AI подходов.
+- authoritative portable Python kernel с ограниченным stdlib-only контрактом;
+- certified generator → committed TypeScript executor + identity metadata;
+- differential Python↔TypeScript conformance corpus;
+- local Case creation и deterministic commands без обязательных `/api/v1/case/*` вызовов;
+- atomic IndexedDB commit: canonical Case + execution receipt;
+- idempotent retry по `command_id`, conflict reuse fail-closed;
+- local deterministic checklist proposal;
+- assistant transport fallback без retrospective replay после reconnect;
+- execution identity/version/hash skew guard перед model provider;
+- preloaded PWA выполняет канонический search workflow офлайн.
 
-Python `Case` + `CaseController` остаются единственным детерминированным источником истины: TypeScript port/domain reducer отсутствует.
+`mind-detective-case/v2` остаётся текущей схемой. Cloud sync, Pyodide/WASM, Bayesian/POD, calibrated location percentages и hidden belief state не добавляются.
 
-## Архитектура
+## Архитектура 0.3.0
 
 ```text
-Nuxt 4 PWA
-  │  IndexedDB / reviewed RU+EN UI / command queue
-  ▼
-FastAPI stateless adapter
-  │
-  ├── Python CaseController / planner / guard / artifacts
-  │
-  └── AI proposal ──► LiteLLM Proxy ──► configured model provider
+portable Python kernel
+        │
+        ├── certified generator ──► committed TypeScript executor
+        │                              │
+        │                              ▼
+        │                    local executor + IndexedDB
+        │                    Case + execution receipt
+        │
+        └── FastAPI compatibility / proposal boundary
+                                       │
+                        assistant only ─┴─► LiteLLM Proxy
 ```
 
-Checklist и AI проходят один canonical mutation path. В AI arm модель может предложить структурированный candidate action, но model output не становится состоянием автоматически: server-side proposal/guard boundary возвращает только reviewed structured proposal или deterministic fallback.
+Python остаётся authoritative source semantics. TypeScript artifact генерируется и проверяется conformance corpus; вручную поддерживаемого параллельного Case reducer нет.
 
-## LiteLLM для AI arm
+## Offline и AI
 
-Web/API не содержит provider-specific client configuration. Единственный live-model gateway — **LiteLLM Proxy**. Для API задаются server-side переменные:
+Deterministic create/mutation/checklist path работает локально. Service worker кэширует только application shell/static assets и не кэширует Case/user/model/evaluation data и `/api/`; Background Sync для Case-команд не используется.
 
-```bash
-export LITELLM_API_KEY="<proxy-key>"
-export MIND_DETECTIVE_LITELLM_MODEL="<model-alias-from-litellm>"
-export MIND_DETECTIVE_LITELLM_BASE_URL="http://127.0.0.1:4000"  # optional; это default
-```
+AI arm обращается к server-side proposal boundary только для assistant proposal. Каждый запрос несёт execution identity (`version`, `kernel_sha256`, `generated_sha256`, `generator_version`). При mismatch запрос блокируется до provider creation. При transport failure UI использует локальный deterministic fallback и не переигрывает старый model request после reconnect.
 
-`LITELLM_API_KEY` и provider credentials нельзя помещать в browser bundle. В AI request transiently передаётся только контекст, необходимый для текущего proposal. Поэтому browser-local persistence **не означает**, что данные никогда не покидают устройство: модельный контекст обрабатывается LiteLLM и настроенным model provider согласно их deployment/privacy boundary.
+## Хранение и приватность
 
-## Хранение и офлайн
+Web canonical persistence — IndexedDB на устройстве. Explicit JSON export/import остаётся способом переносимости. Plugin surface сохраняет case-local файл `.mind-detective/cases/<case-id>/case.json`. Browser-local storage не означает, что assistant model context никогда не покидает устройство: только минимально необходимый transient context проходит через LiteLLM и настроенного provider при online assistant proposal.
 
-Web-кейсы хранятся локально в IndexedDB. Persistent Storage API может уменьшить риск eviction, но не является гарантией backup; для переносимости используйте explicit JSON export. Service worker хранит только shell/static assets. Offline mutation не считается сохранённой, пока API не вернул новый canonical Case; retry повторяет тот же command envelope.
+## Границы продукта
 
-Plugin surface сохраняет прежний explicit local-file contract `.mind-detective/cases/<case-id>/case.json`.
-
-## Чего продукт не заявляет
-
-MIND Detective не является медицинским инструментом, не восстанавливает «истинную» память, не диагностирует причину забывания, не знает фактическую локацию вещи, не присваивает локациям калиброванные проценты и не использует Bayesian/POD/hidden belief weight. Повторные быстрые проверки не считаются независимыми доказательствами отсутствия. Неопределённость о high-risk действии выводится из ordinary physical-search reasoning.
+Продукт не диагностирует причину забывания, не утверждает фактическую локацию предмета, не гарантирует результат поиска и не присваивает локациям калиброванные вероятности. High-risk uncertainty маршрутизируется отдельно от ordinary physical-search reasoning.
 
 ## Разработка и проверка
 
-Проект использует SDD + TDD: `SPEC → RED → GREEN → REFACTOR → TRACE → EVAL → VERIFY`. Нормативные `MD-REQ-*` и `MD-WEB-REQ-*` связаны с exact selectors в `docs/CONTRACT_MATRIX.json`. CI на exact PR head проверяет Python 3.10/3.13, repository/plugin/API tests, Ruff, strict Mypy, frozen pnpm install, Vitest, production PWA build, Playwright Chromium/WebKit и secret scan.
+Нормативные контракты `MD-REQ-*`, `MD-WEB-REQ-*` и `MD-OFFLINE-REQ-*` имеют exact selectors в `docs/CONTRACT_MATRIX.json`. CI на exact PR head проверяет Python 3.10/3.13, repository/plugin/API tests, Ruff, strict Mypy, generated artifact freshness, conformance corpus, frozen pnpm install, Vitest, production PWA build, Playwright Chromium/WebKit и secret scan.
 
-Начните с [Getting Started](docs/GETTING_STARTED.md), затем см. [Architecture](docs/ARCHITECTURE.md), [Methodology](docs/METHODOLOGY.md), [Privacy](docs/PRIVACY.md), [Product Evaluation](docs/PRODUCT_EVALUATION.md) и [Release Policy](docs/RELEASE_POLICY.md).
+См. [Getting Started](docs/GETTING_STARTED.md), [Architecture](docs/ARCHITECTURE.md), [Privacy](docs/PRIVACY.md), [Product Evaluation](docs/PRODUCT_EVALUATION.md) и [Release Policy](docs/RELEASE_POLICY.md).

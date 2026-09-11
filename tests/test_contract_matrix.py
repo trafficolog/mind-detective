@@ -35,6 +35,25 @@ WEB_REQUIREMENTS = {
     "MD-WEB-REQ-RELEASE-01",
 }
 
+OFFLINE_REQUIREMENTS = {
+    "MD-OFFLINE-REQ-KERNEL-01",
+    "MD-OFFLINE-REQ-GENERATOR-01",
+    "MD-OFFLINE-REQ-CONFORMANCE-01",
+    "MD-OFFLINE-REQ-API-01",
+    "MD-OFFLINE-REQ-INTRINSIC-01",
+    "MD-OFFLINE-REQ-LOCAL-01",
+    "MD-OFFLINE-REQ-ATOMIC-01",
+    "MD-OFFLINE-REQ-IDEMPOTENCE-01",
+    "MD-OFFLINE-REQ-CREATE-01",
+    "MD-OFFLINE-REQ-PROPOSAL-01",
+    "MD-OFFLINE-REQ-ASSISTANT-01",
+    "MD-OFFLINE-REQ-IDENTITY-01",
+    "MD-OFFLINE-REQ-SKEW-01",
+    "MD-OFFLINE-REQ-PRIVACY-01",
+    "MD-OFFLINE-REQ-PWA-01",
+    "MD-OFFLINE-REQ-RELEASE-01",
+}
+
 
 class ContractMatrixTests(unittest.TestCase):
     def test_exact_selector_exists_for_real_unittest_method(self):
@@ -63,10 +82,26 @@ class ContractMatrixTests(unittest.TestCase):
         self.assertEqual(ids, {"MD-REQ-CASE-01", "MD-WEB-REQ-SHELL-01"})
         self.assertEqual(duplicates, set())
 
+    def test_offline_requirement_ids_are_collected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "requirements.md"
+            path.write_text(
+                "- `MD-OFFLINE-REQ-KERNEL-01` portable kernel\n",
+                encoding="utf-8",
+            )
+            ids, duplicates = collect_requirement_ids(path)
+        self.assertEqual(ids, {"MD-OFFLINE-REQ-KERNEL-01"})
+        self.assertEqual(duplicates, set())
+
     def test_repository_declares_all_approved_web_requirements(self):
         ids, duplicates = collect_requirement_ids(ROOT / "docs/REQUIREMENTS.md")
         self.assertEqual(duplicates, set())
         self.assertTrue(WEB_REQUIREMENTS.issubset(ids))
+
+    def test_repository_declares_all_approved_offline_requirements(self):
+        ids, duplicates = collect_requirement_ids(ROOT / "docs/REQUIREMENTS.md")
+        self.assertEqual(duplicates, set())
+        self.assertTrue(OFFLINE_REQUIREMENTS.issubset(ids))
 
     def test_privacy_requirement_is_active_and_exactly_traced(self):
         matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))

@@ -34,8 +34,9 @@ export default defineNuxtConfig({
     includeAssets: ['icon.svg'],
     workbox: {
       globPatterns: ['**/*.{js,css,html,svg}'],
+      globIgnores: ['200.html', '404.html'],
       runtimeCaching: [],
-      navigateFallback: '/index.html',
+      navigateFallback: '/',
       navigateFallbackDenylist: [/^\/api\//],
       cleanupOutdatedCaches: true,
     },

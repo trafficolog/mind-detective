@@ -1,0 +1,32 @@
+[
+  {
+    "name": "cyrillic",
+    "value": {"я": "ключи", "а": "ЁЖ", "nested": {"б": null, "а": []}},
+    "canonical": "{\"nested\":{\"а\":[],\"б\":null},\"а\":\"ЁЖ\",\"я\":\"ключи\"}",
+    "sha256": "sha256:7d8b5d13016e7bd6a70a0e5b97799f7ee9b1cbc955620b7f4e83a2447d53c570"
+  },
+  {
+    "name": "emoji",
+    "value": {"😀": "face", "𐐀": "deseret", "A": "ascii", "a": "lower"},
+    "canonical": "{\"A\":\"ascii\",\"a\":\"lower\",\"𐐀\":\"deseret\",\"😀\":\"face\"}",
+    "sha256": "sha256:a62a13ef0c978b09a925e0ab5146bf95582eac971a192b7580737839980f9a12"
+  },
+  {
+    "name": "integer_keys",
+    "value": {"10": "ten", "2": "two", "01": "leading", "a": 1},
+    "canonical": "{\"01\":\"leading\",\"10\":\"ten\",\"2\":\"two\",\"a\":1}",
+    "sha256": "sha256:b6dd0cc950f49c889127a51859189a2c14db88a517857ea9df7d075fdfcfaec4"
+  },
+  {
+    "name": "empty",
+    "value": {"array": [], "object": {}, "null": null, "false": false, "true": true},
+    "canonical": "{\"array\":[],\"false\":false,\"null\":null,\"object\":{},\"true\":true}",
+    "sha256": "sha256:fb13054b1656cceb3a827958cb2a1cc811a68ce9d644a058270712e6d0475303"
+  },
+  {
+    "name": "punctuation",
+    "value": {"text": "a/b\\c\n\t\"quote\"", "empty": "", "n": 0},
+    "canonical": "{\"empty\":\"\",\"n\":0,\"text\":\"a/b\\\\c\\n\\t\\\"quote\\\"\"}",
+    "sha256": "sha256:edd1a748ebe3823cd9e89d88ec93af357d80c6771c0a77c0adf2450566689060"
+  }
+]

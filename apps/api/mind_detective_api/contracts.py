@@ -55,6 +55,17 @@ class ProposalModel(StrictModel):
     related_statement_ids: list[str] = Field(default_factory=list)
 
 
+class ExecutionIdentity(StrictModel):
+    version: str = Field(min_length=1)
+    kernel_sha256: str = Field(min_length=1)
+    generated_sha256: str = Field(min_length=1)
+    generator_version: str = Field(min_length=1)
+
+
+class ExecutionContractResponse(ExecutionIdentity):
+    case_schemas: list[str]
+
+
 class ProposalRequest(StrictModel):
     request_id: str = Field(min_length=1)
     now: str = Field(min_length=1)
@@ -62,6 +73,7 @@ class ProposalRequest(StrictModel):
     mode: Literal["reconstruction", "search"]
     locale: Literal["ru", "en"]
     experimental_arm: Literal["checklist", "assistant"]
+    execution_identity: ExecutionIdentity | None = None
 
 
 class ProposalResponse(StrictModel):

@@ -2,6 +2,23 @@
 
 [Русский](CHANGELOG.md)
 
+## [0.3.0] — 2026-09-11
+
+### Added
+- a restricted portable Python kernel as the authoritative executable semantics for local execution;
+- certified Python→TypeScript generation, a committed generated executor, and identity metadata;
+- a deterministic conformance corpus for Python↔TypeScript observable parity;
+- local-first Case creation, deterministic commands, and checklist proposals;
+- atomic IndexedDB Case + execution receipt commits, idempotent retry, and command-id conflict protection;
+- assistant transport fallback without reconnect replay plus an execution-contract skew guard;
+- a full offline PWA vertical slice after shell preload;
+- 16 active `MD-OFFLINE-REQ-*` contracts with exact traceability.
+
+### Changed
+- FastAPI remains a stateless compatibility/proposal boundary but is no longer the required mutation path for deterministic Web commands;
+- Web has no hand-maintained Case reducer: it executes only the generated certified artifact;
+- release intent is now repository `0.3.0` and plugin `mind-detective-v0.3.0`.
+
 ## [0.2.0] — 2026-09-10
 
 ### Added
@@ -21,19 +38,6 @@
 - ADR 009–012 for the Web domain boundary, local persistence, shared experiment shell, and LiteLLM model-data boundary;
 - pinned Node/pnpm toolchain, committed lockfile, and frozen-install CI contract.
 
-### Fixed
-- Nuxt auto-import resolution for nested production components;
-- synchronous `DataCloneError` when cloning a Vue-reactive Case in the command queue;
-- premature quality clarification immediately after a new `reported_check`;
-- pause-command wiring from the production shell;
-- experimental-arm identity leaking into production UI;
-- guard journal identity, storage-control mounting, and modal focus contracts.
-
-### Release
-- declarative release intent: repository `0.2.0`, plugin `mind-detective-v0.2.0`;
-- the existing hardened publisher remains the only publication path;
-- publication is allowed only after human-authorized merge, exact post-merge `main` CI, and a separate human-approved **full 40-hex target SHA**.
-
 ## [0.1.0] — 2026-09-09
 
 ### Added
@@ -45,5 +49,3 @@
 - handoff/outcome artifacts;
 - exactly five production skills;
 - exact CONTRACT_MATRIX and adversarial eval v2.
-
-A release is published only after human-authorized merge, exact-main CI, and a separate human-approved publisher gate.
