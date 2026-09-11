@@ -31,18 +31,16 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   await page.getByRole('button', { name: 'Перейти к поиску' }).click()
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 
-  await page.getByRole('button', { name: 'Написать' }).click()
-  await page.locator('#composer-text').fill('карман рюкзака')
-  await page.getByRole('button', { name: 'Сохранить' }).click()
+  await page.getByTestId('search-target-input').fill('карман рюкзака')
+  await page.getByTestId('add-search-target').click()
   await expect(page.getByTestId('next-action-target')).toHaveText('карман рюкзака')
 
   await page.getByTestId('mark-checked').click()
   await expect.poll(async () => (await storedCase(page, caseId))?.search_checks.length).toBe(1)
   await expect(page.getByTestId('check-quality-dialog')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Написать' }).click()
-  await page.locator('#composer-text').fill('полка у двери')
-  await page.getByRole('button', { name: 'Сохранить' }).click()
+  await page.getByTestId('search-target-input').fill('полка у двери')
+  await page.getByTestId('add-search-target').click()
   await expect(page.getByTestId('next-action-target')).toHaveText('полка у двери')
 
   await page.getByTestId('reject-action').click()
