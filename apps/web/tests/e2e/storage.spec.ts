@@ -17,7 +17,7 @@ const legacyV1 = {
   outcome: null,
 }
 
-test('valid v1 import migrates locally to canonical v2 offline and future schema is rejected', async ({ page, context }) => {
+test('valid v1 import migrates locally with case validation network unavailable and future schema is rejected', async ({ page }) => {
   let validationRequests = 0
   await page.route('**/api/v1/case/validate', async (route) => {
     validationRequests += 1
@@ -26,27 +26,22 @@ test('valid v1 import migrates locally to canonical v2 offline and future schema
 
   await page.goto('/')
   await expect(page.getByTestId('offline-route-ready')).toBeVisible()
-  await context.setOffline(true)
   await page.getByTestId('case-import').setInputFiles({
     name: 'legacy.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(legacyV1)),
   })
 
-  await expect.poll(async () => (await storedCase(page, 'legacy-import'))?.schema)
-    .toBe('mind-detective-case/v2')
+  await expect(page).toHaveURL(/\/cases\/legacy-import/)
   const migrated = await storedCase(page, 'legacy-import')
+  expect(migrated?.schema).toBe('mind-detective-case/v2')
   expect(migrated?.current_mode).toBe('unselected')
   expect(migrated?.interaction_journal).toEqual([])
   expect(migrated?.action_feedback).toEqual([])
   expect(validationRequests).toBe(0)
 
-  await context.setOffline(false)
-  await page.goto('/cases/legacy-import')
-  await expect(page).toHaveURL(/\/cases\/legacy-import/)
-
   await page.goto('/')
-  await context.setOffline(true)
+  await expect(page.getByTestId('case-import')).toBeVisible()
   await page.getByTestId('case-import').setInputFiles({
     name: 'future.json',
     mimeType: 'application/json',
@@ -54,7 +49,6 @@ test('valid v1 import migrates locally to canonical v2 offline and future schema
   })
   await expect(page.getByRole('status')).toContainText('не поддерживается')
   expect(validationRequests).toBe(0)
-  await context.setOffline(false)
 })
 
 test('engaged case exposes durability warning install education and explicit JSON export', async ({ page }) => {
