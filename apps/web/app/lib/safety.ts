@@ -8,7 +8,7 @@ export interface SafetyDecision {
 
 const MEDICATION_PATTERNS = [
   /(?:я\s+)?уже\s+(?:принял|приняла|выпил|выпила)[^\s]*\s+(?:таблет|лекарств|доз)/i,
-  /принимал[аи]?\s+ли\s+(?:я\s+)?(?:таблет|лекарств|доз)/i,
+  /принимал[аи]?\s+ли\s+(?:я\s+)?(?:уже\s+)?(?:таблет|лекарств|доз)/i,
   /\bdid\s+i\s+(?:already\s+)?take\s+(?:the\s+)?(?:pill|medicine|dose)\b/i,
   /\bhave\s+i\s+(?:already\s+)?taken\s+(?:the\s+)?(?:pill|medicine|dose)\b/i,
 ]
