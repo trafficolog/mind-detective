@@ -19,6 +19,11 @@ class SafetyTests(unittest.TestCase):
         self.assertEqual(decision.route, SafetyRoute.LIMIT_AND_ESCALATE)
         self.assertIn("MD_SAFE_MEDICATION_ACTION", decision.codes)
 
+    def test_medication_question_with_explicit_already_exits_search_reasoning(self):
+        decision = classify_request("Принимал ли я уже таблетки?")
+        self.assertEqual(decision.route, SafetyRoute.LIMIT_AND_ESCALATE)
+        self.assertIn("MD_SAFE_MEDICATION_ACTION", decision.codes)
+
     def test_hazardous_equipment_action_uncertainty_exits_search_reasoning(self):
         decision = classify_request("Я выключил плиту перед уходом?")
         self.assertEqual(decision.route, SafetyRoute.LIMIT_AND_ESCALATE)
