@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { candidate, caseFixture, seedCase, storedCase } from './helpers'
 
-test('empty planner asks for a structured user-supported search target without inventing a location', async ({ page }) => {
+test('empty planner asks for more information without inventing a location', async ({ page }) => {
   const caseValue = caseFixture({ candidates: [] })
   await seedCase(page, caseValue)
   await page.goto(`/cases/${caseValue.case_id}`)
