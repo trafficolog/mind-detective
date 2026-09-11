@@ -70,6 +70,9 @@ export default defineConfig({
       command: 'pnpm dev --host 127.0.0.1 --port 3000',
       cwd: '.',
       url: 'http://127.0.0.1:3000',
+      env: {
+        NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION: '1',
+      },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },

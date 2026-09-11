@@ -1,36 +1,43 @@
 # Product Evaluation
 
-Цель оценки — проверить, даёт ли диалоговый AI практическую добавочную ценность поверх хорошо сделанного deterministic search controller, а не доказать заранее выбранную гипотезу.
+Цель — проверить, даёт ли диалоговый AI практическую добавочную ценность поверх deterministic search controller, а не доказать заранее выбранную гипотезу.
 
-## Сравниваемые arms
+## Arms
 
-- **A — обычный поиск** без специального инструмента.
-- **B — структурированный чек-лист** + журнал поиска без диалогового AI.
-- **C — чек-лист + журнал поиска + диалоговый AI** MIND Detective.
+- **A — обычный поиск:** внешний contextual baseline без MIND Detective UI/скрытой structured assistance.
+- **B — структурированный чек-лист** + журнал поиска без диалогового AI: Web/PWA, canonical Case и deterministic local executor.
+- **C — чек-лист + журнал поиска + диалоговый AI:** тот же product shell и execution semantics; отличие ограничено live assistant proposal generation. Transport fallback не меняет assignment: session остаётся C.
 
-В `0.3.0` B и C используют один Web/PWA shell, одну canonical Case model и один certified local deterministic execution path. Этот path — generated TypeScript artifact из authoritative portable Python semantics; отдельного вручную поддерживаемого reducer для arm нет. Отличие C ограничено live assistant proposal generation через execution-identity-guarded FastAPI → LiteLLM/provider boundary. При transport failure C временно использует тот же deterministic local proposal, без reconnect replay.
+Обычное использование продукта не рандомизируется. B/C assignment существует только в explicit evaluation mode и хранится отдельно от `Case v2`.
 
-Сначала используются безопасные staged tasks; добровольные реальные кейсы анализируются отдельно.
+## Canonical protocol documents
 
-## Метрики
+- [Approved design](superpowers/specs/2026-09-11-mind-detective-product-evaluation-design.md)
+- [Staged protocol](evaluation/STAGED_PROTOCOL.md)
+- [Real-pilot protocol](evaluation/REAL_PILOT_PROTOCOL.md)
+- [External arm A protocol](evaluation/EXTERNAL_A_PROTOCOL.md)
+- [Analysis runbook](evaluation/ANALYSIS.md)
 
-- `time_to_next_useful_action`;
-- `duplicate_check_count`;
-- perceived task load / convenience;
-- `found_rate`, при этом **unresolved** и **abandoned** выводятся отдельно и не исключаются из выборки;
-- `unsupported_fact_rate`;
-- `leading_suggestion_rate` в reconstruction;
-- `false_confidence_rate`;
-- resume/handoff completeness.
+Analysis CLI:
 
-Нельзя считать только успешные found cases: незавершённые/censored outcomes должны оставаться видимыми.
+```bash
+python -m scripts.analyze_evaluation export.json --seed 1729 --bootstrap 2000 --json-out summary.json
+```
 
-## Evaluation privacy
+## Primary decision
 
-Browser evaluation log является local-only и использует explicit allowlist. Он может фиксировать interaction/outcome codes, case id, arm/mode и categorical reasons, но не сохраняет `item_label`, конкретные location targets, journal/user text или raw model output. Background telemetry upload отсутствует; export выполняется только явным действием пользователя.
+Staged B↔C is primary. `time_to_next_useful_action` is reconstructed retrospectively from `case_started` → first shown proposal that later reaches matching `check_finished` without prior rejection. Sessions without an observed useful action are right-censored at terminal time or 10 minutes. Primary summary is 10-minute RMTUA with participant-clustered uncertainty.
 
-## Falsifiable decision rule
+Secondary evidence includes duplicate checks, fixed 1–5 task-load/convenience ratings, found/unresolved/abandoned distribution, proposal safety, handoff continuity, fallback, and technical failures. All assigned/started sessions remain visible in ITT; abandonment, fallback, incomplete participation, and missing ratings are not silently removed.
 
-Если C не даёт практически значимого улучшения относительно B при сопоставимом safety profile, продукт следует упростить до checklist/controller. Это валидный product evidence, а не неудача исследования.
+A product-direction claim requires at least 32 protocol-complete staged participants and at least 8 per counterbalance cell. Arm A remains contextual and does not alter the C-vs-B product decision.
 
-Green deterministic/browser fixtures подтверждают конкретные control paths и conformance covered portable semantics, но не являются доказательством causal product lift или научной валидности методологии.
+## Privacy
+
+Evaluation storage/export is local-only by default, explicit-export only, and allowlist-based. It rejects Case payload/content, item/location text, journal/statement/user text, evaluator free text, and raw model output. Normal Case export and evaluation export remain separate.
+
+## Falsifiable rule
+
+Если C не даёт practically meaningful lift относительно B при сопоставимом safety/readiness profile, default core следует упростить до deterministic checklist/controller. Если результат inconclusive, следующий номер версии сам по себе не является основанием объявлять победителя.
+
+Green deterministic/browser/analysis fixtures подтверждают machinery, conformance и reproducibility, но не являются доказательством causal product lift или научной валидности исследования.
