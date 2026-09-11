@@ -20,6 +20,7 @@ from .portable_kernel import (
     resume_json,
     set_mode_json,
 )
+from .safety import SafetyRoute, classify_request
 from .search_log import SearchCheck, SearchLogError, SearchMethod, find_duplicate_checks
 from .statements import Statement
 from .store import case_from_dict, case_to_dict
@@ -33,7 +34,14 @@ class CaseController:
     def _case_error(self, exc: PortableKernelError) -> CaseError:
         return CaseError(exc.code, str(exc))
 
+    def _enforce_safe_ingress(self, text: str) -> None:
+        decision = classify_request(text)
+        if decision.route is SafetyRoute.LIMIT_AND_ESCALATE:
+            code = decision.codes[0] if decision.codes else "MD_SAFE_HIGH_RISK_ACTION"
+            raise CaseError(code, decision.message_key)
+
     def create_case(self, case_id: str, item_label: str, now: str) -> Case:
+        self._enforce_safe_ingress(item_label)
         try:
             return self._from_portable(create_case(case_id, item_label, now))
         except PortableKernelError as exc:
@@ -86,6 +94,7 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def add_statement(self, case: Case, statement: Statement, now: str) -> Case:
+        self._enforce_safe_ingress(statement.original_text)
         statement_payload: dict[str, object] = {
             "id": statement.id,
             "source": statement.source.value,
