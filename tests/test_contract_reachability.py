@@ -66,6 +66,17 @@ class ContractReachabilityTests(unittest.TestCase):
             errors,
         )
 
+    def test_removed_runtime_surfaces_do_not_return_as_test_only_dead_code(self):
+        self.assertFalse((ROOT / "apps/web/app/composables/useCommandQueue.ts").exists())
+        self.assertFalse((ROOT / "apps/web/tests/unit/commandQueue.spec.ts").exists())
+        self.assertFalse((ROOT / "apps/api/mind_detective_api/privacy_log.py").exists())
+
+        case_api = (ROOT / "apps/web/app/composables/useCaseApi.ts").read_text(encoding="utf-8")
+        self.assertNotIn("createCase(", case_api)
+        self.assertNotIn("sendCommand(", case_api)
+        self.assertIn("validateCase(", case_api)
+        self.assertIn("nextProposal(", case_api)
+
 
 if __name__ == "__main__":
     unittest.main()
