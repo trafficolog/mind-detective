@@ -7,6 +7,7 @@ import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import type { EvalEventName } from '~/lib/eval/contracts'
 import { appendEvalEvent } from '~/lib/eval/log'
 import { finishEvaluationSession } from '~/lib/eval/store'
+import { safetyCodeForInput } from '~/lib/safety'
 
 type FoundContext = 'current_suggested_action' | 'elsewhere_unplanned' | 'after_previous_check' | 'unknown'
 type RefinedMethod = Exclude<SearchMethod, 'reported_check' | 'inaccessible'>
@@ -389,6 +390,18 @@ async function submitComposer(): Promise<void> {
   const text = composerText.value.trim()
   const current = caseValue.value
   if (!text || !current) return
+
+  const safetyCode = safetyCodeForInput(text)
+  if (safetyCode) {
+    errorCode.value = safetyCode
+    retryCommandState.value = null
+    proposal.value = null
+    currentProposalId.value = null
+    guardCode.value = null
+    showComposer.value = false
+    return
+  }
+
   const returned = await runCommand(envelope('add_statement', {
     statement_id: crypto.randomUUID(),
     source: 'user',
