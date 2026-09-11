@@ -17,7 +17,7 @@ const legacyV1 = {
   outcome: null,
 }
 
-test('valid v1 import is server-migrated to canonical v2 and future schema is rejected', async ({ page }) => {
+test('valid v1 import migrates locally to canonical v2 offline and future schema is rejected', async ({ page, context }) => {
   let validationRequests = 0
   await page.route('**/api/v1/case/validate', async (route) => {
     validationRequests += 1
@@ -25,6 +25,8 @@ test('valid v1 import is server-migrated to canonical v2 and future schema is re
   })
 
   await page.goto('/')
+  await expect(page.getByTestId('offline-route-ready')).toBeVisible()
+  await context.setOffline(true)
   await page.getByTestId('case-import').setInputFiles({
     name: 'legacy.json',
     mimeType: 'application/json',
@@ -35,8 +37,10 @@ test('valid v1 import is server-migrated to canonical v2 and future schema is re
   expect(migrated?.schema).toBe('mind-detective-case/v2')
   expect(migrated?.current_mode).toBe('unselected')
   expect(migrated?.interaction_journal).toEqual([])
+  expect(migrated?.action_feedback).toEqual([])
   expect(validationRequests).toBe(0)
 
+  await context.setOffline(false)
   await page.goto('/')
   await page.getByTestId('case-import').setInputFiles({
     name: 'future.json',
