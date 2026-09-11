@@ -38,6 +38,7 @@ const composerText = ref('')
 const caseId = computed(() => String(route.params.id || ''))
 const evaluationSession = computed(() => evaluation.session.value)
 const executionContractMismatch = computed(() => errorCode.value === EXECUTION_CONTRACT_MISMATCH)
+const safetyErrorCode = computed(() => errorCode.value?.startsWith('MD_SAFE_') ? errorCode.value : null)
 const engaged = computed(() => {
   const current = caseValue.value
   if (!current) return false
@@ -99,6 +100,13 @@ async function trackProposal(current: CaseV2, next: ProposalModel): Promise<void
 
 function snapshotCase(current: CaseV2): CaseV2 {
   return structuredClone(toRaw(current))
+}
+
+function executionErrorCode(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string') {
+    return error.code
+  }
+  return error instanceof Error ? error.message : fallback
 }
 
 function envelope(commandType: CommandEnvelope['command_type'], payload: Record<string, unknown>): CommandEnvelope {
@@ -209,9 +217,17 @@ async function runCommand(
     if (refreshAfter) await refreshProposal()
     return returned
   } catch (error: unknown) {
-    const code = error instanceof Error ? error.message : 'MD_WEB_LOCAL_EXECUTION_FAILED'
+    const code = executionErrorCode(error, 'MD_WEB_LOCAL_EXECUTION_FAILED')
     const normalizedCode = code.startsWith('MD_') ? code : 'MD_WEB_LOCAL_EXECUTION_FAILED'
     errorCode.value = normalizedCode
+    if (normalizedCode.startsWith('MD_SAFE_')) {
+      retryCommandState.value = null
+      proposal.value = null
+      currentProposalId.value = null
+      guardCode.value = null
+      showComposer.value = false
+      return null
+    }
     if (normalizedCode === 'MD_WEB_LOCAL_EXECUTION_FAILED' || normalizedCode.startsWith('MD_WEB_IDB_')) {
       retryCommandState.value = {
         caseSnapshot: structuredClone(inputCase),
@@ -235,6 +251,14 @@ async function retryLastCommand(): Promise<void> {
   const retry = retryCommandState.value
   if (!retry) return
   await runCommand(retry.command, retry.caseSnapshot)
+}
+
+async function resumeAfterSafety(): Promise<void> {
+  errorCode.value = null
+  composerText.value = ''
+  showComposer.value = false
+  const current = caseValue.value
+  if (current?.lifecycle === 'active') await refreshProposal()
 }
 
 async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
@@ -435,7 +459,17 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="errorCode && !executionContractMismatch" class="privacy-note" role="alert" data-testid="command-error">
+      <aside v-if="safetyErrorCode" class="system-event" role="alert" data-testid="case-safety-route">
+        {{ locale === 'ru'
+          ? 'Этот ввод касается потенциально опасного действия. Он не добавлен в дело, и поиск вещей не продолжается автоматически. Не полагайтесь только на воспоминание: проверьте факт надёжным и безопасным способом или обратитесь за подходящей помощью.'
+          : 'This input concerns a potentially hazardous action. It was not added to the Case, and lost-item search will not continue automatically. Do not rely on memory alone: verify the fact using a reliable, safe source or seek appropriate help.' }}
+        <details><summary>{{ locale === 'ru' ? 'Код маршрута' : 'Route code' }}</summary><code>{{ safetyErrorCode }}</code></details>
+        <button class="secondary-action" type="button" :disabled="busy" @click="resumeAfterSafety">
+          {{ locale === 'ru' ? 'Вернуться к поиску вещи' : 'Return to lost-item search' }}
+        </button>
+      </aside>
+
+      <div v-if="errorCode && !executionContractMismatch && !safetyErrorCode" class="privacy-note" role="alert" data-testid="command-error">
         {{ t('case.command_error') }}
         <button
           v-if="retryCommandState"
