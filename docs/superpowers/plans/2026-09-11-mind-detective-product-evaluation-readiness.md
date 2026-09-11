@@ -39,6 +39,7 @@
 ### Evaluation UI
 
 - Modify `apps/web/nuxt.config.ts` — add disabled-by-default `mindDetectiveEvaluationEnabled` public config.
+- Modify `apps/web/playwright.config.ts` — enable evaluation mode only for the Playwright dev server so explicit evaluation routes can be exercised in browser tests; ordinary page tests still use the normal product path.
 - Create `apps/web/app/pages/evaluation/index.vue` — evaluator dashboard / staged or real session start / explicit export.
 - Create `apps/web/app/pages/evaluation/observer/[sessionId].vue` — staged proposal annotation and S4 rubric console.
 - Create `apps/web/app/components/evaluation/EvaluationStartPanel.vue` — participant/session start controls.
@@ -86,7 +87,7 @@ No `.github/workflows/ci.yml` change is required: existing Web/unit/e2e and Pyth
 
 **Interfaces:**
 - Produces `EvaluationParticipantV1`, `EvaluationSessionV1`, `EvaluationEventV1`, `EvaluationExportV1`.
-- Produces `createEvaluationParticipant()`, `createEvaluationSession()`, `bindEvaluationSessionCase()`, `completeEvaluationSession()`, `getEvaluationSessionByCaseId()`, `appendEvaluationEvent()`, `buildEvaluationExport()`.
+- Produces `createEvaluationParticipant()`, `createEvaluationSession()`, `bindEvaluationSessionCase()`, `completeEvaluationSession()`, `getEvaluationSessionByCaseId()`, `appendEvalEvent()`, `buildEvaluationExport()`.
 - Later tasks consume only these APIs; they do not open evaluation IndexedDB directly.
 
 - [ ] **Step 1: Write contract tests for bounded values and sensitive-field rejection**
@@ -126,9 +127,18 @@ export const EVALUATION_SCHEMA = 'mind-detective-evaluation/v1' as const
 export const EVALUATION_EXPORT_SCHEMA = 'mind-detective-evaluation-export/v1' as const
 ```
 
-`EvaluationSessionV1` must keep assignment fields immutable and mutable completion fields separate:
+Define participant/session/event identities explicitly:
 
 ```ts
+export interface EvaluationParticipantV1 {
+  evaluation_schema: typeof EVALUATION_SCHEMA
+  participant_id: string
+  protocol: 'staged' | 'real'
+  enrollment_slot: number | null
+  counterbalance_cell: CounterbalanceCell | null
+  created_at: string
+}
+
 export interface EvaluationSessionV1 {
   evaluation_schema: typeof EVALUATION_SCHEMA
   evaluation_session_id: string
@@ -145,9 +155,17 @@ export interface EvaluationSessionV1 {
   ended_at: string | null
   outcome: EvaluationOutcome | null
 }
+
+export interface EvaluationEventV1 {
+  event_id: string
+  evaluation_session_id: string
+  event: EvalEventName
+  at: string
+  metadata: Record<string, string | number | boolean | null>
+}
 ```
 
-Event metadata must be validated against an event-specific key map, not one global permissive set. Include only keys required by the spec: `case_id`, `candidate_id`, `proposal_id`, `mode`, `reason_code`, `guard_code`, `command_id`, `outcome_code`, `found_context`, `task_load`, `convenience`, the seven staged safety booleans, four handoff booleans, and `handoff_score`.
+Event metadata must be validated against an event-specific key map, not one global permissive set. Include only keys required by the spec: `case_id`, `candidate_id`, `proposal_id`, `mode`, `reason_code`, `guard_code`, `command_id`, `outcome_code`, `found_context`, `task_load`, `convenience`, seven staged safety booleans, four handoff booleans, and `handoff_score`.
 
 - [ ] **Step 3: Write IndexedDB migration/immutability tests**
 
@@ -179,7 +197,7 @@ const SESSIONS = 'sessions'
 const EVENTS = 'events'
 ```
 
-Create sessions with `add`, never `put`. Permit only these later mutations:
+Create participant/session records with `add`, never unrestricted `put`. Permit only these later session mutations:
 
 ```ts
 bindEvaluationSessionCase(sessionId, caseId, startedAt)
@@ -210,7 +228,7 @@ export function exportEvalJson(bundle: EvaluationExportV1): Blob
 export function exportEvalCsv(bundle: EvaluationExportV1): Blob
 ```
 
-CSV must use one row per session/event record with a `record_type` column and JSON-encoded primitive metadata; it must never flatten Case content because Case data is absent from the bundle.
+CSV uses one row per participant/session/event record with a `record_type` column and JSON-encoded primitive metadata; it never flattens Case content because Case data is absent from the bundle.
 
 - [ ] **Step 6: Run focused and full Web unit tests**
 
@@ -238,11 +256,11 @@ git commit -m "feat: add evaluation data contract and store"
 
 **Interfaces:**
 - Consumes `EvaluationParticipantV1`, `EvaluationSessionV1`, `CounterbalanceCell`, `ScenarioFamily`, `ScenarioVariant`, `EvaluationArm` from Task 1.
-- Produces `cellForEnrollmentSlot()`, `createStagedParticipantRecord()`, `nextStagedAssignment()`, `assignRealArm()`.
+- Produces `STAGED_CELLS`, `cellForEnrollmentSlot()`, `createStagedParticipantRecord()`, `nextStagedAssignment()`, `assignRealArm()`.
 
 - [ ] **Step 1: Encode invariant tests before the table**
 
-The test must prove all four invariants, not compare only a snapshot:
+The test proves invariants rather than only snapshot equality:
 
 ```ts
 for (const cell of [1, 2, 3, 4] as const) {
@@ -337,6 +355,7 @@ git commit -m "feat: add evaluation assignment engine"
 
 **Files:**
 - Modify: `apps/web/nuxt.config.ts`
+- Modify: `apps/web/playwright.config.ts`
 - Create: `apps/web/app/composables/useEvaluationSession.ts`
 - Create: `apps/web/app/pages/evaluation/index.vue`
 - Create: `apps/web/app/components/evaluation/EvaluationStartPanel.vue`
@@ -350,11 +369,14 @@ git commit -m "feat: add evaluation assignment engine"
 - Produces `useEvaluationSession()` with `session`, `loadForCase()`, `effectiveProductArm()`, `startStagedSession()`, `startRealSession()`.
 - Maps B→`checklist`, C→`assistant`; A is rejected as an application arm.
 
-- [ ] **Step 1: Add failing browser tests proving evaluation is disabled by default**
+- [ ] **Step 1: Add explicit-mode browser tests before route implementation**
 
-Test normal `/` remains unchanged and `/evaluation` renders an unavailable message unless `NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION=1` is set in the evaluation Playwright webServer environment.
+Configure the Playwright dev server with `NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION=1`, then test that:
 
-Do not add any random assignment to `/` or `CreateCaseForm` when no evaluation session id is supplied.
+- `/evaluation` is an explicit evaluator entry point;
+- visiting normal `/` creates no participant/session/assignment record;
+- creating a normal Case outside `/evaluation` keeps the build-level arm and emits no evaluation event;
+- staged/real assignment starts only after an action inside `/evaluation`.
 
 Run:
 
@@ -364,13 +386,23 @@ pnpm --dir apps/web exec playwright test tests/e2e/evaluation-flow.spec.ts --pro
 
 Expected: FAIL before route/config exists.
 
-- [ ] **Step 2: Add disabled-by-default public config**
+The production/default config remains disabled because `nuxt.config.ts` resolves the flag to `false` unless the environment variable is exactly `1`.
+
+- [ ] **Step 2: Add disabled-by-default public config and test-server opt-in**
+
+Nuxt:
 
 ```ts
 mindDetectiveEvaluationEnabled: process.env.NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION === '1',
 ```
 
-The default remains `false`.
+Playwright webServer env adds only:
+
+```ts
+NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION: '1'
+```
+
+No product arm override is added here.
 
 - [ ] **Step 3: Implement the evaluation context composable**
 
@@ -393,8 +425,8 @@ Staged flow:
 1. evaluator enters integer `enrollment_slot`;
 2. create/reuse one pseudonymous staged participant record;
 3. derive cell from slot;
-4. create the next immutable session from `STAGED_CELLS`;
-5. render family/variant/arm code for the evaluator;
+4. create next immutable session from `STAGED_CELLS`;
+5. render family/variant/arm code for evaluator;
 6. render `CreateCaseForm` with `evaluation-session-id`.
 
 Real flow:
@@ -419,11 +451,11 @@ await bindEvaluationSessionCase(sessionId, caseValue.case_id, now)
 await appendEvalEvent(sessionId, 'case_started', { case_id: caseValue.case_id })
 ```
 
-If binding fails, do not emit `created`; show an evaluation binding error so an unbound Case is not analyzed as an assigned session.
+If binding fails, do not emit `created`; show an evaluation binding error so an unbound Case is not analyzed as assigned.
 
-- [ ] **Step 6: Resolve arm in the Case page without changing ordinary behavior**
+- [ ] **Step 6: Resolve arm in Case page without changing ordinary behavior**
 
-Keep `useExperimentalArm()` as the ordinary build-level default. Add:
+Keep `useExperimentalArm()` as ordinary build-level default. Add:
 
 ```ts
 const defaultArm = useExperimentalArm()
@@ -433,7 +465,7 @@ const effectiveArm = computed(() => evaluation.session.value
   : defaultArm.value)
 ```
 
-Replace proposal calls/provider disclosure checks to use `effectiveArm`. A reload calls `loadForCase(caseId)` and therefore restores stored assignment instead of recomputing it.
+Replace proposal calls/provider disclosure checks to use `effectiveArm`. Reload calls `loadForCase(caseId)` and restores stored assignment rather than recomputing it.
 
 - [ ] **Step 7: Extend Playwright helpers to seed evaluation DB v2**
 
@@ -441,7 +473,7 @@ Add `seedEvaluationParticipant`, `seedEvaluationSession`, `storedEvaluationSessi
 
 - [ ] **Step 8: Prove assignment persistence in Chromium and WebKit**
 
-Browser test must create one staged session, reload Case route, and assert the stored arm/session id remains identical. Add a C session that goes offline and assert it remains C after deterministic fallback.
+Browser test creates one staged session, reloads Case route, and asserts stored arm/session id remain identical. Add a C session that goes offline and assert it remains C after deterministic fallback.
 
 Run:
 
@@ -454,7 +486,7 @@ Expected: PASS.
 - [ ] **Step 9: Commit Task 3**
 
 ```bash
-git add apps/web/nuxt.config.ts apps/web/app/composables/useEvaluationSession.ts apps/web/app/pages/evaluation apps/web/app/components/evaluation/EvaluationStartPanel.vue apps/web/app/components/case/CreateCaseForm.vue apps/web/app/pages/cases/[id].vue apps/web/tests/e2e/evaluation-flow.spec.ts apps/web/tests/e2e/helpers.ts
+git add apps/web/nuxt.config.ts apps/web/playwright.config.ts apps/web/app/composables/useEvaluationSession.ts apps/web/app/pages/evaluation apps/web/app/components/evaluation/EvaluationStartPanel.vue apps/web/app/components/case/CreateCaseForm.vue apps/web/app/pages/cases/[id].vue apps/web/tests/e2e/evaluation-flow.spec.ts apps/web/tests/e2e/helpers.ts
 git commit -m "feat: add explicit evaluation session entry"
 ```
 
@@ -541,7 +573,7 @@ After successful `close_found`:
 await completeEvaluationSession(sessionId, 'found', new Date().toISOString())
 ```
 
-After successful `close_unresolved`, use `unresolved`. Event and session completion must agree; unit/e2e tests assert mismatch attempts fail closed.
+After successful `close_unresolved`, use `unresolved`. Event/session completion must agree; unit/e2e tests assert mismatch attempts fail closed.
 
 - [ ] **Step 6: Run focused browser/unit tests and commit**
 
@@ -604,7 +636,7 @@ appendEvalEvent(sessionId, 'post_case_rating', {
 })
 ```
 
-Do not render a text area or notes field.
+Do not render text area or notes field.
 
 - [ ] **Step 3: Implement evaluation-only abandonment**
 
@@ -619,7 +651,7 @@ It does not call a Case command and therefore does not add a new Case lifecycle 
 
 - [ ] **Step 4: Implement staged observer safety booleans**
 
-For each unannotated `next_action_shown` proposal id, store exactly these booleans:
+For each unannotated `next_action_shown` proposal id, store exactly:
 
 ```ts
 unsupported_fact
@@ -631,7 +663,7 @@ critical_forgetting_diagnosis
 critical_unsafe_action
 ```
 
-`critical_violation` is derived in analysis as OR of the four critical booleans; it is not entered as free text.
+`critical_violation` is derived in analysis as OR of four critical booleans; it is not entered as free text.
 
 - [ ] **Step 5: Implement S4 handoff rubric**
 
@@ -644,9 +676,9 @@ journal_continuity
 next_action_coherent
 ```
 
-Store `handoff_score` as the integer sum 0–4. Reject the rubric event for any non-S4 staged session.
+Store `handoff_score` as integer sum 0–4. Reject rubric event for any non-S4 staged session.
 
-- [ ] **Step 6: Implement explicit evaluation exports on the dashboard**
+- [ ] **Step 6: Implement explicit evaluation exports on dashboard**
 
 Use `buildEvaluationExport()` only after button click. Download names:
 
@@ -690,7 +722,7 @@ git commit -m "feat: add evaluation measures and export"
 
 - [ ] **Step 1: Write failing schema and reconstruction tests**
 
-Fixtures must include:
+Fixtures include:
 
 - at least two staged participants with both B/C sessions;
 - one `abandoned` session;
@@ -701,7 +733,7 @@ Fixtures must include:
 - one S4 handoff rubric;
 - an external A record.
 
-Tests assert that all these sessions remain visible in ITT and denominator counts.
+Tests assert all these sessions remain visible in ITT and denominator counts.
 
 Run:
 
@@ -709,11 +741,11 @@ Run:
 python -m unittest tests.test_evaluation_analysis -v
 ```
 
-Expected: FAIL before the script exists.
+Expected: FAIL before script exists.
 
 - [ ] **Step 2: Implement strict export validation**
 
-Use dataclasses/typed dictionaries from stdlib only. Reject:
+Use stdlib dataclasses / typed structures only. Reject:
 
 - wrong export/evaluation schema;
 - duplicate participant/session/event ids;
@@ -727,15 +759,15 @@ Use dataclasses/typed dictionaries from stdlib only. Reject:
 
 Do not accept or inspect `item_label`, target, journal, user text, or raw model output fields.
 
-- [ ] **Step 3: Reconstruct the first useful action deterministically**
+- [ ] **Step 3: Reconstruct first useful action deterministically**
 
 For each session:
 
 1. sort events by `(at, event_id)`;
 2. start at `case_started`;
 3. collect `next_action_shown` by `proposal_id`/`candidate_id`;
-4. mark a proposal rejected if a matching rejection precedes its check completion;
-5. first shown proposal that later reaches matching `check_finished` without prior rejection is the event time;
+4. mark proposal rejected if matching rejection precedes its check completion;
+5. first shown proposal that later reaches matching `check_finished` without prior rejection is event time;
 6. otherwise censor at terminal event or 600 seconds, whichever occurs first.
 
 Expose:
@@ -760,13 +792,13 @@ Unit tests use hand-calculated fixtures, including all-censored and immediate-ev
 
 - [ ] **Step 5: Implement participant-clustered bootstrap**
 
-Sample participant ids with replacement; include all of each sampled participant’s staged sessions each draw. Recompute B and C RMTUA and rate differences. Use deterministic `random.Random(seed)` and percentile two-sided 95% intervals.
+Sample participant ids with replacement; include all staged sessions for each sampled participant. Recompute B/C RMTUA and rate differences. Use deterministic `random.Random(seed)` and percentile two-sided 95% intervals.
 
-CLI default is `--bootstrap 2000`; unit tests use 100 draws and a fixed seed for speed.
+CLI default is `--bootstrap 2000`; unit tests use 100 draws and fixed seed for speed.
 
 - [ ] **Step 6: Compute explicit gate inputs without pretending ambiguous review is automatic**
 
-The report must include:
+Report includes:
 
 ```text
 sample.protocol_complete_participants
@@ -785,11 +817,11 @@ readiness.pre_useful_fallback_rate_C
 readiness.execution_contract_failure_count
 ```
 
-Classify only rules with exact thresholds as `pass`/`fail`/`inconclusive`. Terminal-outcome imbalance remains a visible review flag because the approved spec deliberately does not invent a numeric staged threshold for “could plausibly explain the time effect”. Overall product direction therefore remains a reviewed conclusion, not a one-line automated claim.
+Classify only rules with exact thresholds as `pass`/`fail`/`inconclusive`. Terminal-outcome imbalance remains a visible review flag because the approved spec deliberately does not invent a numeric staged threshold for “could plausibly explain the time effect”. Overall product direction therefore remains a reviewed conclusion, not an automated claim.
 
 - [ ] **Step 7: Prove arm A stays contextual**
 
-With `--external-a`, include A summaries under `contextual_external_a`; never use A values in the C-vs-B efficacy/safety decision calculations.
+With `--external-a`, include A summaries under `contextual_external_a`; never use A values in C-vs-B efficacy/safety calculations.
 
 - [ ] **Step 8: Run Python quality gates and commit**
 
@@ -816,16 +848,16 @@ git commit -m "feat: add evaluation analysis pipeline"
 - Modify or create repository contract tests only if `scripts/validate_repo.py` requires references for new normative docs.
 
 **Interfaces:**
-- Documents the exact operator steps implemented in Tasks 1–6.
-- Does not redefine thresholds independently from the approved spec.
+- Documents exact operator steps implemented in Tasks 1–6.
+- Does not redefine thresholds independently from approved spec.
 
-- [ ] **Step 1: Write `STAGED_PROTOCOL.md` from the corrected matrix**
+- [ ] **Step 1: Write `STAGED_PROTOCOL.md` from corrected matrix**
 
-It must specify:
+It specifies:
 
 - enrollment slot is assigned before case content is viewed;
 - `cell = ((slot - 1) mod 4) + 1`;
-- exact four-cell order/arm/variant table from the spec;
+- exact four-cell order/arm/variant table from spec;
 - S1–S4 physical setup principles;
 - fixed 10-minute observation horizon;
 - observer annotation timing;
@@ -836,11 +868,11 @@ No participant-identifying field is requested.
 
 - [ ] **Step 2: Write real-pilot eligibility/exclusion procedure**
 
-Include explicit low-risk examples as categories rather than personal examples, high-stakes exclusions, immutable 1:1 assignment, and the rule that fallback remains C.
+Include low-risk categories, high-stakes exclusions, immutable 1:1 assignment, and rule that fallback remains C.
 
 - [ ] **Step 3: Write external-A procedure**
 
-Use the same staged family framing where applicable, but no application route and no hidden structured assistance. Document the JSON template fields accepted by `--external-a`.
+Use same staged family framing where applicable, but no application route and no hidden structured assistance. Document JSON template fields accepted by `--external-a`.
 
 - [ ] **Step 4: Write analysis runbook**
 
@@ -855,7 +887,7 @@ State prominently: green fixtures prove machinery/reproducibility, not causal li
 
 - [ ] **Step 5: Update `docs/PRODUCT_EVALUATION.md`**
 
-Keep it short and canonical: link the approved design, four protocol docs, and analysis CLI; preserve the falsifiable “simplify if C does not lift over B” rule.
+Keep it short and canonical: link approved design, four protocol docs, and analysis CLI; preserve falsifiable “simplify if C does not lift over B” rule.
 
 - [ ] **Step 6: Run repository validation and commit**
 
@@ -876,7 +908,7 @@ git commit -m "docs: add Product Evaluation runbooks"
 - Update implementation PR body/checklist, not release files.
 
 **Interfaces:**
-- Verifies every `MD-EVAL-REQ-*` requirement against tests or a documented operator step.
+- Verifies every `MD-EVAL-REQ-*` requirement against tests or documented operator step.
 
 - [ ] **Step 1: Run generated-artifact freshness gates before full test suite**
 
@@ -922,11 +954,11 @@ grep -RInE 'item_label|raw_model_output|journal_text|statement_text|user_text|mo
   apps/web/app/lib/eval tests/fixtures/evaluation
 ```
 
-Expected: matches are limited to explicit denylist/test assertions, never exported fixture payload values. Manually inspect each match before accepting the gate.
+Expected: matches are limited to explicit denylist/test assertions, never exported fixture payload values. Manually inspect each match before accepting gate.
 
-- [ ] **Step 5: Map requirements to evidence in the implementation PR**
+- [ ] **Step 5: Map requirements to evidence in implementation PR**
 
-PR body must list all requirements from `MD-EVAL-REQ-BOUNDARY-01` through `MD-EVAL-REQ-RELEASE-01` and point to exact tests/docs. It must explicitly state:
+PR body lists all requirements from `MD-EVAL-REQ-BOUNDARY-01` through `MD-EVAL-REQ-RELEASE-01` and points to exact tests/docs. It explicitly states:
 
 ```text
 No release/version publication is requested by this implementation PR.
@@ -935,9 +967,9 @@ Engineering-green does not imply Product Evaluation lift.
 
 - [ ] **Step 6: Verify exact implementation head CI before requesting merge authorization**
 
-Record exact branch head SHA and require the pull-request CI run for that SHA to be completed/success across Python 3.10, Python 3.13, Web, and Secret scan.
+Record exact branch head SHA and require pull-request CI for that SHA to be completed/success across Python 3.10, Python 3.13, Web, and Secret scan.
 
-Do not merge in this step. Merge requires a separate explicit user authorization after review.
+Do not merge in this step. Merge requires separate explicit user authorization after review.
 
 - [ ] **Step 7: Commit any verification-only documentation changes**
 
