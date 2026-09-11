@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from .case import Case, CaseError, CaseLifecycle
 from .feedback import ActionFeedback
-from .journal import InteractionMode, JournalEntry
+from .journal import InteractionMode, JournalAuthor, JournalEntry
 from .planner import CandidateCheck, select_next_action
 from .portable_intrinsics import PortableKernelError
 from .portable_kernel import (
@@ -62,6 +62,8 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def append_journal_entry(self, case: Case, entry: JournalEntry, now: str) -> Case:
+        if entry.author is JournalAuthor.USER:
+            self._enforce_safe_ingress(entry.text)
         entry_payload: dict[str, object] = {
             "id": entry.id,
             "author": entry.author.value,
