@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { candidate, caseFixture, searchCheck, seedCase, storedCase } from './helpers'
 
-test('one-tap not-found check commits canonical progress locally without command network', async ({ page }) => {
+test('one-tap check commits canonical progress locally without command network', async ({ page }) => {
   const caseValue = caseFixture()
   let commandCalls = 0
   await page.route('**/api/v1/case/command', async (route) => {
