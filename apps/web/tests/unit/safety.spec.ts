@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { classifySafetyInput, safetyCodeForInput } from '../../app/lib/safety'
+import {
+  classifySafetyInput,
+  enforceSafeInput,
+  SafetyIngressError,
+  safetyCodeForInput,
+} from '../../app/lib/safety'
 
 describe('browser safety ingress', () => {
   it.each([
-    ['Принимал ли я таблетки?', 'MD_SAFE_MEDICATION_ACTION'],
+    ['Принимал ли я уже таблетки?', 'MD_SAFE_MEDICATION_ACTION'],
     ['Я выключил плиту перед уходом?', 'MD_SAFE_HAZARDOUS_ACTION'],
     ['Я закрыл входную дверь?', 'MD_SAFE_SECURITY_ACTION'],
     ['Did I already take the medicine?', 'MD_SAFE_MEDICATION_ACTION'],
@@ -14,6 +19,12 @@ describe('browser safety ingress', () => {
     expect(decision.route).toBe('limit_and_escalate')
     expect(decision.codes).toContain(code)
     expect(safetyCodeForInput(text)).toBe(code)
+    expect(() => enforceSafeInput(text)).toThrowError(SafetyIngressError)
+    try {
+      enforceSafeInput(text)
+    } catch (error: unknown) {
+      expect(error).toMatchObject({ code })
+    }
   })
 
   it.each([
@@ -28,5 +39,6 @@ describe('browser safety ingress', () => {
       messageKey: 'ordinary_lost_item_search',
     })
     expect(safetyCodeForInput(text)).toBeNull()
+    expect(() => enforceSafeInput(text)).not.toThrow()
   })
 })
