@@ -9,6 +9,7 @@ from pathlib import Path
 from scripts.analyze_evaluation import (
     EvaluationBundle,
     EvaluationDataError,
+    EvaluationEvent,
     TimeObservation,
     analyze,
     load_evaluation_export,
@@ -59,7 +60,7 @@ class EvaluationAnalysisTests(unittest.TestCase):
 
     def test_first_useful_action_uses_shown_time_and_censors_abandonment(self) -> None:
         bundle = load_evaluation_export(self.staged_path)
-        grouped: dict[str, list[object]] = {}
+        grouped: dict[str, list[EvaluationEvent]] = {}
         for event in bundle.events:
             grouped.setdefault(event.evaluation_session_id, []).append(event)
         ordered = {
@@ -85,7 +86,7 @@ class EvaluationAnalysisTests(unittest.TestCase):
 
     def test_bootstrap_is_deterministic_by_seed(self) -> None:
         bundle = load_evaluation_export(self.staged_path)
-        grouped: dict[str, list[object]] = {}
+        grouped: dict[str, list[EvaluationEvent]] = {}
         for event in bundle.events:
             grouped.setdefault(event.evaluation_session_id, []).append(event)
         first = participant_clustered_bootstrap(bundle.sessions, grouped, seed=77, draws=100)
