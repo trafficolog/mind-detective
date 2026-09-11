@@ -1,66 +1,62 @@
 # MIND Detective
 
-<!-- release-0.2.0 -->
+<!-- release-0.3.0 -->
 
 [Русский](README.md)
 
-**MIND Detective is a systematic lost-item search assistant.** It reduces cognitive load during a search by preserving the user's own recollections without promoting them to verified facts, keeping a durable log of physical checks, proposing one useful next action, and resuming a saved case after interruption.
+**MIND Detective is a systematic lost-item search assistant.** It reduces working-memory load during a search by separating user recollection from hypotheses, logging physical checks, selecting one next action, and preserving a case for later resume.
 
-## What 0.2.0 adds
+## What 0.3.0 adds
 
-Version 0.2.0 keeps the five production plugin skills and adds a mobile-first **Nuxt 4 Web/PWA** over the same Python `CaseController`:
+Version `0.3.0` makes deterministic Web/PWA execution local-first without introducing a second hand-maintained domain reducer:
 
-- one production shell for checklist and AI arms without exposing arm identity as separate UX;
-- canonical browser persistence in IndexedDB, explicit JSON export/import, and deterministic v1→v2 migration;
-- a stateless FastAPI adapter with no server-side Case database;
-- a sequential retryable command queue with no optimistic canonical mutation;
-- one-tap “Checked” as neutral `reported_check`, with delayed quality clarification;
-- reviewed guard fallback without persisting or revealing a blocked raw proposal;
-- PWA shell caching without `/api/`, Case/user/model/evaluation data, and without Background Sync;
-- reviewed RU/EN copy, keyboard/focus contracts, and dark/reduced-motion/increased-contrast support;
-- privacy-filtered browser-local evaluation events for checklist-vs-AI comparison.
+- an authoritative restricted stdlib-only portable Python kernel;
+- certified generator → committed TypeScript executor plus identity metadata;
+- a differential Python↔TypeScript conformance corpus;
+- local Case creation and deterministic commands without required `/api/v1/case/*` calls;
+- atomic IndexedDB commit of canonical Case + execution receipt;
+- idempotent retry by `command_id`, with conflicting reuse failing closed;
+- local deterministic checklist proposals;
+- assistant transport fallback without retrospective reconnect replay;
+- execution identity/version/hash skew guard before model-provider creation;
+- a preloaded PWA that completes the canonical search workflow offline.
 
-Python `Case` + `CaseController` remain the single deterministic source of truth: there is no TypeScript port or parallel domain reducer.
+`mind-detective-case/v2` remains the current Case schema. This release does not add cloud sync, Pyodide/WASM, Bayesian/POD logic, calibrated location percentages, or hidden belief state.
 
-## Architecture
+## 0.3.0 architecture
 
 ```text
-Nuxt 4 PWA
-  │  IndexedDB / reviewed RU+EN UI / command queue
-  ▼
-FastAPI stateless adapter
-  │
-  ├── Python CaseController / planner / guard / artifacts
-  │
-  └── AI proposal ──► LiteLLM Proxy ──► configured model provider
+portable Python kernel
+        │
+        ├── certified generator ──► committed TypeScript executor
+        │                              │
+        │                              ▼
+        │                    local executor + IndexedDB
+        │                    Case + execution receipt
+        │
+        └── FastAPI compatibility / proposal boundary
+                                       │
+                        assistant only ─┴─► LiteLLM Proxy
 ```
 
-Checklist and AI use the same canonical mutation path. In the AI arm a model can produce a structured candidate proposal, but model output never becomes state automatically: the server-side proposal/guard boundary returns only a reviewed structured proposal or a deterministic fallback.
+Python remains the authoritative semantic source. The TypeScript artifact is generated and checked against the conformance corpus; there is no hand-maintained parallel Case reducer.
 
-## LiteLLM setup for the AI arm
+## Offline and AI
 
-The Web/API layer contains no provider-specific client configuration. The only live-model gateway is **LiteLLM Proxy**. Configure these server-side variables for the API:
+The deterministic create/mutation/checklist path executes locally. The service worker caches only application-shell/static assets; it does not cache Case/user/model/evaluation data or `/api/`, and Case commands do not use Background Sync.
 
-```bash
-export LITELLM_API_KEY="<proxy-key>"
-export MIND_DETECTIVE_LITELLM_MODEL="<model-alias-from-litellm>"
-export MIND_DETECTIVE_LITELLM_BASE_URL="http://127.0.0.1:4000"  # optional; this is the default
-```
+The AI arm calls the server-side proposal boundary only for an assistant proposal. Every request carries execution identity (`version`, `kernel_sha256`, `generated_sha256`, `generator_version`). A mismatch fails closed before provider creation. A transport failure uses the local deterministic fallback and is not replayed after reconnect.
 
-`LITELLM_API_KEY` and provider credentials must never be shipped in the browser bundle. Only the context needed for the current proposal is transiently processed for AI requests. Therefore browser-local persistence does **not** mean data never leaves the device: model context is processed by LiteLLM and the configured model provider according to that deployment/privacy boundary.
+## Storage and privacy
 
-## Storage and offline behavior
+Web canonical persistence is device-local IndexedDB. Explicit JSON export/import remains the portability mechanism. The plugin surface keeps its case-local `.mind-detective/cases/<case-id>/case.json` contract. Browser-local storage does not mean assistant model context never leaves the device: only the minimum transient context needed for an online assistant proposal crosses LiteLLM and the configured provider boundary.
 
-Web cases are stored locally in IndexedDB. The Persistent Storage API can reduce eviction risk but is not a backup guarantee; use explicit JSON export for portability. The service worker stores only shell/static assets. An offline mutation is not treated as saved until the API returns a new canonical Case; retry reuses the same command envelope.
+## Product boundaries
 
-The plugin surface keeps the existing explicit local-file contract at `.mind-detective/cases/<case-id>/case.json`.
-
-## Product limits
-
-MIND Detective is not a medical tool, does not restore “true” memory, does not diagnose why forgetting happened, does not know an item's actual location, does not provide calibrated location percentages, and uses no Bayesian/POD/hidden belief-weight model. Repeated quick checks are not treated as independent evidence of absence. Uncertainty about a high-risk action exits ordinary physical-search reasoning.
+The product does not diagnose why forgetting occurred, assert the real location of an item, guarantee search success, or assign calibrated probabilities to locations. High-risk action uncertainty is routed outside ordinary physical-search reasoning.
 
 ## Development and verification
 
-Development follows `SPEC → RED → GREEN → REFACTOR → TRACE → EVAL → VERIFY`. Normative `MD-REQ-*` and `MD-WEB-REQ-*` entries map to exact selectors in `docs/CONTRACT_MATRIX.json`. CI against the exact PR head validates Python 3.10/3.13, repository/plugin/API tests, Ruff, strict Mypy, frozen pnpm install, Vitest, production PWA build, Playwright on Chromium/WebKit, and secret scanning.
+Normative `MD-REQ-*`, `MD-WEB-REQ-*`, and `MD-OFFLINE-REQ-*` contracts have exact selectors in `docs/CONTRACT_MATRIX.json`. Exact-head CI covers Python 3.10/3.13, repository/plugin/API tests, Ruff, strict Mypy, generated-artifact freshness, conformance corpus, frozen pnpm installation, Vitest, production PWA build, Chromium/WebKit Playwright, and secret scanning.
 
-Start with [Getting Started](docs/GETTING_STARTED.en.md), then see [Architecture](docs/ARCHITECTURE.en.md), [Methodology](docs/METHODOLOGY.en.md), [Privacy (RU)](docs/PRIVACY.md), [Product Evaluation (RU)](docs/PRODUCT_EVALUATION.md), and [Release Policy](docs/RELEASE_POLICY.md).
+See [Getting Started](docs/GETTING_STARTED.en.md), [Architecture](docs/ARCHITECTURE.en.md), [Privacy](docs/PRIVACY.md), [Product Evaluation](docs/PRODUCT_EVALUATION.md), and [Release Policy](docs/RELEASE_POLICY.en.md).

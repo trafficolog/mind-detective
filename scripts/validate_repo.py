@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 CANONICAL_NAME = "mind-detective"
-CANONICAL_VERSION = "0.2.0"
+CANONICAL_VERSION = "0.3.0"
 
 
 FORBIDDEN_IMPORT_PREFIXES: tuple[str, ...] = (

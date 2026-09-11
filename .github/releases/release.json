@@ -1,18 +1,18 @@
 {
   "schema_version": 1,
   "repository": {
-    "version": "0.2.0",
-    "tag": "0.2.0",
-    "title": "MIND Detective repository 0.2.0",
-    "notes_file": ".github/releases/0.2.0.md"
+    "version": "0.3.0",
+    "tag": "0.3.0",
+    "title": "MIND Detective repository 0.3.0",
+    "notes_file": ".github/releases/0.3.0.md"
   },
   "plugins": [
     {
       "plugin": "mind-detective",
-      "version": "0.2.0",
-      "tag": "mind-detective-v0.2.0",
-      "title": "MIND Detective plugin 0.2.0",
-      "notes_file": ".github/releases/0.2.0.md"
+      "version": "0.3.0",
+      "tag": "mind-detective-v0.3.0",
+      "title": "MIND Detective plugin 0.3.0",
+      "notes_file": ".github/releases/0.3.0.md"
     }
   ]
 }
