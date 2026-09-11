@@ -18,6 +18,12 @@ const legacyV1 = {
 }
 
 test('valid v1 import is server-migrated to canonical v2 and future schema is rejected', async ({ page }) => {
+  let validationRequests = 0
+  await page.route('**/api/v1/case/validate', async (route) => {
+    validationRequests += 1
+    await route.abort('failed')
+  })
+
   await page.goto('/')
   await page.getByTestId('case-import').setInputFiles({
     name: 'legacy.json',
@@ -29,6 +35,7 @@ test('valid v1 import is server-migrated to canonical v2 and future schema is re
   expect(migrated?.schema).toBe('mind-detective-case/v2')
   expect(migrated?.current_mode).toBe('unselected')
   expect(migrated?.interaction_journal).toEqual([])
+  expect(validationRequests).toBe(0)
 
   await page.goto('/')
   await page.getByTestId('case-import').setInputFiles({
@@ -37,6 +44,7 @@ test('valid v1 import is server-migrated to canonical v2 and future schema is re
     buffer: Buffer.from(JSON.stringify({ schema: 'mind-detective-case/v999' })),
   })
   await expect(page.getByRole('status')).toContainText('не поддерживается')
+  expect(validationRequests).toBe(0)
 })
 
 test('engaged case exposes durability warning install education and explicit JSON export', async ({ page }) => {
