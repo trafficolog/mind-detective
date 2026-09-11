@@ -12,6 +12,7 @@ _TS_TEST_RE = re.compile(
     r"\b(?:test|it)\s*\(\s*(['\"])(?P<title>.*?)\1",
     re.DOTALL,
 )
+_WEB_SOURCE_SUFFIXES = {".ts", ".tsx", ".vue"}
 
 
 def collect_requirement_ids(path: Path) -> tuple[set[str], set[str]]:
@@ -67,6 +68,107 @@ def selector_exists(root: Path, selector: str) -> bool:
     return False
 
 
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+
+def _web_sources(root: Path, helper: Path) -> list[Path]:
+    app_root = root / "apps/web/app"
+    if not app_root.is_dir():
+        return []
+    return [
+        path
+        for path in app_root.rglob("*")
+        if path.is_file()
+        and path != helper
+        and path.suffix in _WEB_SOURCE_SUFFIXES
+    ]
+
+
+def _web_helper_reachable(root: Path, helper_text: str) -> bool:
+    helper = root / helper_text
+    web_root = root / "apps/web"
+    app_root = web_root / "app"
+    try:
+        relative = helper.relative_to(web_root)
+    except ValueError:
+        return True
+
+    if relative.as_posix() == "nuxt.config.ts":
+        return True
+    try:
+        app_relative = helper.relative_to(app_root)
+    except ValueError:
+        return True
+
+    parts = app_relative.parts
+    if parts and parts[0] == "pages":
+        return True
+
+    sources = _web_sources(root, helper)
+    if not sources:
+        return False
+
+    stem = helper.stem
+    if parts and parts[0] == "components":
+        marker = re.compile(rf"(?:<|\b){re.escape(stem)}\b")
+        return any(marker.search(_read_text(source)) for source in sources)
+
+    if parts and parts[0] == "composables":
+        direct_call = re.compile(rf"\b{re.escape(stem)}\s*\(")
+        module_import = re.compile(rf"from\s+['\"][^'\"]*{re.escape(stem)}['\"]")
+        return any(
+            direct_call.search(_read_text(source)) or module_import.search(_read_text(source))
+            for source in sources
+        )
+
+    if parts and parts[0] == "lib":
+        module_key = helper.parent.name if stem == "index" else stem
+        marker = re.compile(rf"(?:/|\b){re.escape(module_key)}(?:['\"/]|\b)")
+        return any(marker.search(_read_text(source)) for source in sources)
+
+    return True
+
+
+def _api_helper_reachable(root: Path, helper_text: str) -> bool:
+    helper = root / helper_text
+    package_root = root / "apps/api/mind_detective_api"
+    try:
+        relative = helper.relative_to(package_root)
+    except ValueError:
+        return True
+    if relative.name in {"app.py", "__main__.py"}:
+        return True
+    module = relative.with_suffix("").as_posix().replace("/", ".")
+    for source in package_root.rglob("*.py"):
+        if source == helper:
+            continue
+        try:
+            tree = ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+        except (OSError, UnicodeDecodeError, SyntaxError):
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                imported = node.module.lstrip(".")
+                if imported == module or imported.endswith(f".{module}") or imported == helper.stem:
+                    return True
+            if isinstance(node, ast.Import):
+                if any(alias.name.endswith(module) for alias in node.names):
+                    return True
+    return False
+
+
+def helper_reachable(root: Path, helper_text: str) -> bool:
+    if helper_text.startswith("apps/web/"):
+        return _web_helper_reachable(root, helper_text)
+    if helper_text.startswith("apps/api/mind_detective_api/"):
+        return _api_helper_reachable(root, helper_text)
+    return True
+
+
 def _load_json_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -110,6 +212,13 @@ def validate_contract_matrix(root: Path) -> list[str]:
                 value = raw.get(field)
                 if isinstance(value, str) and not (root / value).is_file():
                     errors.append(f"MD_CONTRACT_PATH:{requirement_id}:{field}")
+            helper = raw.get("helper")
+            if (
+                isinstance(helper, str)
+                and (root / helper).is_file()
+                and not helper_reachable(root, helper)
+            ):
+                errors.append(f"MD_CONTRACT_REACHABILITY:{requirement_id}:{helper}")
             test_selector = raw.get("test")
             if isinstance(test_selector, str) and not selector_exists(root, test_selector):
                 errors.append(f"MD_CONTRACT_SELECTOR:{requirement_id}:{test_selector}")
