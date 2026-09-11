@@ -36,6 +36,51 @@ class PortableKernelTests(unittest.TestCase):
         self.assertEqual(case["interaction_journal"], [])
         self.assertEqual(case["action_feedback"], [])
 
+    def test_create_case_blocks_high_risk_forgotten_action_before_case_creation(self):
+        with self.assertRaises(PortableKernelError) as blocked:
+            create_case("case-risk", "Принимал ли я уже таблетки?", "2026-09-10T18:00:00Z")
+        self.assertEqual(blocked.exception.code, "MD_SAFE_MEDICATION_ACTION")
+
+    def test_create_case_does_not_block_ordinary_lost_medication_item(self):
+        case = create_case("case-ordinary", "коробка с таблетками", "2026-09-10T18:00:00Z")
+        self.assertEqual(case["item_label"], "коробка с таблетками")
+
+    def test_add_statement_blocks_high_risk_forgotten_action_before_journal_write(self):
+        case = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
+        case = apply_command(
+            case,
+            command(
+                "set_mode",
+                command_id="cmd-mode",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "reconstruction"},
+            ),
+        )
+        with self.assertRaises(PortableKernelError) as blocked:
+            apply_command(
+                case,
+                command(
+                    "add_statement",
+                    command_id="cmd-risk",
+                    expected="2026-09-10T18:01:00Z",
+                    now="2026-09-10T18:02:00Z",
+                    payload={
+                        "statement_id": "stmt-risk",
+                        "source": "user",
+                        "statement_type": "recollection",
+                        "original_text": "Did I turn off the stove?",
+                        "event_time": None,
+                        "user_confirmation": False,
+                        "supporting_evidence_ids": [],
+                        "limitations": [],
+                    },
+                ),
+            )
+        self.assertEqual(blocked.exception.code, "MD_SAFE_HAZARDOUS_ACTION")
+        self.assertEqual(case["statements"], [])
+        self.assertEqual(case["interaction_journal"], [])
+
     def test_mode_and_pause_transitions_do_not_mutate_input(self):
         source = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
         original = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
