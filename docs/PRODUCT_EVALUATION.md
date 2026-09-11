@@ -5,8 +5,8 @@
 ## Arms
 
 - **A — обычный поиск:** внешний contextual baseline без MIND Detective UI/скрытой structured assistance.
-- **B — checklist/controller:** Web/PWA, canonical Case и deterministic local executor без conversational AI.
-- **C — B + conversational AI:** тот же product shell и execution semantics; отличие ограничено live assistant proposal generation. Transport fallback не меняет assignment: session остаётся C.
+- **B — структурированный чек-лист** + журнал поиска без диалогового AI: Web/PWA, canonical Case и deterministic local executor.
+- **C — чек-лист + журнал поиска + диалоговый AI:** тот же product shell и execution semantics; отличие ограничено live assistant proposal generation. Transport fallback не меняет assignment: session остаётся C.
 
 Обычное использование продукта не рандомизируется. B/C assignment существует только в explicit evaluation mode и хранится отдельно от `Case v2`.
 
