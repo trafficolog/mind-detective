@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CaseV2 } from '~/lib/api/contracts'
 import { startEvaluationSessionCase } from '~/lib/eval/store'
+import { safetyCodeForInput } from '~/lib/safety'
 
 const props = withDefaults(defineProps<{
   evaluationSessionId?: string | null
@@ -29,8 +30,14 @@ function executionErrorCode(error: unknown, fallback: string): string {
 async function submit(): Promise<void> {
   const label = itemLabel.value.trim()
   if (!label || pending.value) return
-  pending.value = true
   errorCode.value = null
+  const safetyCode = safetyCodeForInput(label)
+  if (safetyCode) {
+    errorCode.value = safetyCode
+    return
+  }
+
+  pending.value = true
   const caseId = crypto.randomUUID()
   const now = new Date().toISOString()
   try {
@@ -42,9 +49,7 @@ async function submit(): Promise<void> {
     itemLabel.value = ''
   } catch (error: unknown) {
     const code = executionErrorCode(error, 'create.failed')
-    errorCode.value = code.startsWith('MD_WEB_EVAL_') || code.startsWith('MD_SAFE_')
-      ? code
-      : 'create.failed'
+    errorCode.value = code.startsWith('MD_WEB_EVAL_') ? code : 'create.failed'
   } finally {
     pending.value = false
   }
