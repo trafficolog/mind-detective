@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-_REQUIREMENT_RE = re.compile(r"MD(?:-WEB)?-REQ-[A-Z0-9]+-\d{2}")
+_REQUIREMENT_RE = re.compile(r"MD(?:-(?:WEB|OFFLINE))?-REQ-[A-Z0-9]+-\d{2}")
 _ACTIVE_FIELDS = ("skill", "helper", "test", "reference")
 _TS_TEST_RE = re.compile(
     r"\b(?:test|it)\s*\(\s*(['\"])(?P<title>.*?)\1",

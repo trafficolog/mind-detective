@@ -64,6 +64,12 @@ describe('generated local execution differential conformance', () => {
     expect(vectors.length).toBeGreaterThanOrEqual(50)
   })
 
+  it('matches every committed conformance vector', () => {
+    for (const vector of vectors) {
+      expect(execute(vector)).toEqual(vector.expected)
+    }
+  })
+
   for (const vector of vectors) {
     it(vector.id, () => {
       expect(execute(vector)).toEqual(vector.expected)
