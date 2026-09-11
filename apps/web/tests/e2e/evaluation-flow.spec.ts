@@ -89,24 +89,28 @@ test('B session records linked useful-action instrumentation and finishes atomic
   await expect(page.getByTestId('case-outcome')).toContainText('найдено')
 
   const events = await storedEvaluationEvents(page)
-  expect(events).toHaveLength(5)
-  expect(events.map(event => event.event).sort()).toEqual([
+  const chronological = [...events].sort((left, right) => left.at.localeCompare(right.at) || left.event_id.localeCompare(right.event_id))
+  expect(chronological.map(event => event.event)).toEqual([
     'case_started',
-    'check_finished',
-    'check_started',
-    'found',
     'next_action_shown',
-  ].sort())
+    'check_started',
+    'check_finished',
+    'next_action_shown',
+    'found',
+  ])
 
-  const shown = events.find(event => event.event === 'next_action_shown')
-  const started = events.find(event => event.event === 'check_started')
-  const finished = events.find(event => event.event === 'check_finished')
+  const shown = chronological.find(event => event.event === 'next_action_shown')
+  const started = chronological.find(event => event.event === 'check_started')
+  const finished = chronological.find(event => event.event === 'check_finished')
+  const reshown = chronological.filter(event => event.event === 'next_action_shown')[1]
   expect(shown?.metadata.proposal_id).toBeTruthy()
   expect(started?.metadata.proposal_id).toBe(shown?.metadata.proposal_id)
   expect(finished?.metadata.proposal_id).toBe(shown?.metadata.proposal_id)
   expect(shown?.metadata.candidate_id).toBe('candidate-1')
   expect(started?.metadata.candidate_id).toBe('candidate-1')
-  expect(events.find(event => event.event === 'found')?.metadata.found_context).toBe('elsewhere_unplanned')
+  expect(reshown?.metadata.candidate_id).toBe('candidate-1')
+  expect(reshown?.metadata.proposal_id).not.toBe(shown?.metadata.proposal_id)
+  expect(chronological.at(-1)?.metadata.found_context).toBe('elsewhere_unplanned')
 
   const session = (await storedEvaluationSessions(page))[0]
   expect(session?.outcome).toBe('found')
@@ -119,10 +123,13 @@ test('duplicate check is derived from canonical prior evidence', async ({ page }
     case_id: caseId,
     updated_at: '2026-09-10T07:01:10Z',
     candidates: [candidate('candidate-1', 'карманы куртки', 'partial')],
-    search_checks: [searchCheck('prior-check', 'candidate-1', 'карманы куртки', 'visual')],
+    search_checks: [searchCheck('prior-check', 'candidate-1', 'карманы куртки', 'reported_check')],
   }))
   await page.goto(`/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
+  await expect(page.getByTestId('check-quality-dialog')).toBeVisible()
+  await page.getByRole('button', { name: 'Не сейчас' }).click()
+  await expect(page.getByTestId('check-quality-dialog')).toHaveCount(0)
   await page.getByTestId('mark-checked').click()
 
   const events = await storedEvaluationEvents(page)
