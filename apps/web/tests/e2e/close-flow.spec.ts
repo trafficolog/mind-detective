@@ -6,7 +6,7 @@ test('found elsewhere closes case with explicit research context', async ({ page
   await seedCase(page, caseValue)
   await page.goto(`/cases/${caseValue.case_id}`)
 
-  await page.getByRole('button', { name: 'Нашёл' }).click()
+  await page.getByTestId('found-case').click()
   await expect(page.getByTestId('close-case-dialog')).toBeVisible()
   await page.getByTestId('found-context').selectOption('elsewhere_unplanned')
   await page.getByTestId('close-found').click()
@@ -22,7 +22,7 @@ test('unresolved close is distinct from found', async ({ page }) => {
   await seedCase(page, caseValue)
   await page.goto(`/cases/${caseValue.case_id}`)
 
-  await page.getByRole('button', { name: 'Нашёл' }).click()
+  await page.getByTestId('found-case').click()
   await page.getByTestId('close-unresolved').click()
 
   await expect(page.getByTestId('case-outcome')).toContainText('без результата')
