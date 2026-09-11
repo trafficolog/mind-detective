@@ -11,6 +11,7 @@ const emit = defineEmits<{
   reject: []
 }>()
 
+const { t } = useCopy()
 const isAction = computed(() => props.proposal?.kind === 'next_action' && Boolean(props.proposal.target))
 </script>
 
@@ -30,7 +31,7 @@ const isAction = computed(() => props.proposal?.kind === 'next_action' && Boolea
       <p v-else class="next-action-card__target">Продолжим с безопасного следующего шага</p>
       <div v-if="isAction" class="next-action-card__actions">
         <button class="primary-action" data-testid="mark-checked" type="button" :disabled="pending" :aria-busy="pending" @click="emit('checked')">
-          {{ pending ? 'Сохраняем…' : 'Проверил' }}
+          {{ pending ? t('next.pending') : t('next.checked_not_found') }}
         </button>
         <button class="secondary-action" data-testid="reject-action" type="button" :disabled="pending" @click="emit('reject')">Не подходит</button>
       </div>
