@@ -79,6 +79,13 @@ describe('read-only case derivations', () => {
     expect(deriveProgress(caseValue)).toEqual({ checked: 5, remaining: 3, inaccessible: 0 })
   })
 
+  it('lets canonical checked state win over stale inaccessible metadata', () => {
+    const caseValue = fixture()
+    caseValue.candidates = caseValue.candidates.map(item => item.id === 'c8' ? { ...item, check_state: 'checked' } : item)
+
+    expect(deriveProgress(caseValue)).toEqual({ checked: 5, remaining: 3, inaccessible: 0 })
+  })
+
   it('uses explicit candidate ids for prior-check annotations', () => {
     const caseValue = fixture()
     expect(derivePriorCheckAnnotation(caseValue, 'c8')).toEqual({
