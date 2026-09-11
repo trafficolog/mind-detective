@@ -3,7 +3,6 @@ import type { CaseV2 } from '~/lib/api/contracts'
 import { importCase } from '~/lib/storage/exportImport'
 
 const repository = useCaseRepository()
-const api = useCaseApi()
 const loading = ref(true)
 const caseRouteReady = ref(false)
 const importPending = ref(false)
@@ -37,7 +36,7 @@ async function handleImport(event: Event): Promise<void> {
   importPending.value = true
   importMessage.value = null
   try {
-    const imported = await importCase(file, api.validateCase)
+    const imported = await importCase(file)
     await repository.put(imported)
     importMessage.value = 'Импорт завершён. Дело сохранено локально.'
     if (!caseRouteReady.value) await prepareCaseRoute()
