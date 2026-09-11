@@ -6,6 +6,13 @@ export interface SafetyDecision {
   messageKey: 'ordinary_lost_item_search' | 'high_risk_forgotten_action'
 }
 
+export class SafetyIngressError extends Error {
+  constructor(public readonly code: string) {
+    super(code)
+    this.name = 'SafetyIngressError'
+  }
+}
+
 const MEDICATION_PATTERNS = [
   /(?:я\s+)?уже\s+(?:принял|приняла|выпил|выпила)[^\s]*\s+(?:таблет|лекарств|доз)/i,
   /принимал[аи]?\s+ли\s+(?:я\s+)?(?:уже\s+)?(?:таблет|лекарств|доз)/i,
@@ -55,4 +62,9 @@ export function classifySafetyInput(text: string): SafetyDecision {
 export function safetyCodeForInput(text: string): string | null {
   const decision = classifySafetyInput(text)
   return decision.route === 'limit_and_escalate' ? decision.codes[0] ?? 'MD_SAFE_HIGH_RISK_ACTION' : null
+}
+
+export function enforceSafeInput(text: string): void {
+  const code = safetyCodeForInput(text)
+  if (code) throw new SafetyIngressError(code)
 }
