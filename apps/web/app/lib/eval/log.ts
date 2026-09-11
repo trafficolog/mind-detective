@@ -1,37 +1,32 @@
-export type EvalEventName =
-  | 'case_started'
-  | 'next_action_shown'
-  | 'next_action_started'
-  | 'next_action_rejected'
-  | 'check_started'
-  | 'check_finished'
-  | 'duplicate_check_detected'
-  | 'check_quality_clarified'
-  | 'ai_guard_blocked'
-  | 'assistant_offline_fallback'
-  | 'local_execution_failed'
-  | 'pending_command_started'
-  | 'pending_command_retried'
-  | 'pending_command_failed'
-  | 'pause'
-  | 'resume'
-  | 'found'
-  | 'case_closed_unresolved'
-  | 'case_abandoned'
-  | 'found_context_recorded'
+import {
+  type EvalEventName,
+  type EvaluationExportV1,
+  type EvaluationPrimitive,
+  EvalLogError,
+  validateEventMetadata,
+} from './contracts'
+import {
+  appendEvaluationEvent,
+  appendLegacyEvaluationEvent,
+  buildEvaluationExport,
+  listEvaluationEvents,
+} from './store'
 
+export type { EvalEventName, EvaluationExportV1 } from './contracts'
+export { EvalLogError } from './contracts'
+
+/**
+ * Legacy pre-v1 event shape. Rows written through this shape have no
+ * evaluation_session_id and are intentionally excluded from v1 exports.
+ */
 export interface EvalEvent {
   event_id: string
   event: EvalEventName
   at: string
-  metadata: Record<string, string | number | boolean | null>
+  metadata: Record<string, EvaluationPrimitive>
 }
 
-const DB_NAME = 'mind-detective-evaluation'
-const DB_VERSION = 1
-const STORE = 'events'
-
-const ALLOWED_KEYS = new Set([
+const LEGACY_ALLOWED_KEYS = new Set([
   'case_id',
   'arm',
   'mode',
@@ -45,7 +40,7 @@ const ALLOWED_KEYS = new Set([
   'candidate_id',
 ])
 
-const SENSITIVE_KEYS = new Set([
+const LEGACY_SENSITIVE_KEYS = new Set([
   'case',
   'item_label',
   'location',
@@ -59,85 +54,65 @@ const SENSITIVE_KEYS = new Set([
   'raw_model_output',
 ])
 
-export class EvalLogError extends Error {
-  constructor(public readonly code: string, message: string) {
-    super(message)
-  }
-}
-
-function validateMetadata(metadata: Record<string, unknown>): Record<string, string | number | boolean | null> {
-  const safe: Record<string, string | number | boolean | null> = {}
+function validateLegacyMetadata(metadata: Record<string, unknown>): Record<string, EvaluationPrimitive> {
+  const safe: Record<string, EvaluationPrimitive> = {}
   for (const [key, value] of Object.entries(metadata)) {
-    if (SENSITIVE_KEYS.has(key)) {
+    if (LEGACY_SENSITIVE_KEYS.has(key)) {
       throw new EvalLogError('MD_WEB_EVAL_SENSITIVE_FIELD', `sensitive evaluation field: ${key}`)
     }
-    if (!ALLOWED_KEYS.has(key)) {
+    if (!LEGACY_ALLOWED_KEYS.has(key)) {
       throw new EvalLogError('MD_WEB_EVAL_FIELD', `unexpected evaluation field: ${key}`)
     }
     if (value !== null && !['string', 'number', 'boolean'].includes(typeof value)) {
       throw new EvalLogError('MD_WEB_EVAL_VALUE', `invalid evaluation value: ${key}`)
     }
-    safe[key] = value as string | number | boolean | null
+    if (typeof value === 'string' && value.length > 256) {
+      throw new EvalLogError('MD_WEB_EVAL_VALUE', `evaluation string too long: ${key}`)
+    }
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      throw new EvalLogError('MD_WEB_EVAL_VALUE', `invalid evaluation number: ${key}`)
+    }
+    safe[key] = value as EvaluationPrimitive
   }
   return safe
 }
 
-function openDatabase(): Promise<IDBDatabase> {
-  if (typeof indexedDB === 'undefined') return Promise.reject(new Error('MD_WEB_EVAL_IDB_UNAVAILABLE'))
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION)
-    request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE)) {
-        request.result.createObjectStore(STORE, { keyPath: 'event_id' })
-      }
-    }
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error ?? new Error('MD_WEB_EVAL_IDB_OPEN'))
-  })
-}
-
-async function persist(event: EvalEvent): Promise<void> {
-  const database = await openDatabase()
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(STORE, 'readwrite')
-      transaction.objectStore(STORE).put(structuredClone(event))
-      transaction.oncomplete = () => resolve()
-      transaction.onerror = () => reject(transaction.error ?? new Error('MD_WEB_EVAL_IDB_WRITE'))
-      transaction.onabort = () => reject(transaction.error ?? new Error('MD_WEB_EVAL_IDB_ABORT'))
-    })
-  } finally {
-    database.close()
+export function appendEvalEvent(
+  evaluationSessionId: string,
+  event: EvalEventName,
+  metadata?: Record<string, unknown>,
+): Promise<void>
+/** @deprecated Ordinary unbound logging is retained only until evaluation instrumentation is migrated. */
+export function appendEvalEvent(event: EvalEventName, metadata?: Record<string, unknown>): Promise<void>
+export function appendEvalEvent(
+  first: string,
+  second: EvalEventName | Record<string, unknown> = {},
+  third: Record<string, unknown> = {},
+): Promise<void> {
+  if (typeof second === 'string') {
+    const metadata = validateEventMetadata(second, third)
+    return appendEvaluationEvent(first, second, metadata).then(() => undefined)
   }
-}
 
-export function appendEvalEvent(event: EvalEventName, metadata: Record<string, unknown> = {}): Promise<void> {
-  const safeMetadata = validateMetadata(metadata)
+  const event = first as EvalEventName
+  const safeMetadata = validateLegacyMetadata(second)
   const record: EvalEvent = {
     event_id: crypto.randomUUID(),
     event,
     at: new Date().toISOString(),
     metadata: safeMetadata,
   }
-  return persist(record)
+  return appendLegacyEvaluationEvent(record)
 }
 
-export async function listEvalEvents(): Promise<EvalEvent[]> {
-  const database = await openDatabase()
-  try {
-    return await new Promise<EvalEvent[]>((resolve, reject) => {
-      const transaction = database.transaction(STORE, 'readonly')
-      const request = transaction.objectStore(STORE).getAll()
-      request.onsuccess = () => resolve((request.result as EvalEvent[]).sort((a, b) => a.at.localeCompare(b.at)))
-      request.onerror = () => reject(request.error ?? new Error('MD_WEB_EVAL_IDB_READ'))
-    })
-  } finally {
-    database.close()
-  }
+export async function listEvalEvents(): Promise<ReturnType<typeof listEvaluationEvents> extends Promise<infer T> ? T : never> {
+  return await listEvaluationEvents()
 }
 
-export function exportEvalJson(events: readonly EvalEvent[]): Blob {
-  return new Blob([JSON.stringify(events, null, 2)], { type: 'application/json' })
+export { buildEvaluationExport }
+
+export function exportEvalJson(bundle: EvaluationExportV1 | readonly EvalEvent[]): Blob {
+  return new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' })
 }
 
 function csvCell(value: unknown): string {
@@ -145,9 +120,43 @@ function csvCell(value: unknown): string {
   return `"${text.replaceAll('"', '""')}"`
 }
 
-export function exportEvalCsv(events: readonly EvalEvent[]): Blob {
+function exportBundleCsv(bundle: EvaluationExportV1): Blob {
+  const rows = ['record_type,record_id,evaluation_session_id,at,payload']
+  for (const participant of bundle.participants) {
+    rows.push([
+      'participant',
+      participant.participant_id,
+      '',
+      participant.created_at,
+      participant,
+    ].map(csvCell).join(','))
+  }
+  for (const session of bundle.sessions) {
+    rows.push([
+      'session',
+      session.evaluation_session_id,
+      session.evaluation_session_id,
+      session.started_at ?? '',
+      session,
+    ].map(csvCell).join(','))
+  }
+  for (const event of bundle.events) {
+    rows.push([
+      'event',
+      event.event_id,
+      event.evaluation_session_id,
+      event.at,
+      { event: event.event, metadata: event.metadata },
+    ].map(csvCell).join(','))
+  }
+  return new Blob([`${rows.join('\n')}\n`], { type: 'text/csv;charset=utf-8' })
+}
+
+export function exportEvalCsv(bundle: EvaluationExportV1 | readonly EvalEvent[]): Blob {
+  if (!Array.isArray(bundle)) return exportBundleCsv(bundle as EvaluationExportV1)
+
   const rows = ['event_id,event,at,metadata']
-  for (const event of events) {
+  for (const event of bundle) {
     rows.push([event.event_id, event.event, event.at, event.metadata].map(csvCell).join(','))
   }
   return new Blob([`${rows.join('\n')}\n`], { type: 'text/csv;charset=utf-8' })
