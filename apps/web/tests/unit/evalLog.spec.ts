@@ -8,7 +8,7 @@ import {
 import { appendEvalEvent, exportEvalCsv, exportEvalJson, type EvalEvent } from '../../app/lib/eval/log'
 
 describe('local evaluation log privacy contract', () => {
-  it('rejects sensitive evaluation keys synchronously on the legacy compatibility path', () => {
+  it('rejects sensitive evaluation keys synchronously', () => {
     expect(() => appendEvalEvent('found', { item_label: 'ключи' })).toThrow('sensitive evaluation field: item_label')
     expect(() => appendEvalEvent('next_action_shown', { target: 'рюкзак' })).toThrow('sensitive evaluation field: target')
     expect(() => appendEvalEvent('ai_guard_blocked', { raw_model_output: 'secret' })).toThrow('sensitive evaluation field: raw_model_output')
