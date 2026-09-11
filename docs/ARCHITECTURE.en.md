@@ -2,38 +2,63 @@
 
 [Русский](ARCHITECTURE.md)
 
-## Single domain source of truth
+## Single source of deterministic semantics
 
-The canonical `Case` together with the Python `CaseController` remains the only deterministic state authority. Version 0.2.0 adds a Web/PWA surface but does **not** port the domain state machine to TypeScript or introduce a parallel reducer. The Nuxt client sends commands and accepts the full canonical Case returned by the API.
-
-The plugin runtime still separates provenance (`statements.py`), uncertainty-preserving sequence (`timeline.py`), physical checks (`search_log.py`), categorical one-next-action planning (`planner.py`), guard checks (`guard.py`), plugin-surface local file persistence (`store.py`), and derived artifacts (`artifacts.py`). Safety routing runs before ordinary search reasoning.
-
-## Web/PWA 0.2.0
+In `0.3.0`, Python remains the authoritative source for deterministic Case semantics. The portable subset lives in `plugins/mind-detective/scripts/portable_kernel.py` plus certified intrinsics. Web has no second hand-maintained reducer: the TypeScript executor is generated from validated Python source and committed as a reproducible artifact together with identity metadata.
 
 ```text
-Nuxt 4 PWA
-  │  IndexedDB: browser-local canonical Case copy
-  │  sequential command queue / reviewed RU+EN copy
-  ▼
-FastAPI stateless adapter
-  │
-  ├── Python CaseController / planner / guard / artifacts
-  │
-  └── proposal adapter ──► LiteLLM Proxy ──► configured model provider
+portable Python kernel + certified intrinsics
+                 │
+                 ├── AST/certification gate
+                 │
+                 ├── deterministic generator
+                 │         │
+                 │         ▼
+                 │   committed TypeScript executor + metadata
+                 │         │
+                 │         ├── differential conformance corpus
+                 │         ▼
+                 │   Nuxt local executor
+                 │         │
+                 │         ▼
+                 │   IndexedDB atomic transaction
+                 │   canonical Case + execution receipt
+                 │
+                 └── FastAPI compatibility / proposal boundary
+                                      │
+                           assistant ──┴──► LiteLLM Proxy
 ```
 
-`apps/web` owns presentation, browser-local IndexedDB persistence, the PWA shell, import/export, and interaction telemetry that excludes raw case content. `apps/api` is a thin stateless transport adapter: it does not store user cases and does not become another domain state owner.
+## Local execution boundary
 
-For the AI arm, LiteLLM Proxy is the single live-model gateway. Provider credentials are never shipped to the client; model output crosses the server-side proposal/guard boundary and is converted into a reviewed proposal contract. Checklist and AI arms use the same production shell and the same canonical mutation path.
+Case creation, deterministic commands, and checklist proposals execute in the browser through the generated certified artifact. `apps/web/app/lib/execution/localExecutor.ts` adds persistence and idempotence boundaries but does not define separate domain semantics.
 
-## Persistence and PWA boundary
+Each command mutation is calculated from a canonical input Case and immutable command envelope. The Case and execution receipt are written in one IndexedDB transaction. Reusing the same `command_id` with the same input returns the persisted canonical result; reusing it with different input fails closed. A failed transaction must not partially mutate the persisted Case.
 
-Web cases are stored in IndexedDB. The service worker caches only application-shell/static assets: `/api/`, Case payloads, user text, model output, and evaluation records are excluded from the PWA cache and are not submitted through background sync. The persistent-storage API is treated only as a browser capability request, never as a backup guarantee. Explicit JSON export/import provides portability, including deterministic v1→v2 migration.
+`mind-detective-case/v2` remains the current data schema. `0.3.0` does not introduce Case v3, cloud sync, Pyodide/WASM, Bayesian/POD logic, calibrated location probabilities, or hidden belief state.
 
-The plugin surface keeps the existing explicit case-local file persistence contract at `.mind-detective/cases/<case-id>/case.json`; Web persistence does not change that contract and does not create cross-case learning or profiles.
+## Generator and conformance
+
+The generator accepts only the restricted AST/call surface and certified intrinsics. Unsupported constructs fail before emission. CI regenerates the artifact and corpus and requires a byte-clean git diff.
+
+The committed conformance corpus contains deterministic vectors for create, commands, proposal, and planner operations. Vitest executes every vector against the generated TypeScript executor. This verifies observable parity for the covered portable contract, not general equivalence between arbitrary Python and TypeScript.
+
+## API and assistant boundary
+
+FastAPI remains a stateless compatibility and server-side proposal boundary. It is not the required mutation path for deterministic Web commands and stores no Case database.
+
+Assistant proposals cross the server boundary only when live-model generation is needed. The client sends execution identity fields `version`, `kernel_sha256`, `generated_sha256`, and `generator_version`. The server validates identity before provider creation; mismatch returns `MD_WEB_EXECUTION_CONTRACT_MISMATCH` and does not call the provider. An already committed local deterministic mutation is not rolled back.
+
+On assistant transport failure, the arm uses the local deterministic checklist fallback. The old model request is not retrospectively replayed after reconnect.
+
+## Persistence, PWA, and privacy boundary
+
+Web canonical persistence is IndexedDB. The service-worker precache contains application-shell/static assets; `/api/`, Case payloads, user text, model output, and evaluation records are excluded, and Case commands do not use Background Sync. After preload, the canonical search workflow can run offline.
+
+The plugin surface retains its explicit case-local `.mind-detective/cases/<case-id>/case.json` contract. Neither Web nor plugin surfaces create cross-case learning or profiles.
 
 ## Verifiable boundaries
 
-Normative requirements live in `REQUIREMENTS.md`, with exact traceability in `CONTRACT_MATRIX.json`. CI validates Python 3.10/3.13, API behavior, Ruff, strict Mypy, frozen pnpm installation, Vitest, production PWA build, Playwright on Chromium/WebKit, and secret scanning against the exact PR head SHA.
+Normative `MD-REQ-*`, `MD-WEB-REQ-*`, and `MD-OFFLINE-REQ-*` contracts live in `REQUIREMENTS.md` with exact selectors in `CONTRACT_MATRIX.json`. Exact-head CI covers Python 3.10/3.13, repository/plugin/API tests, Ruff, strict Mypy, generated-artifact freshness, conformance corpus, frozen pnpm installation, Vitest, production PWA build, Chromium/WebKit Playwright, and secret scanning.
 
-Eval/browser fixtures demonstrate specific control paths; they are not proof of scientific validity or arbitrary live-model semantic compliance. Architectural decisions are recorded under `docs/adr/`.
+Key decisions are recorded as ADRs, including [ADR 013](adr/013-generated-portable-local-execution.md) and [ADR 014](adr/014-execution-identity-skew-gate.md).

@@ -1,21 +1,25 @@
 # Privacy / Конфиденциальность
 
-## Два разных контура хранения
+## Case-local persistence
 
-Plugin surface сохраняет прежний 0.1.0 contract: Case создаётся в памяти процесса, а запись на диск выполняется только по явному действию пользователя (`save`/`pause`/`retain`) в `.mind-detective/cases/<case-id>/case.json`. Плагин не создаёт cross-case index, общий пользовательский профиль, hidden priors или автоматическое обучение на предыдущих кейсах.
+Plugin surface сохраняет Case на диск только по **явному действию пользователя** (`save`/`pause`/`retain`) в `.mind-detective/cases/<case-id>/case.json`. Плагин не создаёт cross-case index, общий профиль пользователя, hidden priors или автоматическое обучение на предыдущих кейсах.
 
-В Web/PWA 0.2.0 каноническая browser copy хранится локально в IndexedDB. Service worker кэширует только application shell/static assets. Case payload, пользовательский текст, model output и evaluation records не должны попадать в Cache Storage или background sync. Persistent-storage permission повышает устойчивость browser-local storage, но **не является резервной копией**; для переноса предусмотрен явный JSON export/import.
+В Web/PWA canonical Case хранится локально в IndexedDB. Deterministic create и mutations выполняются generated local executor и атомарно записывают Case вместе с execution receipt. Они не требуют отправки Case mutation в `/api/v1/case/*`.
 
-## Local persistence не означает «данные никогда не покидают устройство»
+Service worker кэширует только application shell/static assets. Case payload, user text, model output и evaluation records не попадают в precache/background sync. Persistent Storage API не является гарантией backup; переносимость обеспечивается explicit JSON export/import.
 
-В checklist arm доменные изменения идут через stateless FastAPI adapter и Python `CaseController`. В AI arm минимальный контекст, необходимый для конкретного proposal request, дополнительно transiently обрабатывается настроенным **LiteLLM Proxy** и выбранным model provider. Это transport/model-processing boundary, а не server-side Case storage.
+## Local-first не означает «никаких внешних данных» для AI
 
-Provider credentials и LiteLLM secrets остаются только на сервере и не должны попадать в browser bundle. Raw model output не является каноническим Case state: предложение проходит server-side proposal/guard boundary, а заблокированный raw proposal не сохраняется клиентом для последующего reveal.
+Checklist/local deterministic path не требует model provider. Assistant proposal — отдельная transient processing boundary: минимально необходимый контекст текущего proposal может пройти через stateless FastAPI, LiteLLM Proxy и настроенного model provider. Provider credentials и LiteLLM secrets остаются server-side.
 
-## Минимизация данных
+Assistant request несёт execution identity; mismatch блокируется до provider creation. При transport failure используется local deterministic fallback, и прежний model request не ставится в reconnect replay queue.
 
-Web surface также не создаёт cross-case index или общий пользовательский профиль. Evaluation log хранит только allowlisted interaction/outcome metadata и отвергает raw `item_label`, location target, journal/user text и raw model output.
+Raw model output не становится canonical Case автоматически: server-side proposal/guard boundary возвращает reviewed structured proposal или deterministic fallback. Заблокированный raw proposal не сохраняется для последующего reveal.
 
-Не следует вводить в Case данные, не необходимые для поиска: credentials, access tokens, платёжные данные, подробные медицинские сведения, полный домашний адрес или другую идентифицирующую информацию без необходимости.
+## Evaluation и минимизация данных
 
-Case artifacts не содержат hidden chain-of-thought, `belief_weight`, POD или numerical location probability. Любое будущее cloud sync, account system, connector storage или расширение telemetry требует отдельной privacy/threat-model review.
+Browser evaluation log остаётся локальным и allowlisted. Он хранит interaction/outcome metadata, но отвергает raw `item_label`, location target, journal/user text и raw model output; background telemetry upload отсутствует.
+
+Не следует помещать в Case credentials, access tokens, платёжные данные, подробные медицинские сведения, полный домашний адрес или другую идентифицирующую информацию без необходимости.
+
+Case artifacts не содержат hidden chain-of-thought, `belief_weight`, POD или numerical location probability. Будущие cloud sync, account system, connector storage или расширение telemetry требуют отдельной privacy/threat-model review.

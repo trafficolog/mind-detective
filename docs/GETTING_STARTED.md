@@ -2,26 +2,31 @@
 
 [English](GETTING_STARTED.en.md)
 
-## Установка как plugin
+## Plugin surface
 
-Репозиторий публикует metadata для Claude и Codex-compatible plugin discovery. Канонический plugin id: `mind-detective`, target version: `0.1.0`. Runtime не требует сетевых credentials.
+Канонический plugin id — `mind-detective`, версия `0.3.0`. Пять production skills сохраняются: router, reconstruct, plan, resume и close. Сам plugin runtime использует Python standard library и не требует сетевых credentials.
 
-## Первый кейс
+Для явного plugin persistence кейс записывается только по действию пользователя (`save`/`pause`/`retain`) в `.mind-detective/cases/<case-id>/case.json`.
 
-1. Начните через `mind-detective` с названием потерянного физического предмета.
-2. Router сначала применит safety boundary.
-3. `mind-detective-reconstruct` попросит свободно рассказать последовательность без списка предполагаемых мест.
-4. `mind-detective-plan` зафиксирует выполненные проверки и предложит одно следующее действие.
-5. При паузе сохраните кейс явно; файл появится в `.mind-detective/cases/<case-id>/case.json`.
-6. `mind-detective-resume` возобновит только явно указанный кейс.
-7. `mind-detective-close` закроет `found`, `unresolved` или `abandoned` и выполнит явный retain/delete выбор.
+## Web/PWA 0.3.0
 
-## Для разработчика
+Web surface использует Nuxt 4 и browser-local IndexedDB. Deterministic Case create/commands/checklist proposals выполняются локально generated certified executor; server API для них не обязателен. AI proposal при online assistant arm проходит через FastAPI → LiteLLM/provider boundary и execution-identity check.
+
+Service worker кэширует только shell/static assets. Чтобы проверить реальный offline path, сначала загрузите PWA online и дождитесь active service worker, затем отключите сеть: создание/поиск/проверка/pause-resume/close/export должны оставаться локальными.
+
+## Проверка для разработчика
 
 ```bash
 python scripts/validate_repo.py
 python -m unittest discover -s tests -v
 python -m unittest discover -s plugins/mind-detective/tests -v
+python -m unittest discover -s apps/api/tests -v
+python -m scripts.write_local_execution_artifacts
+python -m scripts.generate_local_execution_corpus
+pnpm install --frozen-lockfile
+pnpm --dir apps/web exec vitest run
+pnpm --dir apps/web build
+pnpm --dir apps/web exec playwright test
 ```
 
-Позже CI также запускает ruff, mypy, boundaries, freshness и release checks.
+Generated files должны оставаться byte-clean после повторной генерации. Production merge выполняется только после exact-head CI; release — после exact post-merge `main` CI через hardened publisher.

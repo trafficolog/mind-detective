@@ -2,9 +2,9 @@
 
 [English](README.en.md)
 
-Плагин MIND Detective реализует transport-free систематический поиск потерянных физических предметов. В 0.1.0 он включает ровно пять skills и deterministic Case Controller.
+MIND Detective `0.3.0` — transport-free Python plugin для систематического поиска потерянных физических предметов. Он остаётся source of truth для safety, provenance, search и portable deterministic semantics.
 
-## Skills
+## Production skills
 
 - `mind-detective` — safety-first router;
 - `mind-detective-reconstruct` — free account + uncertainty-preserving timeline;
@@ -12,4 +12,8 @@
 - `mind-detective-resume` — explicit case resume/handoff;
 - `mind-detective-close` — outcome + retain/delete.
 
-Runtime: Python standard library only. Metadata SSOT: `.codex-plugin/plugin.json`. Локальное сохранение — только явно, без cross-case learning.
+## Portable execution 0.3.0
+
+`portable_kernel.py` и certified intrinsics определяют restricted stdlib-only surface, из которого repository generator создаёт Web TypeScript executor. Generated artifact не является вторым вручную поддерживаемым reducer; parity проверяется committed differential conformance corpus.
+
+Сам plugin runtime не вызывает Web/API/LiteLLM и не требует network credentials. Metadata SSOT — `.codex-plugin/plugin.json`. Локальное файловое сохранение остаётся explicit case-local в `.mind-detective/cases/<case-id>/case.json`, без cross-case learning.

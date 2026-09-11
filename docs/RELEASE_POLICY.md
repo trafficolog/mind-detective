@@ -2,10 +2,22 @@
 
 [English](RELEASE_POLICY.en.md)
 
-Репозиторий использует один SemVer (`0.1.0`, …) и независимый SemVer плагина с тегом `mind-detective-vX.Y.Z`. Milestone/codename не является version line.
+Репозиторий использует один repository SemVer и независимый plugin SemVer с тегом `mind-detective-vX.Y.Z`. Для `0.3.0` declarative intent находится в `.github/releases/release.json`: repository `0.3.0` и plugin `mind-detective-v0.3.0`.
 
-Публикация требует: feature/design review → exact PR-head CI → human merge authorization → exact new-main CI → human-approved `.github/releases/release.json` → единственный active publisher → exact tag-SHA verification → immutable release.
+## Единственный publication path
 
-Publisher обязан fail closed при stale main, conflicting tag SHA, ambiguous existing release state или mutable recovery target. Уже опубликованные tags/releases не переназначаются; исправление = новая версия.
+Публикация выполняется только `.github/workflows/publish-current-release.yml`. Параллельный publisher, ручное создание заменяющих тегов или переназначение опубликованных тегов не допускаются.
 
-До Task 15 этот документ описывает нормативную политику, но release control в CONTRACT_MATRIX остаётся `planned`.
+Последовательность gate:
+
+1. design/implementation review;
+2. CI на exact PR head SHA;
+3. явно авторизованный merge;
+4. CI на exact новом `main` SHA;
+5. manual `workflow_dispatch` canonical publisher с **полным 40-hex `target_sha`** этого verified `main`;
+6. publisher повторно проверяет live `origin/main`, successful CI exact target, declarative manifest и существующее release state до mutation;
+7. exact tag-SHA и immutable release verification после публикации.
+
+Publisher fail-closed при stale main, conflicting tag SHA, standalone tag без согласованного release, ambiguous existing release state, mutable recovery target или остатках rollback. Уже опубликованные tags/releases не переназначаются; исправление выпускается новой версией.
+
+Release controls `MD-REQ-RELEASE-01`, `MD-WEB-REQ-RELEASE-01` и `MD-OFFLINE-REQ-RELEASE-01` активны и трассируются exact tests в `CONTRACT_MATRIX.json`.
