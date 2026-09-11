@@ -1,4 +1,5 @@
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -11,23 +12,47 @@ from scripts.release_manifest import (
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/publish-current-release.yml"
+EXPECTED_VERSION = "0.3.0"
+
+
+def project_version(path: Path) -> str:
+    match = re.search(r'^version = "([^"]+)"$', path.read_text(encoding="utf-8"), re.MULTILINE)
+    if match is None:
+        raise AssertionError(f"version not found in {path}")
+    return match.group(1)
 
 
 class ReleaseContractTests(unittest.TestCase):
     def test_repository_manifest_is_valid(self):
         self.assertEqual(validate_release_manifest(ROOT), [])
         items = release_items(ROOT)
-        self.assertEqual([item.tag for item in items], ["0.2.0", "mind-detective-v0.2.0"])
+        self.assertEqual([item.tag for item in items], ["0.3.0", "mind-detective-v0.3.0"])
 
     def test_manifest_version_parity_and_notes_file(self):
         data = json.loads((ROOT / ".github/releases/release.json").read_text(encoding="utf-8"))
-        self.assertEqual(data["repository"]["version"], "0.2.0")
-        self.assertEqual(data["repository"]["tag"], "0.2.0")
+        self.assertEqual(data["repository"]["version"], EXPECTED_VERSION)
+        self.assertEqual(data["repository"]["tag"], EXPECTED_VERSION)
         self.assertEqual(data["plugins"][0]["plugin"], "mind-detective")
-        self.assertEqual(data["plugins"][0]["version"], "0.2.0")
-        self.assertEqual(data["plugins"][0]["tag"], "mind-detective-v0.2.0")
+        self.assertEqual(data["plugins"][0]["version"], EXPECTED_VERSION)
+        self.assertEqual(data["plugins"][0]["tag"], "mind-detective-v0.3.0")
+        self.assertEqual(data["repository"]["notes_file"], ".github/releases/0.3.0.md")
         self.assertTrue((ROOT / data["repository"]["notes_file"]).is_file())
         self.assertTrue((ROOT / ".github/releases/0.1.0.md").is_file())
+        self.assertTrue((ROOT / ".github/releases/0.2.0.md").is_file())
+
+    def test_all_release_version_surfaces_are_0_3_0(self):
+        self.assertEqual(project_version(ROOT / "pyproject.toml"), EXPECTED_VERSION)
+        self.assertEqual(project_version(ROOT / "apps/api/pyproject.toml"), EXPECTED_VERSION)
+        web = json.loads((ROOT / "apps/web/package.json").read_text(encoding="utf-8"))
+        codex = json.loads((ROOT / "plugins/mind-detective/.codex-plugin/plugin.json").read_text(encoding="utf-8"))
+        claude = json.loads((ROOT / "plugins/mind-detective/.claude-plugin/plugin.json").read_text(encoding="utf-8"))
+        agents_marketplace = json.loads((ROOT / ".agents/plugins/marketplace.json").read_text(encoding="utf-8"))
+        claude_marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
+        self.assertEqual(web["version"], EXPECTED_VERSION)
+        self.assertEqual(codex["version"], EXPECTED_VERSION)
+        self.assertEqual(claude["version"], EXPECTED_VERSION)
+        self.assertEqual(agents_marketplace["plugins"][0]["version"], EXPECTED_VERSION)
+        self.assertEqual(claude_marketplace["plugins"][0]["version"], EXPECTED_VERSION)
 
     def test_recovery_sha_requires_full_40_hex(self):
         with self.assertRaisesRegex(ValueError, "MD_RELEASE_SHA"):
