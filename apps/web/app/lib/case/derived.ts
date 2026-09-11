@@ -28,6 +28,8 @@ export function deriveProgress(caseValue: CaseV2): ProgressSummary {
 
   const inaccessibleIds = new Set<string>()
   for (const [candidateId, check] of latestChecks) {
+    const candidate = caseValue.candidates.find(item => item.id === candidateId)
+    if (candidate?.check_state === 'checked') continue
     if (check.result === 'inaccessible' || check.inaccessible_parts.length > 0) {
       inaccessibleIds.add(candidateId)
     }
@@ -36,14 +38,14 @@ export function deriveProgress(caseValue: CaseV2): ProgressSummary {
   let checked = 0
   let remaining = 0
   for (const candidate of caseValue.candidates) {
+    if (candidate.check_state === 'checked') {
+      checked += 1
+      continue
+    }
     if (inaccessibleIds.has(candidate.id)) {
       continue
     }
-    if (candidate.check_state === 'checked') {
-      checked += 1
-    } else {
-      remaining += 1
-    }
+    remaining += 1
   }
 
   return {
