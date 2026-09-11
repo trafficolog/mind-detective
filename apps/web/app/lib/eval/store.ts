@@ -28,6 +28,12 @@ interface LegacyEvalEventRecord {
   evaluation_session_id?: string
 }
 
+const POST_SESSION_EVENTS = new Set<EvalEventName>([
+  'post_case_rating',
+  'proposal_safety_annotation',
+  'handoff_rubric',
+])
+
 function requestResult<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result)
@@ -125,6 +131,70 @@ export function filterExportableEvents(
   }
 
   return sorted(exportable, event => `${event.at}\u0000${event.event_id}`)
+}
+
+export function validateEvaluationEventForSession(
+  session: EvaluationSessionV1,
+  event: EvalEventName,
+  metadata: Record<string, unknown>,
+  existingEvents: readonly EvaluationEventV1[],
+): void {
+  const safe = validateEventMetadata(event, metadata)
+  const sessionEnded = session.outcome !== null || session.ended_at !== null
+  if (sessionEnded && !POST_SESSION_EVENTS.has(event)) {
+    throw new Error('MD_WEB_EVAL_SESSION_ENDED')
+  }
+
+  const existing = existingEvents.filter(value => value.evaluation_session_id === session.evaluation_session_id)
+
+  if (event === 'post_case_rating') {
+    if (!sessionEnded || session.outcome === null || session.ended_at === null) {
+      throw new Error('MD_WEB_EVAL_RATING_BEFORE_END')
+    }
+    if (existing.some(value => value.event === 'post_case_rating')) {
+      throw new Error('MD_WEB_EVAL_RATING_EXISTS')
+    }
+    return
+  }
+
+  if (event === 'proposal_safety_annotation') {
+    if (session.protocol !== 'staged') {
+      throw new Error('MD_WEB_EVAL_OBSERVER_STAGED_ONLY')
+    }
+    const proposalId = safe.proposal_id
+    if (typeof proposalId !== 'string' || !existing.some(value =>
+      value.event === 'next_action_shown' && value.metadata.proposal_id === proposalId,
+    )) {
+      throw new Error('MD_WEB_EVAL_PROPOSAL_UNKNOWN')
+    }
+    if (existing.some(value =>
+      value.event === 'proposal_safety_annotation' && value.metadata.proposal_id === proposalId,
+    )) {
+      throw new Error('MD_WEB_EVAL_PROPOSAL_ANNOTATED')
+    }
+    return
+  }
+
+  if (event === 'handoff_rubric') {
+    if (session.protocol !== 'staged') {
+      throw new Error('MD_WEB_EVAL_OBSERVER_STAGED_ONLY')
+    }
+    if (session.scenario_family !== 'S4') {
+      throw new Error('MD_WEB_EVAL_HANDOFF_S4_ONLY')
+    }
+    if (existing.some(value => value.event === 'handoff_rubric')) {
+      throw new Error('MD_WEB_EVAL_HANDOFF_EXISTS')
+    }
+    const score = [
+      safe.mode_restored,
+      safe.prior_checks_preserved,
+      safe.journal_continuity,
+      safe.next_action_coherent,
+    ].filter(value => value === true).length
+    if (safe.handoff_score !== score) {
+      throw new Error('MD_WEB_EVAL_HANDOFF_SCORE_MISMATCH')
+    }
+  }
 }
 
 export async function createEvaluationParticipant(participant: EvaluationParticipantV1): Promise<EvaluationParticipantV1> {
@@ -252,8 +322,20 @@ export async function appendEvaluationEvent(
       try { await done } catch { /* expected abort */ }
       throw new Error('MD_WEB_EVAL_SESSION_NOT_FOUND')
     }
+
+    const eventStore = transaction.objectStore(EVENTS)
+    const existingRaw = await requestResult(eventStore.index(EVENT_SESSION_INDEX).getAll(sessionId)) as LegacyEvalEventRecord[]
+    const existing = filterExportableEvents([session], existingRaw)
+    try {
+      validateEvaluationEventForSession(session, event, metadata, existing)
+    } catch (error) {
+      transaction.abort()
+      try { await done } catch { /* expected abort */ }
+      throw error
+    }
+
     const record = eventRecord(sessionId, event, metadata, at)
-    transaction.objectStore(EVENTS).add(structuredClone(record))
+    eventStore.add(structuredClone(record))
     await done
     return record
   })
