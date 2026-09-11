@@ -62,6 +62,116 @@ _ALLOWED_PAYLOAD_KEYS: dict[str, frozenset[str]] = {
     "close_found": frozenset({"outcome"}),
     "close_unresolved": frozenset({"outcome"}),
 }
+_MEDICATION_ACTION_FRAGMENTS = (
+    "уже принял",
+    "уже приняла",
+    "уже выпил",
+    "уже выпила",
+    "принимал ли",
+    "принимала ли",
+    "did i take",
+    "did i already take",
+    "have i already taken",
+)
+_MEDICATION_OBJECT_FRAGMENTS = ("таблет", "лекарств", "доз", "pill", "medicine", "dose")
+_HAZARDOUS_ACTION_FRAGMENTS = (
+    "выключил",
+    "выключила",
+    "перекрыл газ",
+    "перекрыла газ",
+    "did i turn off",
+    "did i shut off",
+)
+_HAZARDOUS_OBJECT_FRAGMENTS = (
+    "плит",
+    "утюг",
+    "обогревател",
+    "газ",
+    "stove",
+    "iron",
+    "heater",
+    "gas",
+)
+_SECURITY_ACTION_FRAGMENTS = (
+    "запер ",
+    "заперла",
+    "закрыл ",
+    "закрыла",
+    "поставил дом на сигнализац",
+    "поставила дом на сигнализац",
+    "поставил квартиру на сигнализац",
+    "поставила квартиру на сигнализац",
+    "did i lock",
+    "did i arm",
+)
+_SECURITY_OBJECT_FRAGMENTS = ("двер", "сигнализац", "door", "alarm")
+
+
+def _normalize_safety_text(text: str) -> str:
+    return unicode_casefold(text).replace("ё", "е")
+
+
+def _contains_fragment(text: str, fragments: tuple[str, ...]) -> bool:
+    for fragment in fragments:
+        if fragment in text:
+            return True
+    return False
+
+
+def _has_action_and_object(
+    text: str,
+    action_fragments: tuple[str, ...],
+    object_fragments: tuple[str, ...],
+) -> bool:
+    return _contains_fragment(text, action_fragments) and _contains_fragment(text, object_fragments)
+
+
+def _safety_codes_for_text(text: str) -> list[str]:
+    normalized = _normalize_safety_text(text)
+    codes: list[str] = []
+    if _has_action_and_object(
+        normalized,
+        _MEDICATION_ACTION_FRAGMENTS,
+        _MEDICATION_OBJECT_FRAGMENTS,
+    ):
+        codes.append("MD_SAFE_MEDICATION_ACTION")
+    if _has_action_and_object(
+        normalized,
+        _HAZARDOUS_ACTION_FRAGMENTS,
+        _HAZARDOUS_OBJECT_FRAGMENTS,
+    ):
+        codes.append("MD_SAFE_HAZARDOUS_ACTION")
+    if _has_action_and_object(
+        normalized,
+        _SECURITY_ACTION_FRAGMENTS,
+        _SECURITY_OBJECT_FRAGMENTS,
+    ):
+        codes.append("MD_SAFE_SECURITY_ACTION")
+    return codes
+
+
+def classify_safety_text_json(text: str) -> dict[str, object]:
+    codes = _safety_codes_for_text(text)
+    if codes:
+        return {
+            "route": "limit_and_escalate",
+            "codes": codes,
+            "message_key": "high_risk_forgotten_action",
+        }
+    return {
+        "route": "ordinary_search",
+        "codes": [],
+        "message_key": "ordinary_lost_item_search",
+    }
+
+
+def _enforce_safe_search_input(text: str) -> None:
+    codes = _safety_codes_for_text(text)
+    if codes:
+        portable_error(
+            codes[0],
+            "high-risk forgotten-action uncertainty must exit lost-item search",
+        )
 
 
 def create_case(case_id: str, item_label: str, now: str) -> dict[str, object]:
@@ -69,6 +179,7 @@ def create_case(case_id: str, item_label: str, now: str) -> dict[str, object]:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "case_id must be a non-empty string")
     if not item_label:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "item_label must be a non-empty string")
+    _enforce_safe_search_input(item_label)
     if not now:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "now must be a non-empty string")
     return {
@@ -413,11 +524,13 @@ def _statement_from_payload(payload: dict[str, object], now: str) -> dict[str, o
     statement_type = _required_str(payload, "statement_type")
     if statement_type not in _STATEMENT_TYPES:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid statement_type")
+    original_text = _required_str(payload, "original_text")
+    _enforce_safe_search_input(original_text)
     return {
         "id": _required_str(payload, "statement_id"),
         "source": source,
         "statement_type": statement_type,
-        "original_text": _required_str(payload, "original_text"),
+        "original_text": original_text,
         "recorded_at": now,
         "event_time": _optional_str(payload, "event_time"),
         "user_confirmation": bool(payload.get("user_confirmation", False)),
@@ -696,6 +809,7 @@ __all__ = [
     "append_journal_entry_json",
     "apply_command",
     "build_checklist_proposal_json",
+    "classify_safety_text_json",
     "close_found_json",
     "close_unresolved_json",
     "create_case",
