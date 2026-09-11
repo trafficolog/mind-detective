@@ -37,12 +37,21 @@ async function handleCreated(caseValue: CaseV2): Promise<void> {
           {{ activeSession.scenario_family }} / variant {{ activeSession.scenario_variant }} / position {{ activeSession.order_position }}
         </p>
         <p v-if="activeSession.case_id">Case уже привязан: {{ activeSession.case_id }}</p>
+        <NuxtLink
+          v-if="activeSession.protocol === 'staged'"
+          class="secondary-action"
+          :to="`/evaluation/observer/${activeSession.evaluation_session_id}`"
+        >
+          Observer rubric
+        </NuxtLink>
       </section>
 
       <section v-if="activeSession && !activeSession.case_id" class="hero-panel" data-testid="evaluation-case-create">
         <h2>Создать Case для назначенной session</h2>
         <CreateCaseForm :evaluation-session-id="activeSession.evaluation_session_id" @created="handleCreated" />
       </section>
+
+      <EvaluationExportActions />
     </template>
   </main>
 </template>

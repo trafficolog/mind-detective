@@ -36,6 +36,7 @@ const retryCommandState = shallowRef<RetryableCommand | null>(null)
 const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
+const evaluationSession = computed(() => evaluation.session.value)
 const executionContractMismatch = computed(() => errorCode.value === EXECUTION_CONTRACT_MISMATCH)
 const engaged = computed(() => {
   const current = caseValue.value
@@ -412,6 +413,10 @@ onMounted(async () => {
 
     <template v-else-if="caseValue.lifecycle === 'closed_found' || caseValue.lifecycle === 'closed_unresolved'">
       <CaseOutcome :case-value="caseValue" />
+      <EvaluationPostCaseRatings
+        v-if="evaluationSession && evaluationSession.case_id === caseValue.case_id && evaluationSession.outcome !== null"
+        :evaluation-session-id="evaluationSession.evaluation_session_id"
+      />
       <CaseDataActions :case-value="caseValue" :allow-delete="true" @deleted="handleDeleted" />
     </template>
 
@@ -476,6 +481,11 @@ onMounted(async () => {
         @pause="pauseCase"
       />
 
+      <EvaluationAbandonAction
+        v-if="evaluationSession && evaluationSession.case_id === caseValue.case_id && evaluationSession.outcome === null"
+        :evaluation-session-id="evaluationSession.evaluation_session_id"
+        :case-id="caseValue.case_id"
+      />
       <StorageNotice :engaged="engaged" />
       <InstallEducation :engaged="engaged" />
       <CaseDataActions :case-value="caseValue" />
