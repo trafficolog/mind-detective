@@ -4,7 +4,9 @@ import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCase
 import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
 import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
 import { derivePriorCheckAnnotation } from '~/lib/case/derived'
+import type { EvalEventName } from '~/lib/eval/contracts'
 import { appendEvalEvent } from '~/lib/eval/log'
+import { finishEvaluationSession } from '~/lib/eval/store'
 
 type FoundContext = 'current_suggested_action' | 'elsewhere_unplanned' | 'after_previous_check' | 'unknown'
 type RefinedMethod = Exclude<SearchMethod, 'reported_check' | 'inaccessible'>
@@ -14,11 +16,13 @@ const route = useRoute()
 const repository = useCaseRepository()
 const api = useCaseApi()
 const arm = useExperimentalArm()
+const evaluation = useEvaluationSession()
 const localExecution = useLocalExecution()
 const { locale, t } = useCopy()
 
 const caseValue = ref<CaseV2 | null>(null)
 const proposal = ref<ProposalModel | null>(null)
+const currentProposalId = ref<string | null>(null)
 const loading = ref(true)
 const busy = ref(false)
 const errorCode = ref<string | null>(null)
@@ -57,8 +61,39 @@ watch(
   },
 )
 
-function logEvent(event: Parameters<typeof appendEvalEvent>[0], metadata: Record<string, unknown> = {}): void {
-  void appendEvalEvent(event, metadata).catch(() => undefined)
+async function logEvaluationEvent(event: EvalEventName, metadata: Record<string, unknown> = {}): Promise<void> {
+  const session = evaluation.session.value
+  if (!session || session.outcome !== null || session.case_id !== caseId.value) return
+  try {
+    await appendEvalEvent(session.evaluation_session_id, event, metadata)
+  } catch {
+    // Evaluation storage must never block canonical Case progress.
+  }
+}
+
+function linkedMetadata(
+  current: CaseV2,
+  candidateId: string | null | undefined,
+  proposalId: string | null,
+): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {
+    case_id: current.case_id,
+    mode: current.current_mode,
+  }
+  if (candidateId) metadata.candidate_id = candidateId
+  if (proposalId) metadata.proposal_id = proposalId
+  return metadata
+}
+
+async function trackProposal(current: CaseV2, next: ProposalModel): Promise<void> {
+  proposal.value = next
+  if (next.kind !== 'next_action') {
+    currentProposalId.value = null
+    return
+  }
+  const proposalId = crypto.randomUUID()
+  currentProposalId.value = proposalId
+  await logEvaluationEvent('next_action_shown', linkedMetadata(current, next.candidate_id, proposalId))
 }
 
 function snapshotCase(current: CaseV2): CaseV2 {
@@ -76,32 +111,24 @@ function envelope(commandType: CommandEnvelope['command_type'], payload: Record<
   }
 }
 
-function setLocalProposal(current: CaseV2): void {
+async function setLocalProposal(current: CaseV2): Promise<void> {
   if (current.current_mode === 'unselected') {
     proposal.value = null
+    currentProposalId.value = null
     return
   }
   const next = localExecution.checklistProposal(current, current.current_mode)
-  proposal.value = next
+  await trackProposal(current, next)
   guardCode.value = null
-  if (next.kind === 'next_action') {
-    logEvent('next_action_shown', {
-      case_id: current.case_id,
-      arm: arm.value,
-      mode: current.current_mode,
-      candidate_id: next.candidate_id,
-    })
-  }
 }
 
-function useAssistantFallback(current: CaseV2): void {
+async function useAssistantFallback(current: CaseV2, reasonCode: 'offline' | 'transport_error'): Promise<void> {
   assistantOfflineFallback.value = true
-  setLocalProposal(current)
-  logEvent('assistant_offline_fallback', {
+  await logEvaluationEvent('assistant_offline_fallback', {
     case_id: current.case_id,
-    arm: arm.value,
-    mode: current.current_mode,
+    reason_code: reasonCode,
   })
+  await setLocalProposal(current)
 }
 
 async function refreshProposal(): Promise<void> {
@@ -109,17 +136,18 @@ async function refreshProposal(): Promise<void> {
   assistantOfflineFallback.value = false
   if (!current || current.lifecycle !== 'active' || current.current_mode === 'unselected') {
     proposal.value = null
+    currentProposalId.value = null
     guardCode.value = null
     return
   }
 
   if (arm.value === 'checklist') {
-    setLocalProposal(current)
+    await setLocalProposal(current)
     return
   }
 
   if (typeof navigator !== 'undefined' && !navigator.onLine) {
-    useAssistantFallback(current)
+    await useAssistantFallback(current, 'offline')
     return
   }
 
@@ -136,42 +164,38 @@ async function refreshProposal(): Promise<void> {
       await repository.put(response.case)
       caseValue.value = response.case
     }
-    proposal.value = response.proposal
+    await trackProposal(response.case, response.proposal)
     guardCode.value = response.guard_code
-    if (response.proposal.kind === 'next_action') {
-      logEvent('next_action_shown', {
-        case_id: current.case_id,
-        arm: arm.value,
-        mode: current.current_mode,
-        candidate_id: response.proposal.candidate_id,
-      })
-    }
     if (response.guard_code) {
-      logEvent('ai_guard_blocked', {
-        case_id: current.case_id,
-        arm: arm.value,
-        mode: current.current_mode,
+      await logEvaluationEvent('ai_guard_blocked', {
+        case_id: response.case.case_id,
         guard_code: response.guard_code,
       })
     }
   } catch (error: unknown) {
     if ((typeof navigator !== 'undefined' && !navigator.onLine) || isCaseApiTransportError(error)) {
-      useAssistantFallback(current)
+      await useAssistantFallback(current, typeof navigator !== 'undefined' && !navigator.onLine ? 'offline' : 'transport_error')
       return
     }
     const apiCode = caseApiErrorCode(error)
     if (apiCode === EXECUTION_CONTRACT_MISMATCH) {
       errorCode.value = apiCode
       proposal.value = null
+      currentProposalId.value = null
       guardCode.value = null
       return
     }
     errorCode.value = 'MD_WEB_PROPOSAL_FAILED'
     proposal.value = null
+    currentProposalId.value = null
   }
 }
 
-async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2): Promise<CaseV2 | null> {
+async function runCommand(
+  command: CommandEnvelope,
+  retryCaseSnapshot?: CaseV2,
+  refreshAfter = true,
+): Promise<CaseV2 | null> {
   const current = caseValue.value
   if (!current) return null
   const inputCase = retryCaseSnapshot ? snapshotCase(retryCaseSnapshot) : snapshotCase(current)
@@ -181,7 +205,7 @@ async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2):
     const returned = await localExecution.sendCommand(inputCase, command)
     retryCommandState.value = null
     caseValue.value = returned
-    await refreshProposal()
+    if (refreshAfter) await refreshProposal()
     return returned
   } catch (error: unknown) {
     const code = error instanceof Error ? error.message : 'MD_WEB_LOCAL_EXECUTION_FAILED'
@@ -195,7 +219,7 @@ async function runCommand(command: CommandEnvelope, retryCaseSnapshot?: CaseV2):
     } else {
       retryCommandState.value = null
     }
-    logEvent('local_execution_failed', {
+    await logEvaluationEvent('local_execution_failed', {
       case_id: current.case_id,
       command_id: command.command_id,
       outcome_code: normalizedCode,
@@ -218,19 +242,24 @@ async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
 
 async function pauseCase(): Promise<void> {
   const returned = await runCommand(envelope('pause', {}))
-  if (returned) logEvent('pause', { case_id: returned.case_id })
+  if (returned) await logEvaluationEvent('pause', { case_id: returned.case_id })
 }
 
 async function resumeCase(): Promise<void> {
   const returned = await runCommand(envelope('resume', {}))
-  if (returned) logEvent('resume', { case_id: returned.case_id })
+  if (returned) await logEvaluationEvent('resume', { case_id: returned.case_id })
 }
 
 async function markChecked(): Promise<void> {
   const action = proposal.value
   const current = caseValue.value
   if (!action?.target || !current) return
-  logEvent('check_started', { case_id: current.case_id, candidate_id: action.candidate_id })
+  const proposalId = currentProposalId.value
+  const candidateId = action.candidate_id
+  const duplicate = Boolean(candidateId && current.search_checks.some(check =>
+    check.completed_at !== null && check.based_on.includes(candidateId),
+  ))
+  await logEvaluationEvent('check_started', linkedMetadata(current, candidateId, proposalId))
   const now = new Date().toISOString()
   const checkId = crypto.randomUUID()
   suppressedQualityCheckId.value = checkId
@@ -242,15 +271,24 @@ async function markChecked(): Promise<void> {
     completed_at: now,
     result: 'not_found',
     inaccessible_parts: [],
-    based_on: action.candidate_id ? [action.candidate_id] : [],
+    based_on: candidateId ? [candidateId] : [],
     notes: [],
-  }))
+  }), undefined, false)
   if (returned) {
-    logEvent('check_finished', { case_id: returned.case_id, candidate_id: action.candidate_id })
+    await logEvaluationEvent('check_finished', linkedMetadata(current, candidateId, proposalId))
+    if (duplicate) {
+      await logEvaluationEvent('duplicate_check_detected', {
+        case_id: returned.case_id,
+        ...(candidateId ? { candidate_id: candidateId } : {}),
+        ...(proposalId ? { proposal_id: proposalId } : {}),
+      })
+    }
+    await refreshProposal()
   }
 }
 
 async function refineQuality(payload: { checkId: string; method: RefinedMethod; inaccessibleParts: string[] }): Promise<void> {
+  const candidateId = proposal.value?.candidate_id
   const returned = await runCommand(envelope('refine_search_check', {
     check_id: payload.checkId,
     method: payload.method,
@@ -258,41 +296,67 @@ async function refineQuality(payload: { checkId: string; method: RefinedMethod; 
   }))
   if (returned) {
     suppressedQualityCheckId.value = payload.checkId
-    logEvent('check_quality_clarified', { case_id: returned.case_id })
+    await logEvaluationEvent('check_quality_clarified', {
+      case_id: returned.case_id,
+      ...(candidateId ? { candidate_id: candidateId } : {}),
+    })
   }
 }
 
 async function rejectAction(reason: ActionFeedbackV2['reason']): Promise<void> {
   const current = caseValue.value
   const candidateId = proposal.value?.candidate_id
+  const proposalId = currentProposalId.value
   if (!current || !candidateId) return
   const returned = await runCommand(envelope('reject_next_action', {
     feedback_id: crypto.randomUUID(),
     candidate_id: candidateId,
     reason,
-  }))
+  }), undefined, false)
   if (returned) {
     showReject.value = false
-    logEvent('next_action_rejected', { case_id: returned.case_id, candidate_id: candidateId, reason_code: reason })
+    await logEvaluationEvent('next_action_rejected', {
+      case_id: returned.case_id,
+      candidate_id: candidateId,
+      ...(proposalId ? { proposal_id: proposalId } : {}),
+      reason_code: reason,
+    })
+    await refreshProposal()
   }
 }
 
 async function closeFound(context: FoundContext): Promise<void> {
+  const activeSession = evaluation.session.value
   const returned = await runCommand(envelope('close_found', { outcome: { found_context: context } }))
   if (returned) {
     showClose.value = false
     proposal.value = null
-    logEvent('found', { case_id: returned.case_id })
-    logEvent('found_context_recorded', { case_id: returned.case_id, found_context: context })
+    currentProposalId.value = null
+    if (activeSession && activeSession.outcome === null && activeSession.case_id === returned.case_id) {
+      evaluation.session.value = await finishEvaluationSession(
+        activeSession.evaluation_session_id,
+        'found',
+        new Date().toISOString(),
+        { found_context: context },
+      )
+    }
   }
 }
 
 async function closeUnresolved(): Promise<void> {
+  const activeSession = evaluation.session.value
   const returned = await runCommand(envelope('close_unresolved', { outcome: {} }))
   if (returned) {
     showClose.value = false
     proposal.value = null
-    logEvent('case_closed_unresolved', { case_id: returned.case_id })
+    currentProposalId.value = null
+    if (activeSession && activeSession.outcome === null && activeSession.case_id === returned.case_id) {
+      evaluation.session.value = await finishEvaluationSession(
+        activeSession.evaluation_session_id,
+        'unresolved',
+        new Date().toISOString(),
+      )
+    }
   }
 }
 
@@ -319,6 +383,7 @@ async function submitComposer(): Promise<void> {
 function handleDeleted(): void {
   caseValue.value = null
   proposal.value = null
+  currentProposalId.value = null
   retryCommandState.value = null
 }
 

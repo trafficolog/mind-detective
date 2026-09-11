@@ -317,6 +317,7 @@ export async function finishEvaluationSession(
   sessionId: string,
   outcome: EvaluationOutcome,
   endedAt: string,
+  terminalMetadata: Record<string, unknown> = {},
 ): Promise<EvaluationSessionV1> {
   return await withDatabase(async (database) => {
     const transaction = database.transaction([SESSIONS, EVENTS], 'readwrite')
@@ -345,7 +346,12 @@ export async function finishEvaluationSession(
 
     const updated: EvaluationSessionV1 = { ...session, outcome, ended_at: endedAt }
     sessions.put(structuredClone(updated))
-    transaction.objectStore(EVENTS).add(structuredClone(eventRecord(sessionId, terminalEvent(outcome), { case_id: session.case_id }, endedAt)))
+    transaction.objectStore(EVENTS).add(structuredClone(eventRecord(
+      sessionId,
+      terminalEvent(outcome),
+      { ...terminalMetadata, case_id: session.case_id },
+      endedAt,
+    )))
     await done
     return updated
   })

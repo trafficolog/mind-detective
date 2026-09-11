@@ -133,7 +133,7 @@ const EVENT_ALLOWED_KEYS: Record<EvalEventName, ReadonlySet<string>> = {
   pending_command_failed: new Set(['case_id', 'command_id', 'reason_code', 'outcome_code']),
   pause: new Set(['case_id']),
   resume: new Set(['case_id']),
-  found: new Set(['case_id', 'outcome_code']),
+  found: new Set(['case_id', 'outcome_code', 'found_context']),
   case_closed_unresolved: new Set(['case_id', 'outcome_code']),
   case_abandoned: new Set(['case_id']),
   found_context_recorded: new Set(['case_id', 'found_context']),

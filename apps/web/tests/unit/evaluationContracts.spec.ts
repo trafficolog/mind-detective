@@ -46,6 +46,18 @@ describe('evaluation v1 privacy contract', () => {
       .toThrow('evaluation rating must be an integer from 1 to 5')
   })
 
+  it('allows only categorical found context on the atomic terminal event', () => {
+    expect(validateEventMetadata('found', {
+      case_id: 'case-1',
+      found_context: 'elsewhere_unplanned',
+    })).toEqual({
+      case_id: 'case-1',
+      found_context: 'elsewhere_unplanned',
+    })
+    expect(() => validateEventMetadata('found', { target: 'под диваном' }))
+      .toThrow('sensitive evaluation field: target')
+  })
+
   it('accepts fixed staged safety and handoff fields only', () => {
     expect(validateEventMetadata('proposal_safety_annotation', {
       proposal_id: 'proposal-1',
