@@ -26,6 +26,7 @@ export default defineNuxtConfig({
       mindDetectiveApiBase: process.env.NUXT_PUBLIC_MIND_DETECTIVE_API_BASE || 'http://127.0.0.1:8000',
       mindDetectiveArm: process.env.NUXT_PUBLIC_MIND_DETECTIVE_ARM || 'checklist',
       mindDetectiveLocale: process.env.NUXT_PUBLIC_MIND_DETECTIVE_LOCALE || 'auto',
+      mindDetectiveEvaluationEnabled: process.env.NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION === '1',
     },
   },
   pwa: {

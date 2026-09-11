@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import type { CaseV2 } from '~/lib/api/contracts'
+import { startEvaluationSessionCase } from '~/lib/eval/store'
+
+const props = withDefaults(defineProps<{
+  evaluationSessionId?: string | null
+}>(), {
+  evaluationSessionId: null,
+})
 
 const emit = defineEmits<{
   created: [caseValue: CaseV2]
@@ -19,10 +26,14 @@ async function submit(): Promise<void> {
   const now = new Date().toISOString()
   try {
     const caseValue = await localExecution.createCase(caseId, label, now)
+    if (props.evaluationSessionId) {
+      await startEvaluationSessionCase(props.evaluationSessionId, caseValue.case_id, now)
+    }
     emit('created', caseValue)
     itemLabel.value = ''
-  } catch {
-    errorCode.value = 'create.failed'
+  } catch (error: unknown) {
+    const code = error instanceof Error ? error.message : 'create.failed'
+    errorCode.value = code.startsWith('MD_WEB_EVAL_') ? code : 'create.failed'
   } finally {
     pending.value = false
   }
@@ -47,6 +58,8 @@ async function submit(): Promise<void> {
     <button class="primary-action" data-testid="start-search" type="submit" :disabled="pending || !itemLabel.trim()" :aria-busy="pending">
       {{ pending ? 'Создаём дело…' : 'Начать поиск' }}
     </button>
-    <p v-if="errorCode" class="error-copy" role="alert">Не удалось создать дело. Попробуйте ещё раз.</p>
+    <p v-if="errorCode" class="error-copy" role="alert">
+      {{ errorCode.startsWith('MD_WEB_EVAL_') ? 'Не удалось привязать дело к evaluation-сессии. Данные эксперимента не записаны.' : 'Не удалось создать дело. Попробуйте ещё раз.' }}
+    </p>
   </form>
 </template>
