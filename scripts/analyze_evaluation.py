@@ -4,11 +4,12 @@ import argparse
 import json
 import math
 import random
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 EVALUATION_SCHEMA = "mind-detective-evaluation/v1"
 EVALUATION_EXPORT_SCHEMA = "mind-detective-evaluation-export/v1"
