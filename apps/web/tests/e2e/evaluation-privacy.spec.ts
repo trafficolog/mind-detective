@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
-import { caseFixture, seedCase, storedCase } from './helpers'
+import { candidate, caseFixture, journalEntry, seedCase, storedCase } from './helpers'
 import { storedEvaluationEvents, storedEvaluationSessions } from './evaluation-helpers'
 
 async function startStagedCase(page: Page, slot: number, label: string): Promise<{ caseId: string; sessionId: string }> {
@@ -109,15 +109,8 @@ test('explicit JSON and CSV evaluation exports contain no Case content and issue
   await seedCase(page, caseFixture({
     case_id: caseId,
     item_label: privateItem,
-    candidates: [{
-      id: 'candidate-1',
-      target: privateTarget,
-      source: 'system',
-      status: 'unchecked',
-      priority_band: 'primary',
-      rank_reason: privateReason,
-      evidence_ids: [],
-    }],
+    candidates: [candidate('candidate-1', privateTarget)],
+    interaction_journal: [journalEntry('private-journal', 'search', privateReason)],
   }))
   await page.goto(`/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toHaveText(privateTarget)

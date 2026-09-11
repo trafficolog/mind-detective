@@ -132,10 +132,14 @@ test('duplicate check is derived from canonical prior evidence', async ({ page }
   await expect(page.getByTestId('check-quality-dialog')).toHaveCount(0)
   await page.getByTestId('mark-checked').click()
 
+  await expect.poll(async () => {
+    const duplicate = (await storedEvaluationEvents(page)).find(event => event.event === 'duplicate_check_detected')
+    return duplicate?.metadata.candidate_id
+  }).toBe('candidate-1')
+
   const events = await storedEvaluationEvents(page)
   const duplicate = events.find(event => event.event === 'duplicate_check_detected')
   const started = events.find(event => event.event === 'check_started')
-  expect(duplicate?.metadata.candidate_id).toBe('candidate-1')
   expect(duplicate?.metadata.proposal_id).toBe(started?.metadata.proposal_id)
 })
 
