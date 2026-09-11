@@ -19,7 +19,7 @@ class SafetyDecision:
 
 _MEDICATION_ACTION_PATTERNS = (
     r"\b(?:я\s+)?уже\s+(?:принял|приняла|выпил|выпила)\w*\s+(?:таблет|лекарств|доз)\w*",
-    r"\bпринимал[аи]?\s+ли\s+(?:я\s+)?(?:таблет|лекарств|доз)\w*",
+    r"\bпринимал[аи]?\s+ли\s+(?:я\s+)?(?:уже\s+)?(?:таблет|лекарств|доз)\w*",
     r"\bdid\s+i\s+(?:already\s+)?take\s+(?:the\s+)?(?:pill|medicine|dose)\b",
     r"\bhave\s+i\s+(?:already\s+)?taken\s+(?:the\s+)?(?:pill|medicine|dose)\b",
 )
