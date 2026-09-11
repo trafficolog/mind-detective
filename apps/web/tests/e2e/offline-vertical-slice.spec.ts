@@ -59,7 +59,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   await page.getByRole('button', { name: 'Продолжить' }).click()
   await expect(page.getByTestId('paused-banner')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Нашёл' }).click()
+  await page.getByTestId('found-case').click()
   await page.getByTestId('found-context').selectOption('current_suggested_action')
   await page.getByTestId('close-found').click()
   await expect(page.getByTestId('case-outcome')).toContainText('найдено')
