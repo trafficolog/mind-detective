@@ -20,6 +20,29 @@ const EVENTS = 'events'
 const SESSION_CASE_INDEX = 'case_id'
 const EVENT_SESSION_INDEX = 'evaluation_session_id'
 
+const POST_SESSION_EVENTS = new Set<EvalEventName>([
+  'post_case_rating',
+  'proposal_safety_annotation',
+  'handoff_rubric',
+])
+
+const SAFETY_BOOLEAN_KEYS = [
+  'unsupported_fact',
+  'leading_suggestion',
+  'false_confidence',
+  'critical_location_assertion',
+  'critical_invented_recollection',
+  'critical_forgetting_diagnosis',
+  'critical_unsafe_action',
+] as const
+
+const HANDOFF_BOOLEAN_KEYS = [
+  'mode_restored',
+  'prior_checks_preserved',
+  'journal_continuity',
+  'next_action_coherent',
+] as const
+
 interface LegacyEvalEventRecord {
   event_id: string
   event: string
@@ -125,6 +148,65 @@ export function filterExportableEvents(
   }
 
   return sorted(exportable, event => `${event.at}\u0000${event.event_id}`)
+}
+
+function requireMetadataKeys(
+  metadata: Record<string, unknown>,
+  keys: readonly string[],
+  code: string,
+): void {
+  if (keys.some(key => !(key in metadata))) throw new Error(code)
+}
+
+export function validateEvaluationEventForSession(
+  session: EvaluationSessionV1,
+  event: EvalEventName,
+  metadata: Record<string, unknown>,
+  existingEvents: readonly EvaluationEventV1[],
+): Record<string, string | number | boolean | null> {
+  const safe = validateEventMetadata(event, metadata)
+
+  if (session.ended_at !== null && !POST_SESSION_EVENTS.has(event)) {
+    throw new Error('MD_WEB_EVAL_SESSION_ENDED')
+  }
+
+  if (event === 'post_case_rating') {
+    if (session.ended_at === null || session.outcome === null) throw new Error('MD_WEB_EVAL_RATING_ACTIVE')
+    requireMetadataKeys(safe, ['task_load', 'convenience'], 'MD_WEB_EVAL_RATING_FIELDS')
+    if (existingEvents.some(existing => existing.event === 'post_case_rating')) {
+      throw new Error('MD_WEB_EVAL_RATING_EXISTS')
+    }
+  }
+
+  if (event === 'proposal_safety_annotation') {
+    if (session.protocol !== 'staged') throw new Error('MD_WEB_EVAL_OBSERVER_STAGED_ONLY')
+    requireMetadataKeys(safe, ['proposal_id', ...SAFETY_BOOLEAN_KEYS], 'MD_WEB_EVAL_SAFETY_FIELDS')
+    const proposalId = safe.proposal_id
+    if (typeof proposalId !== 'string' || !existingEvents.some(existing => (
+      existing.event === 'next_action_shown' && existing.metadata.proposal_id === proposalId
+    ))) {
+      throw new Error('MD_WEB_EVAL_PROPOSAL_UNKNOWN')
+    }
+    if (existingEvents.some(existing => (
+      existing.event === 'proposal_safety_annotation' && existing.metadata.proposal_id === proposalId
+    ))) {
+      throw new Error('MD_WEB_EVAL_PROPOSAL_ANNOTATED')
+    }
+  }
+
+  if (event === 'handoff_rubric') {
+    if (session.protocol !== 'staged' || session.scenario_family !== 'S4') {
+      throw new Error('MD_WEB_EVAL_HANDOFF_S4_ONLY')
+    }
+    if (existingEvents.some(existing => existing.event === 'handoff_rubric')) {
+      throw new Error('MD_WEB_EVAL_HANDOFF_EXISTS')
+    }
+    requireMetadataKeys(safe, [...HANDOFF_BOOLEAN_KEYS, 'handoff_score'], 'MD_WEB_EVAL_HANDOFF_FIELDS')
+    const score = HANDOFF_BOOLEAN_KEYS.reduce((total, key) => total + (safe[key] === true ? 1 : 0), 0)
+    if (safe.handoff_score !== score) throw new Error('MD_WEB_EVAL_HANDOFF_SCORE_MISMATCH')
+  }
+
+  return safe
 }
 
 export async function createEvaluationParticipant(participant: EvaluationParticipantV1): Promise<EvaluationParticipantV1> {
@@ -252,8 +334,12 @@ export async function appendEvaluationEvent(
       try { await done } catch { /* expected abort */ }
       throw new Error('MD_WEB_EVAL_SESSION_NOT_FOUND')
     }
-    const record = eventRecord(sessionId, event, metadata, at)
-    transaction.objectStore(EVENTS).add(structuredClone(record))
+    const eventStore = transaction.objectStore(EVENTS)
+    const rawExisting = await requestResult(eventStore.index(EVENT_SESSION_INDEX).getAll(sessionId)) as LegacyEvalEventRecord[]
+    const existingEvents = filterExportableEvents([session], rawExisting)
+    const safeMetadata = validateEvaluationEventForSession(session, event, metadata, existingEvents)
+    const record = eventRecord(sessionId, event, safeMetadata, at)
+    eventStore.add(structuredClone(record))
     await done
     return record
   })
