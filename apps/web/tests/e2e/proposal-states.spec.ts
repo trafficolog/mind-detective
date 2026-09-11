@@ -8,8 +8,8 @@ test('empty planner asks for more information without inventing a location', asy
 
   await expect(page.getByTestId('need-more-information')).toBeVisible()
   await expect(page.getByTestId('next-action-target')).toHaveCount(0)
-  await expect(page.getByTestId('search-target-form')).toBeVisible()
-  await expect(page.getByTestId('search-target-input')).toHaveAttribute('placeholder', /место/i)
+  await expect(page.getByTestId('search-target-form')).toContainText('Добавить место в список проверки')
+  await expect(page.getByTestId('search-target-input')).toHaveAttribute('placeholder', 'Например, карман рюкзака')
 })
 
 test('structured search target becomes the exact deterministic candidate instead of echoing free prose', async ({ page }) => {
