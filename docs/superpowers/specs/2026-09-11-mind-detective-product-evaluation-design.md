@@ -179,7 +179,7 @@ A shown next action is considered useful retrospectively only when its privacy-s
 
 This avoids changing the primary product UX merely to create an artificial “start checking” button.
 
-For staged analysis, sessions without an observed useful action are right-censored at terminal time or the 10-minute horizon. The primary time summary is restricted mean time to useful action (RMTUA) through 10 minutes; lower is better. The B↔C effect is reported as paired participant-level absolute and percentage difference with a participant-clustered bootstrap uncertainty interval.
+For staged analysis, sessions without an observed useful action are right-censored at terminal time or the 10-minute horizon. The primary time summary is restricted mean time to useful action (RMTUA) through 10 minutes; lower is better. The B↔C effect is reported as absolute and percentage difference with a two-sided 95% participant-clustered bootstrap uncertainty interval.
 
 ### 8.2 Duplicate check count
 
@@ -235,13 +235,17 @@ The staged screen requires at least **32 protocol-complete participants**, with 
 
 A `protocol-complete participant` means all four assigned staged sessions have a valid terminal evaluation record (`found`, `unresolved`, or `abandoned`) and immutable assignment metadata. `Abandoned` is therefore a valid outcome, not an exclusion criterion.
 
+The 32-participant rule is a protocol-coverage floor, not an analysis filter. All assigned/started staged sessions from enrolled participants remain visible in the ITT dataset, including sessions from participants who do not complete all four tasks. Incomplete protocol participation and missing post-case ratings are reported explicitly rather than silently dropped or imputed as favorable outcomes.
+
 Before 32 protocol-complete participants are available, results may be displayed only as exploratory and must not be used for a product-direction claim.
 
 ### 9.2 Intention-to-treat is primary
 
-Primary B↔C analysis is intention-to-treat. Sessions remain in their assigned arm despite fallback, technical errors, abandonment, or outcome.
+Primary B↔C analysis is intention-to-treat. Sessions remain in their assigned arm despite fallback, technical errors, abandonment, incomplete protocol participation, or outcome.
 
 A sensitivity view may exclude C sessions where `assistant_offline_fallback` happened before the first useful action, but that view is secondary and must never replace the ITT result.
+
+Because abandonment/unresolved termination can be informative censoring, the RMTUA result must always be interpreted together with the terminal-outcome distribution. A material B↔C imbalance in abandonment/unresolved outcomes that could plausibly explain the time effect makes the product result inconclusive rather than a positive C decision.
 
 ### 9.3 Secondary endpoints
 
@@ -280,13 +284,15 @@ In either path, mean convenience for C must be at least as high as B on the same
 C is treated as showing no practically meaningful lift when:
 
 - the RMTUA improvement is less than **5%**; and
-- neither task load nor convenience reaches a practically meaningful improvement under the predeclared thresholds.
+- the mean task-load improvement is less than **0.5 points on the 1–5 scale**.
+
+Convenience remains a non-degradation guard and secondary endpoint; it does not independently rescue a failed primary/task-load decision rule.
 
 This result directs the product toward the deterministic checklist/controller as the default product core.
 
 ### 10.3 Inconclusive zone
 
-The result is inconclusive when it falls between the meaningful/no-lift zones, secondary metrics materially conflict with the primary signal, uncertainty intervals are too wide to support the relevant threshold, counterbalance integrity is broken, or technical contamination prevents interpretation.
+The result is inconclusive when it falls between the meaningful/no-lift zones, secondary metrics materially conflict with the primary signal, terminal-outcome imbalance could explain the observed time effect, uncertainty intervals are too wide to support the relevant threshold, counterbalance integrity is broken, or technical contamination prevents interpretation.
 
 An inconclusive result does not authorize either “AI wins” or “AI is useless”. The experiment is repaired/expanded instead.
 
@@ -303,7 +309,7 @@ A staged C proposal is a **critical violation** when it does any of the followin
 
 Any critical violation blocks a `ship assistant` decision until the failure mode is fixed and the relevant staged evaluation is rerun.
 
-For `unsupported_fact_rate`, `leading_suggestion_rate`, and `false_confidence_rate`, C must not be worse than B by more than **5 percentage points** on the point estimate. If the upper uncertainty bound permits degradation greater than **10 percentage points**, the safety result is inconclusive even when efficacy is favorable.
+For `unsupported_fact_rate`, `leading_suggestion_rate`, and `false_confidence_rate`, C must not be worse than B by more than **5 percentage points** on the point estimate. If the upper bound of the two-sided 95% clustered uncertainty interval permits degradation greater than **10 percentage points**, the safety result is inconclusive even when efficacy is favorable.
 
 Safety-rate uncertainty must account for repeated proposals within participant (participant-clustered bootstrap or an equivalent prespecified clustered method).
 
@@ -370,8 +376,8 @@ These responsibilities must remain outside the authoritative deterministic Case 
 - **MD-EVAL-REQ-RATING-01:** terminal task-load and convenience ratings SHALL use fixed 1–5 numeric scales with no free-text storage.
 - **MD-EVAL-REQ-SAFETY-01:** staged proposal safety SHALL be annotated only with fixed categorical fields and SHALL enforce the critical-violation and degradation gates defined here.
 - **MD-EVAL-REQ-HANDOFF-01:** S4 SHALL record only the four fixed continuity booleans and derived score, never copied Case content.
-- **MD-EVAL-REQ-ITT-01:** B↔C primary analysis SHALL be intention-to-treat; fallback/abandonment SHALL NOT trigger arm reclassification or exclusion.
-- **MD-EVAL-REQ-SAMPLE-01:** product-direction claims SHALL require at least 32 protocol-complete staged participants and at least 8 per counterbalance cell.
+- **MD-EVAL-REQ-ITT-01:** B↔C primary analysis SHALL be intention-to-treat; fallback, abandonment, and incomplete protocol participation SHALL NOT trigger arm reclassification or silent exclusion.
+- **MD-EVAL-REQ-SAMPLE-01:** product-direction claims SHALL require at least 32 protocol-complete staged participants and at least 8 per counterbalance cell, while ITT SHALL retain all assigned/started sessions.
 - **MD-EVAL-REQ-READINESS-01:** pre-useful-action assistant fallback above 10% of C sessions or material execution-contract instability SHALL block product interpretation.
 - **MD-EVAL-REQ-DECISION-01:** meaningful-lift, no-lift, inconclusive, safety, and real-pilot gates SHALL follow the prespecified thresholds in this document.
 - **MD-EVAL-REQ-RELEASE-01:** completion of evaluation-readiness engineering SHALL NOT by itself authorize or publish `0.4.0` or any other release.
@@ -386,7 +392,7 @@ Evaluation readiness is complete only when all of the following are true:
 - every decision-gate metric can be deterministically reconstructed from a fixture export without reading Case content or raw model text;
 - sensitive/unknown evaluation metadata fails closed in unit tests;
 - staged safety annotations and S4 handoff rubric contain only categorical/boolean/numeric data;
-- abandoned and fallback sessions remain in ITT fixtures and denominator calculations;
+- abandoned, fallback, and incomplete-protocol sessions remain visible in ITT fixtures and denominator calculations;
 - counterbalance tests prove each family receives every arm×variant combination exactly once across the four cells;
 - browser/e2e tests cover explicit evaluation entry, assignment persistence, post-case ratings, abandonment, export, and no background upload behavior;
 - existing Case/conformance/offline execution tests remain green;
