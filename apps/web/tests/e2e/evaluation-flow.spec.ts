@@ -83,7 +83,7 @@ test('B session records linked useful-action instrumentation and finishes atomic
 
   await page.getByTestId('mark-checked').click()
   await expect(page.getByTestId('progress-checked')).toContainText('1')
-  await page.getByRole('button', { name: 'Нашёл' }).click()
+  await page.getByTestId('found-case').click()
   await page.getByTestId('found-context').selectOption('elsewhere_unplanned')
   await page.getByTestId('close-found').click()
   await expect(page.getByTestId('case-outcome')).toContainText('найдено')
