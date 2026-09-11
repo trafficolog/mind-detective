@@ -2,7 +2,6 @@ import type { CaseV2, ExperimentalArm, ProposalResponse } from '~/lib/api/contra
 import { EXECUTION_IDENTITY } from '~/lib/api/executionContract'
 
 export interface CaseApi {
-  validateCase(caseValue: Record<string, unknown>): Promise<CaseV2>
   nextProposal(
     caseValue: CaseV2,
     requestId: string,
@@ -32,15 +31,6 @@ export function useCaseApi(): CaseApi {
   const config = useRuntimeConfig()
   const baseURL = String(config.public.mindDetectiveApiBase || 'http://127.0.0.1:8000')
 
-  async function validateCase(caseValue: Record<string, unknown>): Promise<CaseV2> {
-    const response = await $fetch<{ case: CaseV2 }>('/api/v1/case/validate', {
-      baseURL,
-      method: 'POST',
-      body: { case: caseValue },
-    })
-    return response.case
-  }
-
   async function nextProposal(
     caseValue: CaseV2,
     requestId: string,
@@ -64,5 +54,5 @@ export function useCaseApi(): CaseApi {
     })
   }
 
-  return { validateCase, nextProposal }
+  return { nextProposal }
 }
