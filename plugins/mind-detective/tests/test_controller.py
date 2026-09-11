@@ -7,6 +7,7 @@ sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.case import CaseError, CaseLifecycle  # noqa: E402
 from scripts.controller import CaseController  # noqa: E402
+from scripts.journal import JournalAuthor, JournalEntry, JournalMode  # noqa: E402
 from scripts.planner import (  # noqa: E402
     CandidateBasis,
     CandidateCheck,
@@ -72,6 +73,20 @@ class ControllerTests(unittest.TestCase):
             self.controller.add_statement(self.case, statement, "2026-09-09T18:01:00Z")
         self.assertEqual(ctx.exception.code, "MD_SAFE_HAZARDOUS_ACTION")
         self.assertEqual(self.case.statements, ())
+
+    def test_high_risk_user_journal_entry_exits_before_case_mutation(self):
+        entry = JournalEntry(
+            id="journal-risk",
+            author=JournalAuthor.USER,
+            mode=JournalMode.RECONSTRUCTION,
+            entry_type="note",
+            text="Я запер входную дверь?",
+            created_at="2026-09-09T18:01:00Z",
+        )
+        with self.assertRaises(CaseError) as ctx:
+            self.controller.append_journal_entry(self.case, entry, "2026-09-09T18:01:00Z")
+        self.assertEqual(ctx.exception.code, "MD_SAFE_SECURITY_ACTION")
+        self.assertEqual(self.case.interaction_journal, ())
 
     def test_lifecycle_create_pause_resume_close(self):
         self.assertEqual(self.case.lifecycle, CaseLifecycle.ACTIVE)
