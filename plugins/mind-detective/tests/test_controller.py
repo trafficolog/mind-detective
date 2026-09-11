@@ -39,6 +39,40 @@ class ControllerTests(unittest.TestCase):
             rationale=("direct route",),
         )
 
+    def test_high_risk_forgotten_action_exits_before_case_creation(self):
+        with self.assertRaises(CaseError) as ctx:
+            self.controller.create_case(
+                "case-risk",
+                "Принимал ли я таблетки?",
+                "2026-09-09T18:00:00Z",
+            )
+        self.assertEqual(ctx.exception.code, "MD_SAFE_MEDICATION_ACTION")
+
+    def test_ordinary_lost_medication_item_remains_searchable(self):
+        created = self.controller.create_case(
+            "case-ordinary",
+            "коробка с таблетками",
+            "2026-09-09T18:00:00Z",
+        )
+        self.assertEqual(created.item_label, "коробка с таблетками")
+
+    def test_high_risk_statement_exits_before_case_mutation(self):
+        statement = create_statement(
+            statement_id="risk-1",
+            source=StatementSource.USER,
+            statement_type=StatementType.RECOLLECTION,
+            original_text="Я выключил плиту перед уходом?",
+            recorded_at="2026-09-09T18:01:00Z",
+            event_time=None,
+            user_confirmation=False,
+            supporting_evidence_ids=(),
+            limitations=(),
+        )
+        with self.assertRaises(CaseError) as ctx:
+            self.controller.add_statement(self.case, statement, "2026-09-09T18:01:00Z")
+        self.assertEqual(ctx.exception.code, "MD_SAFE_HAZARDOUS_ACTION")
+        self.assertEqual(self.case.statements, ())
+
     def test_lifecycle_create_pause_resume_close(self):
         self.assertEqual(self.case.lifecycle, CaseLifecycle.ACTIVE)
         paused = self.controller.pause(self.case, "2026-09-09T18:01:00Z")
