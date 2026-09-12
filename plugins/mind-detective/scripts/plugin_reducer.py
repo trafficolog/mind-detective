@@ -21,7 +21,7 @@ def _ensure_mutable(case: Case) -> None:
 
 def set_timeline(case: Case, timeline: Timeline, now: str) -> Case:
     """Compatibility adapter that delegates timeline truth to portable semantics."""
-    event_payloads = [
+    event_payloads: list[dict[str, object]] = [
         {
             "id": event.id,
             "label": event.label,
