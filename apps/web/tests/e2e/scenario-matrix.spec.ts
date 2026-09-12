@@ -70,7 +70,7 @@ test('dark reduced-motion increased-contrast and responsive presentation contrac
 test.describe('assistant guard isolation', () => {
   test.use({ baseURL: 'http://127.0.0.1:3001' })
 
-  test('legacy reconstruction does not request assistant proposals before a search-mode case is loaded', async ({ page }) => {
+  test('blocked reconstruction proposal is not carried into a newly loaded search-mode proposal', async ({ page }) => {
     const reconstruction = caseFixture({ current_mode: 'reconstruction', candidates: [] })
     const search = caseFixture({
       current_mode: 'search',
