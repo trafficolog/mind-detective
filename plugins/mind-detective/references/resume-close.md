@@ -1,6 +1,6 @@
 # Resume and close reference
 
-Persistence in `0.1.0` is explicit and case-local under `.mind-detective/cases/<case-id>/case.json`. Starting a case does not save it automatically. Resuming requires an explicit case id or supplied artifact; do not scan sibling cases to infer which one the user means.
+Plugin persistence is explicit and case-local under `.mind-detective/cases/<case-id>/case.json`; plugin case creation alone does not silently persist the file. The Web/PWA has a separate local-first contract and persists a newly created Web Case to IndexedDB immediately. Resuming requires an explicit case id or supplied artifact; do not scan sibling cases to infer which one the user means.
 
 A handoff preserves provenance and checked-state details so another person can continue without repeating low-value checks. It is derived from the canonical case and must not strengthen old statements.
 
