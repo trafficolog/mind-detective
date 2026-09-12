@@ -3,6 +3,7 @@ import type { CaseV2, CommandEnvelope } from '../../app/lib/api/contracts'
 import {
   applyLocalCommand,
   createLocalCase,
+  createLocalSearchCase,
   type LocalExecutionRepository,
 } from '../../app/lib/execution/localExecutor'
 import type { ExecutionReceipt } from '../../app/lib/storage/indexeddb'
@@ -32,6 +33,7 @@ class MemoryRepository implements LocalExecutionRepository {
   cases = new Map<string, CaseV2>()
   receipts = new Map<string, ExecutionReceipt>()
   writes = 0
+  createWrites = 0
 
   async get(caseId: string): Promise<CaseV2 | null> {
     return this.cases.get(caseId) ?? null
@@ -45,6 +47,7 @@ class MemoryRepository implements LocalExecutionRepository {
       }
       return existing
     }
+    this.createWrites += 1
     this.cases.set(caseValue.case_id, structuredClone(caseValue))
     return caseValue
   }
@@ -103,5 +106,16 @@ describe('local executor wrapper', () => {
     expect(retry).toEqual(first)
     await expect(createLocalCase(repository, 'case-new', 'телефон', '2026-09-10T18:00:00Z'))
       .rejects.toThrow('MD_WEB_CASE_ID_CONFLICT')
+  })
+
+  it('creates the Web search case before the single create-only persistence write', async () => {
+    const repository = new MemoryRepository()
+    const created = await createLocalSearchCase(repository, 'case-search', 'паспорт', '2026-09-10T18:00:00Z')
+
+    expect(created.current_mode).toBe('search')
+    expect(repository.cases.get('case-search')?.current_mode).toBe('search')
+    expect(repository.createWrites).toBe(1)
+    expect(repository.writes).toBe(0)
+    expect(repository.receipts.size).toBe(0)
   })
 })
