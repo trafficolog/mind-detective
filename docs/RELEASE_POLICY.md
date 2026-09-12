@@ -2,7 +2,7 @@
 
 [English](RELEASE_POLICY.en.md)
 
-Репозиторий использует один repository SemVer и независимый plugin SemVer с тегом `mind-detective-vX.Y.Z`. Для `0.3.0` declarative intent находится в `.github/releases/release.json`: repository `0.3.0` и plugin `mind-detective-v0.3.0`.
+Репозиторий использует один repository SemVer и независимый plugin SemVer с тегом `mind-detective-vX.Y.Z`. Текущий declarative intent находится в `.github/releases/release.json`: repository `0.3.1` и plugin `mind-detective-v0.3.1`. Это описание намерения к следующему patch release; опубликованные `0.1.0`, `0.2.0` и `0.3.0` остаются immutable history до отдельной явно авторизованной публикации `0.3.1`.
 
 ## Единственный publication path
 
