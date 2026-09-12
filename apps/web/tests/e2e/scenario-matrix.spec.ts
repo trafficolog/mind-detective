@@ -101,7 +101,7 @@ test.describe('assistant guard isolation', () => {
 
     await seedCase(page, reconstruction)
     await page.goto(`/cases/${reconstruction.case_id}`)
-    await expect(page.getByTestId('web-reconstruction-unavailable')).toBeVisible()
+    await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
     await expect(page.getByTestId('provider-disclosure')).toHaveCount(0)
     expect(proposalCalls).toBe(0)
 

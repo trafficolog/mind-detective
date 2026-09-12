@@ -18,8 +18,11 @@ function plainCase(caseValue: CaseV2): CaseV2 {
 }
 
 function enforceCommandIngress(command: CommandEnvelope): void {
-  if (command.command_type !== 'add_statement') return
-  const text = command.payload.original_text
+  const text = command.command_type === 'add_statement'
+    ? command.payload.original_text
+    : command.command_type === 'record_free_account'
+      ? command.payload.text
+      : null
   if (typeof text === 'string') enforceSafeInput(text)
 }
 
