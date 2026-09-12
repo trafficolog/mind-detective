@@ -7,7 +7,7 @@ sys.path.insert(0, str(PLUGIN_ROOT))
 
 from scripts.case import CaseError, CaseLifecycle  # noqa: E402
 from scripts.controller import CaseController  # noqa: E402
-from scripts.journal import JournalAuthor, JournalEntry, JournalMode  # noqa: E402
+from scripts.journal import InteractionMode, JournalAuthor, JournalEntry, JournalMode  # noqa: E402
 from scripts.planner import (  # noqa: E402
     CandidateBasis,
     CandidateCheck,
@@ -87,6 +87,50 @@ class ControllerTests(unittest.TestCase):
             self.controller.append_journal_entry(self.case, entry, "2026-09-09T18:01:00Z")
         self.assertEqual(ctx.exception.code, "MD_SAFE_SECURITY_ACTION")
         self.assertEqual(self.case.interaction_journal, ())
+
+    def test_controller_records_verbatim_free_account_without_statement_promotion(self):
+        reconstruction = self.controller.set_mode(
+            self.case,
+            InteractionMode.RECONSTRUCTION,
+            "2026-09-09T18:01:00Z",
+        )
+        text = "Я пришёл домой и положил ключи, но не помню куда."
+        updated = self.controller.record_free_account(
+            reconstruction,
+            "free-1",
+            text,
+            "2026-09-09T18:02:00Z",
+        )
+        self.assertEqual(updated.statements, ())
+        self.assertEqual(
+            updated.interaction_journal,
+            (
+                JournalEntry(
+                    id="free-1",
+                    author=JournalAuthor.USER,
+                    mode=JournalMode.RECONSTRUCTION,
+                    entry_type="free_account",
+                    text=text,
+                    created_at="2026-09-09T18:02:00Z",
+                ),
+            ),
+        )
+
+    def test_high_risk_free_account_exits_before_portable_mutation(self):
+        reconstruction = self.controller.set_mode(
+            self.case,
+            InteractionMode.RECONSTRUCTION,
+            "2026-09-09T18:01:00Z",
+        )
+        with self.assertRaises(CaseError) as ctx:
+            self.controller.record_free_account(
+                reconstruction,
+                "free-risk",
+                "Я выключил плиту перед уходом?",
+                "2026-09-09T18:02:00Z",
+            )
+        self.assertEqual(ctx.exception.code, "MD_SAFE_HAZARDOUS_ACTION")
+        self.assertEqual(reconstruction.interaction_journal, ())
 
     def test_lifecycle_create_pause_resume_close(self):
         self.assertEqual(self.case.lifecycle, CaseLifecycle.ACTIVE)
