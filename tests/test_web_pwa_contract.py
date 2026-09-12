@@ -39,6 +39,21 @@ class WebPwaContractTests(unittest.TestCase):
             self.assertIn(f"'{key}'", ru)
             self.assertIn(f"'{key}'", en)
 
+    def test_reconstruction_surface_wires_state_components_to_local_command_boundary(self):
+        page = (ROOT / "apps/web/app/pages/cases/[id].vue").read_text(encoding="utf-8")
+        panel = (ROOT / "apps/web/app/components/reconstruction/ReconstructionPanel.vue").read_text(encoding="utf-8")
+        composable = (ROOT / "apps/web/app/composables/useReconstruction.ts").read_text(encoding="utf-8")
+
+        self.assertIn("<ReconstructionPanel", page)
+        self.assertIn("runCommand(", page)
+        for command_type in ("record_free_account", "add_statement", "rebuild_timeline", "set_mode"):
+            self.assertIn(f"'{command_type}'", page)
+        for component in ("FreeAccountCard", "StatementCapture", "TimelineEditor", "TimelineSummary"):
+            self.assertIn(f"<{component}", panel)
+        self.assertIn("useReconstruction", panel)
+        self.assertIn("buildRecordFreeAccountPayload", page)
+        self.assertIn("buildRecordFreeAccountPayload", composable)
+
     def test_pwa_has_installable_png_icon_set_and_apple_touch_icon(self):
         manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text(encoding="utf-8"))
         icons = {
