@@ -1,0 +1,54 @@
+name: Materialize Task 3 generated artifacts
+
+on:
+  push:
+    branches:
+      - implementation/web-reconstruction-task3-portable-timeline
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: implementation/web-reconstruction-task3-portable-timeline
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Verify Task 3 portable source and plugin behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest tests.test_local_execution_generator -v
+          python -m unittest discover -s plugins/mind-detective/tests -p 'test_portable_contract.py' -v
+          python -m unittest discover -s plugins/mind-detective/tests -p 'test_reconstruction_timeline_task3.py' -v
+          python -m unittest discover -s plugins/mind-detective/tests -p 'test_timeline.py' -v
+          python -m unittest discover -s plugins/mind-detective/tests -p 'test_controller.py' -v
+          python -m unittest discover -s plugins/mind-detective/tests -p 'test_controller_portable_parity.py' -v
+          python -m unittest discover -s plugins/mind-detective/tests -v
+      - name: Regenerate certified executor and conformance corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m scripts.write_local_execution_artifacts
+          python -m scripts.generate_local_execution_corpus
+          python -m compileall -q plugins/mind-detective/scripts plugins/mind-detective/tests
+      - name: Commit generated Task 3 artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            apps/web/app/generated/localExecution.ts \
+            apps/web/app/generated/localExecution.meta.json \
+            conformance/local-execution/v1/vectors.json \
+            conformance/local-execution/v1/manifest.json
+          git diff --cached --quiet && { echo 'Generated artifacts already current'; exit 0; }
+          git commit -m 'build: refresh Task 3 local execution artifacts'
+          git push origin HEAD:implementation/web-reconstruction-task3-portable-timeline
