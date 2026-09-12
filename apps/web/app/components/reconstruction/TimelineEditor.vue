@@ -52,9 +52,19 @@ function addEvent(): void {
   eventPrecision.value = 'approximate'
 }
 
+function plainEvents(): TimelineEventV2[] {
+  return events.value.map(event => ({
+    id: event.id,
+    label: event.label,
+    statement_ids: [...event.statement_ids],
+    event_time: event.event_time,
+    time_precision: event.time_precision,
+  }))
+}
+
 function rebuild(): void {
   emit('rebuild', buildRebuildTimelinePayload(
-    structuredClone(events.value),
+    plainEvents(),
     lastSupported.value || null,
     firstMissing.value || null,
   ))
