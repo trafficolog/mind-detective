@@ -1,0 +1,67 @@
+name: Materialize Task 4 conformance
+
+on:
+  push:
+    branches:
+      - implementation/web-reconstruction-task4-conformance
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: implementation/web-reconstruction-task4-conformance
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Add approved Task 4 conformance vectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('plugins/mind-detective/scripts/conformance_vectors.py')
+          text = path.read_text(encoding='utf-8')
+          marker = '''    reconstruction = apply_command(base, set_reconstruction)\n\n    reconstruction_statement = _command(\n'''
+          if 'reconstruction_record_free_account' in text:
+              raise SystemExit(0)
+          if marker not in text:
+              raise SystemExit('Task 4 insertion marker not found')
+          block = '''    reconstruction = apply_command(base, set_reconstruction)\n\n    free_account = _command(\n        reconstruction,\n        "record_free_account",\n        command_id="cmd-free-account",\n        now="2026-09-10T17:31:03Z",\n        payload={\n            "entry_id": "free-1",\n            "text": "Я пришёл домой и положил ключи, но не помню куда.",\n        },\n    )\n    vectors.append(\n        _vector(\n            "reconstruction_record_free_account",\n            "command",\n            {"case": reconstruction, "command": free_account},\n        )\n    )\n    reconstruction_with_free_account = apply_command(reconstruction, free_account)\n\n    statement_requires_free_account = _command(\n        reconstruction,\n        "add_statement",\n        command_id="cmd-statement-requires-free-account",\n        now="2026-09-10T17:31:04Z",\n        payload={\n            "statement_id": "stmt-before-free",\n            "source": "user",\n            "statement_type": "recollection",\n            "original_text": "Ключи были у двери",\n            "event_time": "2026-09-10T17:10:00Z",\n            "user_confirmation": True,\n            "supporting_evidence_ids": [],\n            "limitations": [],\n        },\n    )\n    vectors.append(\n        _vector(\n            "reconstruction_statement_requires_free_account",\n            "command",\n            {"case": reconstruction, "command": statement_requires_free_account},\n        )\n    )\n\n    known_statement = _command(\n        reconstruction_with_free_account,\n        "add_statement",\n        command_id="cmd-timeline-known",\n        now="2026-09-10T17:31:05Z",\n        payload={\n            "statement_id": "stmt-timeline-known",\n            "source": "user",\n            "statement_type": "recollection",\n            "original_text": "Последний раз держал ключи у двери",\n            "event_time": "2026-09-10T17:10:00Z",\n            "user_confirmation": True,\n            "supporting_evidence_ids": [],\n            "limitations": [],\n        },\n    )\n    reconstruction_known = apply_command(reconstruction_with_free_account, known_statement)\n    unknown_statement = _command(\n        reconstruction_known,\n        "add_statement",\n        command_id="cmd-timeline-unknown",\n        now="2026-09-10T17:31:06Z",\n        payload={\n            "statement_id": "stmt-timeline-unknown",\n            "source": "user",\n            "statement_type": "observation",\n            "original_text": "Позже заметил, что ключей нет",\n            "event_time": None,\n            "user_confirmation": True,\n            "supporting_evidence_ids": [],\n            "limitations": ["точное время неизвестно"],\n        },\n    )\n    reconstruction_unknown = apply_command(reconstruction_known, unknown_statement)\n    rebuild_unknowns = _command(\n        reconstruction_unknown,\n        "rebuild_timeline",\n        command_id="cmd-rebuild-unknowns",\n        now="2026-09-10T17:31:07Z",\n        payload={\n            "events": [\n                {\n                    "id": "event-last-supported",\n                    "label": "Последний подтверждённый контакт с ключами",\n                    "statement_ids": ["stmt-timeline-known"],\n                    "event_time": "2026-09-10T17:10:00Z",\n                    "time_precision": "approximate",\n                }\n            ],\n            "last_supported_interaction_id": "stmt-timeline-known",\n            "first_noticed_missing_id": None,\n        },\n    )\n    vectors.append(\n        _vector(\n            "reconstruction_rebuild_timeline_unknowns",\n            "command",\n            {"case": reconstruction_unknown, "command": rebuild_unknowns},\n        )\n    )\n    reconstruction_with_timeline = apply_command(reconstruction_unknown, rebuild_unknowns)\n\n    contradiction_last = _command(\n        reconstruction_with_free_account,\n        "add_statement",\n        command_id="cmd-contradiction-last",\n        now="2026-09-10T17:31:08Z",\n        payload={\n            "statement_id": "stmt-contradiction-last",\n            "source": "user",\n            "statement_type": "recollection",\n            "original_text": "Последний контакт был позже",\n            "event_time": "2026-09-10T17:20:00Z",\n            "user_confirmation": True,\n            "supporting_evidence_ids": [],\n            "limitations": [],\n        },\n    )\n    contradiction_case = apply_command(reconstruction_with_free_account, contradiction_last)\n    contradiction_missing = _command(\n        contradiction_case,\n        "add_statement",\n        command_id="cmd-contradiction-missing",\n        now="2026-09-10T17:31:09Z",\n        payload={\n            "statement_id": "stmt-contradiction-missing",\n            "source": "user",\n            "statement_type": "observation",\n            "original_text": "Пропажу заметил раньше",\n            "event_time": "2026-09-10T17:15:00Z",\n            "user_confirmation": True,\n            "supporting_evidence_ids": [],\n            "limitations": [],\n        },\n    )\n    contradiction_case = apply_command(contradiction_case, contradiction_missing)\n    rebuild_contradiction = _command(\n        contradiction_case,\n        "rebuild_timeline",\n        command_id="cmd-rebuild-contradiction",\n        now="2026-09-10T17:31:10Z",\n        payload={\n            "events": [],\n            "last_supported_interaction_id": "stmt-contradiction-last",\n            "first_noticed_missing_id": "stmt-contradiction-missing",\n        },\n    )\n    vectors.append(\n        _vector(\n            "reconstruction_rebuild_timeline_contradiction",\n            "command",\n            {"case": contradiction_case, "command": rebuild_contradiction},\n        )\n    )\n\n    transition_to_search = _command(\n        reconstruction_with_timeline,\n        "set_mode",\n        command_id="cmd-reconstruction-to-search",\n        now="2026-09-10T17:31:11Z",\n        payload={"mode": "search"},\n    )\n    vectors.append(\n        _vector(\n            "reconstruction_transition_to_search_preserves_evidence",\n            "command",\n            {"case": reconstruction_with_timeline, "command": transition_to_search},\n        )\n    )\n\n    reconstruction_statement = _command(\n'''
+          path.write_text(text.replace(marker, block, 1), encoding='utf-8')
+          PY
+      - name: Regenerate certified executor and conformance corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m scripts.write_local_execution_artifacts
+          python -m scripts.generate_local_execution_corpus
+      - name: Verify Python Task 4 corpus and generator
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_local_execution_generator.py' -v
+          python -m unittest discover -s tests -p 'test_local_execution_emitter.py' -v
+          python -m unittest discover -s tests -p 'test_local_execution_corpus.py' -v
+      - name: Commit Task 4 source and generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            plugins/mind-detective/scripts/conformance_vectors.py \
+            apps/web/app/generated/localExecution.ts \
+            apps/web/app/generated/localExecution.meta.json \
+            conformance/local-execution/v1/vectors.json \
+            conformance/local-execution/v1/manifest.json
+          git diff --cached --quiet && { echo 'Task 4 artifacts already current'; exit 0; }
+          git commit -m 'test: certify reconstruction local execution'
+          git push origin HEAD:implementation/web-reconstruction-task4-conformance
