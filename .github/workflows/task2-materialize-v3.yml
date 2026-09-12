@@ -20,45 +20,6 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.13'
-      - name: Apply exact Task 2 patch
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          source = Path('.github/workflows/task2-materialize.yml').read_text(encoding='utf-8')
-          marker = "          python - <<'PY'\n"
-          start = source.index(marker) + len(marker)
-          end = source.index("\n          PY\n", start)
-          raw = source[start:end]
-          code = "\n".join(line[10:] if line.startswith("          ") else line for line in raw.splitlines())
-          helper_start = code.index('from pathlib import Path\n')
-          helper_end = code.index('\n\n# Portable contract:', helper_start)
-          new_helper = "\n".join([
-              'from pathlib import Path',
-              'from textwrap import dedent',
-              '',
-              'def replace(path: str, old: str, new: str, *, count: int = 1) -> None:',
-              '    file = Path(path)',
-              '    text = file.read_text(encoding="utf-8")',
-              '    candidate = old',
-              '    replacement = new',
-              '    actual = text.count(candidate)',
-              '    if actual != count:',
-              '        dedented = dedent(old)',
-              '        dedented_actual = text.count(dedented)',
-              '        if dedented_actual == count:',
-              '            candidate = dedented',
-              '            replacement = dedent(new)',
-              '            actual = dedented_actual',
-              '    if actual != count:',
-              '        raise SystemExit(f"{path}: expected {count} occurrence(s), found {actual}: {candidate[:80]!r}")',
-              '    file.write_text(text.replace(candidate, replacement, count), encoding="utf-8")',
-          ])
-          code = code[:helper_start] + new_helper + code[helper_end:]
-          exec(compile(code, 'task2-materializer', 'exec'), {'__name__': '__main__'})
-          PY
       - name: Verify focused and full plugin tests
         shell: bash
         run: |
@@ -75,29 +36,17 @@ jobs:
           python -m scripts.write_local_execution_artifacts
           python -m scripts.generate_local_execution_corpus
           python -m compileall -q plugins/mind-detective/scripts plugins/mind-detective/tests
-          python -m scripts.write_local_execution_artifacts
-          git diff --exit-code -- apps/web/app/generated/localExecution.ts apps/web/app/generated/localExecution.meta.json
-          python -m scripts.generate_local_execution_corpus
-          git diff --exit-code -- conformance/local-execution/v1/manifest.json conformance/local-execution/v1/vectors.json
-      - name: Commit materialized Task 2 tree
+      - name: Commit generated Task 2 artifacts
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add \
-            plugins/mind-detective/scripts/portable_contract.py \
-            plugins/mind-detective/scripts/portable_kernel.py \
-            plugins/mind-detective/scripts/controller.py \
-            plugins/mind-detective/scripts/conformance_vectors.py \
-            plugins/mind-detective/tests/test_portable_contract.py \
-            plugins/mind-detective/tests/test_portable_kernel.py \
-            plugins/mind-detective/tests/test_controller.py \
-            plugins/mind-detective/tests/test_controller_portable_parity.py \
             apps/web/app/generated/localExecution.ts \
             apps/web/app/generated/localExecution.meta.json \
             conformance/local-execution/v1/vectors.json \
             conformance/local-execution/v1/manifest.json
-          git diff --cached --quiet && { echo 'No Task 2 changes materialized'; exit 1; }
-          git commit -m 'feat: add canonical reconstruction free account'
+          git diff --cached --quiet && { echo 'Generated artifacts already current'; exit 0; }
+          git commit -m 'build: refresh Task 2 local execution artifacts'
           git push origin HEAD:implementation/web-reconstruction-task2-free-account
