@@ -1,0 +1,43 @@
+name: Task 3 mypy diagnostic
+
+on:
+  push:
+    branches:
+      - implementation/web-reconstruction-task3-portable-timeline
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: implementation/web-reconstruction-task3-portable-timeline
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - name: Install exact CI typing dependencies
+        run: |
+          python -m pip install \
+            mypy==2.3.1 \
+            fastapi==0.141.1 pydantic==2.13.5 uvicorn==0.52.1 httpx==0.28.1 openai==3.8.0
+      - name: Capture exact mypy output
+        shell: bash
+        run: |
+          set +e
+          MYPYPATH=plugins/mind-detective:apps/api \
+            mypy --explicit-package-bases plugins/mind-detective/scripts scripts apps/api/mind_detective_api apps/api/tests \
+            > tmp-task3-mypy.txt 2>&1
+          status=$?
+          echo "exit_status=$status" >> tmp-task3-mypy.txt
+          cat tmp-task3-mypy.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tmp-task3-mypy.txt
+          git commit -m 'diagnostic: capture Task 3 mypy output'
+          git push origin HEAD:implementation/web-reconstruction-task3-portable-timeline
+          exit $status
