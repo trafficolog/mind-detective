@@ -25,6 +25,7 @@ class PortableContractTests(unittest.TestCase):
                 "set_mode",
                 "record_free_account",
                 "add_statement",
+                "rebuild_timeline",
                 "record_search_check",
                 "refine_search_check",
                 "reject_next_action",
@@ -49,6 +50,8 @@ class PortableContractTests(unittest.TestCase):
                     "MD_RECON_MODE_REQUIRED",
                     "MD_RECON_FREE_ACCOUNT_REQUIRED",
                     "MD_RECON_FREE_ACCOUNT_EXISTS",
+                    "MD_RECON_TIMELINE_EVENT_DUPLICATE",
+                    "MD_RECON_STATEMENT_NOT_FOUND",
                 }
             ),
         )
