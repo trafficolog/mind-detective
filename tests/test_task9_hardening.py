@@ -49,11 +49,35 @@ class Task9HardeningTests(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             self.assertIn("0.3.1", text)
             self.assertIn("MIND_DETECTIVE_PLUGIN_ROOT", text)
+            self.assertIn("MIND_DETECTIVE_EXECUTION_METADATA", text)
             self.assertIn("pnpm install --frozen-lockfile", text)
             self.assertIn("uvicorn", text)
 
+        env_example = (ROOT / ".env.example").read_text(encoding="utf-8")
+        for name in (
+            "LITELLM_API_KEY",
+            "MIND_DETECTIVE_LITELLM_MODEL",
+            "MIND_DETECTIVE_LITELLM_BASE_URL",
+            "MIND_DETECTIVE_PLUGIN_ROOT",
+            "MIND_DETECTIVE_EXECUTION_METADATA",
+            "NUXT_PUBLIC_MIND_DETECTIVE_API_BASE",
+            "NUXT_PUBLIC_MIND_DETECTIVE_ARM",
+            "NUXT_PUBLIC_MIND_DETECTIVE_LOCALE",
+            "NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION",
+        ):
+            self.assertIn(name, env_example)
+
         for path in (ROOT / "apps/web/app/lib/i18n/ru.ts", ROOT / "apps/web/app/lib/i18n/en.ts"):
             self.assertNotIn("0.2.0", path.read_text(encoding="utf-8"))
+
+        for path in (
+            ROOT / "AGENTS.md",
+            ROOT / "docs/PLUGIN_STANDARD.md",
+            ROOT / "docs/PLUGIN_STANDARD.en.md",
+            ROOT / "plugins/mind-detective/references/guard-rules.md",
+            ROOT / "plugins/mind-detective/references/resume-close.md",
+        ):
+            self.assertNotIn("0.1.0", path.read_text(encoding="utf-8"))
 
     def test_eval_corpus_no_longer_describes_web_as_deferred_or_version_bound(self):
         data = json.loads((ROOT / "plugins/mind-detective/evals/scenarios.json").read_text(encoding="utf-8"))
@@ -70,8 +94,12 @@ class Task9HardeningTests(unittest.TestCase):
         bridge = (ROOT / "apps/api/mind_detective_api/core_bridge.py").read_text(encoding="utf-8")
         self.assertNotIn("parents[3]", bridge)
         self.assertIn("resolve_plugin_root", bridge)
+        execution = (ROOT / "apps/api/mind_detective_api/execution_contract.py").read_text(encoding="utf-8")
+        self.assertNotIn("parents[3]", execution)
+        self.assertIn("resolve_execution_metadata_path", execution)
         resolver = (ROOT / "apps/api/mind_detective_api/runtime_paths.py").read_text(encoding="utf-8")
         self.assertIn("MIND_DETECTIVE_PLUGIN_ROOT", resolver)
+        self.assertIn("MIND_DETECTIVE_EXECUTION_METADATA", resolver)
         self.assertIn("MD_API_PLUGIN_ROOT_NOT_FOUND", resolver)
 
     def test_scientific_references_have_machine_readable_verification(self):
