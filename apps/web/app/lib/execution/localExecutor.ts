@@ -26,6 +26,26 @@ export async function createLocalCase(
   return await repository.createOnly(created)
 }
 
+export async function createLocalSearchCase(
+  repository: LocalExecutionRepository,
+  caseId: string,
+  itemLabel: string,
+  now: string,
+): Promise<CaseV2> {
+  const created = create_case(caseId, itemLabel, now) as CaseV2
+  const searchCase = apply_command(
+    structuredClone(created) as unknown as Record<string, unknown>,
+    {
+      command_id: `initial-search:${caseId}`,
+      expected_updated_at: created.updated_at,
+      command_type: 'set_mode',
+      now,
+      payload: { mode: 'search' },
+    },
+  ) as CaseV2
+  return await repository.createOnly(searchCase)
+}
+
 export async function applyLocalCommand(
   repository: LocalExecutionRepository,
   caseValue: CaseV2,
