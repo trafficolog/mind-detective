@@ -12,7 +12,7 @@ from scripts.release_manifest import (
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/publish-current-release.yml"
-EXPECTED_VERSION = "0.3.0"
+EXPECTED_VERSION = "0.3.1"
 
 
 def project_version(path: Path) -> str:
@@ -26,7 +26,10 @@ class ReleaseContractTests(unittest.TestCase):
     def test_repository_manifest_is_valid(self):
         self.assertEqual(validate_release_manifest(ROOT), [])
         items = release_items(ROOT)
-        self.assertEqual([item.tag for item in items], ["0.3.0", "mind-detective-v0.3.0"])
+        self.assertEqual(
+            [item.tag for item in items],
+            [EXPECTED_VERSION, f"mind-detective-v{EXPECTED_VERSION}"],
+        )
 
     def test_manifest_version_parity_and_notes_file(self):
         data = json.loads((ROOT / ".github/releases/release.json").read_text(encoding="utf-8"))
@@ -34,13 +37,17 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertEqual(data["repository"]["tag"], EXPECTED_VERSION)
         self.assertEqual(data["plugins"][0]["plugin"], "mind-detective")
         self.assertEqual(data["plugins"][0]["version"], EXPECTED_VERSION)
-        self.assertEqual(data["plugins"][0]["tag"], "mind-detective-v0.3.0")
-        self.assertEqual(data["repository"]["notes_file"], ".github/releases/0.3.0.md")
+        self.assertEqual(data["plugins"][0]["tag"], f"mind-detective-v{EXPECTED_VERSION}")
+        self.assertEqual(
+            data["repository"]["notes_file"],
+            f".github/releases/{EXPECTED_VERSION}.md",
+        )
         self.assertTrue((ROOT / data["repository"]["notes_file"]).is_file())
         self.assertTrue((ROOT / ".github/releases/0.1.0.md").is_file())
         self.assertTrue((ROOT / ".github/releases/0.2.0.md").is_file())
+        self.assertTrue((ROOT / ".github/releases/0.3.0.md").is_file())
 
-    def test_all_release_version_surfaces_are_0_3_0(self):
+    def test_all_release_version_surfaces_match_current_release(self):
         self.assertEqual(project_version(ROOT / "pyproject.toml"), EXPECTED_VERSION)
         self.assertEqual(project_version(ROOT / "apps/api/pyproject.toml"), EXPECTED_VERSION)
         web = json.loads((ROOT / "apps/web/package.json").read_text(encoding="utf-8"))
