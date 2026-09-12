@@ -30,6 +30,7 @@ _FORBIDDEN_KEYS = frozenset(
 )
 _ALLOWED_PAYLOAD_KEYS: dict[str, frozenset[str]] = {
     "set_mode": frozenset({"mode"}),
+    "record_free_account": frozenset({"entry_id", "text"}),
     "add_statement": frozenset(
         {
             "statement_id",
@@ -216,6 +217,51 @@ def append_journal_entry_json(
     result = _primitive_copy(case, now)
     journal = _as_list(result["interaction_journal"], "interaction_journal")
     journal.append(clone_json(entry))
+    return result
+
+
+def has_free_account_json(case: dict[str, object]) -> bool:
+    _ensure_case_shape(case)
+    journal = _as_list(case["interaction_journal"], "interaction_journal")
+    for raw in journal:
+        entry = _as_dict(raw, "journal_entry")
+        if (
+            entry.get("author") == "user"
+            and entry.get("mode") == "reconstruction"
+            and entry.get("entry_type") == "free_account"
+        ):
+            return True
+    return False
+
+
+def record_free_account_json(
+    case: dict[str, object],
+    entry_id: str,
+    text: str,
+    now: str,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    if _required_str(case, "current_mode") != "reconstruction":
+        portable_error("MD_RECON_MODE_REQUIRED", "free account requires reconstruction mode")
+    if not isinstance(entry_id, str) or not entry_id:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "entry_id must be a non-empty string")
+    if not isinstance(text, str) or not text:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "text must be a non-empty string")
+    if has_free_account_json(case):
+        portable_error("MD_RECON_FREE_ACCOUNT_EXISTS", "free account already exists")
+    journal = _as_list(result["interaction_journal"], "interaction_journal")
+    journal.append(
+        {
+            "id": entry_id,
+            "author": "user",
+            "mode": "reconstruction",
+            "entry_type": "free_account",
+            "text": text,
+            "created_at": now,
+            "statement_ids": [],
+            "search_check_ids": [],
+        }
+    )
     return result
 
 
@@ -474,8 +520,20 @@ def apply_command(
 
     if command_type == "set_mode":
         return set_mode_json(case, _required_str(payload, "mode"), now)
+    if command_type == "record_free_account":
+        return record_free_account_json(
+            case,
+            _required_str(payload, "entry_id"),
+            _required_str(payload, "text"),
+            now,
+        )
     if command_type == "add_statement":
         mode = _journal_mode(case)
+        if mode == "reconstruction" and not has_free_account_json(case):
+            portable_error(
+                "MD_RECON_FREE_ACCOUNT_REQUIRED",
+                "record a free account before reconstruction statements",
+            )
         statement = _statement_from_payload(payload, now)
         result = add_statement_json(case, statement, now)
         if mode == "search" and statement["statement_type"] == "search_suggestion":
@@ -699,8 +757,10 @@ __all__ = [
     "close_found_json",
     "close_unresolved_json",
     "create_case",
+    "has_free_account_json",
     "pause_json",
     "record_action_feedback_json",
+    "record_free_account_json",
     "record_search_check_json",
     "refine_search_check_json",
     "resume_json",
