@@ -74,8 +74,13 @@ class ContractReachabilityTests(unittest.TestCase):
         case_api = (ROOT / "apps/web/app/composables/useCaseApi.ts").read_text(encoding="utf-8")
         self.assertNotIn("createCase(", case_api)
         self.assertNotIn("sendCommand(", case_api)
-        self.assertIn("validateCase(", case_api)
+        self.assertNotIn("validateCase(", case_api)
+        self.assertNotIn("/api/v1/case/validate", case_api)
         self.assertIn("nextProposal(", case_api)
+
+        index_page = (ROOT / "apps/web/app/pages/index.vue").read_text(encoding="utf-8")
+        self.assertNotIn("validateCase", index_page)
+        self.assertNotIn("/api/v1/case/validate", index_page)
 
 
 if __name__ == "__main__":

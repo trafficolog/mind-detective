@@ -17,26 +17,38 @@ const legacyV1 = {
   outcome: null,
 }
 
-test('valid v1 import is server-migrated to canonical v2 and future schema is rejected', async ({ page }) => {
+test('valid v1 import migrates locally with case validation network unavailable and future schema is rejected', async ({ page }) => {
+  let validationRequests = 0
+  await page.route('**/api/v1/case/validate', async (route) => {
+    validationRequests += 1
+    await route.abort('failed')
+  })
+
   await page.goto('/')
+  await expect(page.getByTestId('offline-route-ready')).toBeVisible()
   await page.getByTestId('case-import').setInputFiles({
     name: 'legacy.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(legacyV1)),
   })
+
   await expect(page).toHaveURL(/\/cases\/legacy-import/)
   const migrated = await storedCase(page, 'legacy-import')
   expect(migrated?.schema).toBe('mind-detective-case/v2')
   expect(migrated?.current_mode).toBe('unselected')
   expect(migrated?.interaction_journal).toEqual([])
+  expect(migrated?.action_feedback).toEqual([])
+  expect(validationRequests).toBe(0)
 
   await page.goto('/')
+  await expect(page.getByTestId('case-import')).toBeVisible()
   await page.getByTestId('case-import').setInputFiles({
     name: 'future.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ schema: 'mind-detective-case/v999' })),
   })
   await expect(page.getByRole('status')).toContainText('не поддерживается')
+  expect(validationRequests).toBe(0)
 })
 
 test('engaged case exposes durability warning install education and explicit JSON export', async ({ page }) => {
