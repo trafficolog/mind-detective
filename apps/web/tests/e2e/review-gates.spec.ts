@@ -34,14 +34,13 @@ test('high-risk forgotten action exits lost-item creation before a Case is persi
 test('high-risk forgotten action is not appended to an existing Case journal', async ({ page }) => {
   const caseValue = caseFixture({
     case_id: 'case-safety-journal',
-    current_mode: 'reconstruction',
+    current_mode: 'search',
   })
   await seedCase(page, caseValue)
   await page.goto(`/cases/${caseValue.case_id}`)
 
-  await page.getByRole('button', { name: 'Написать' }).click()
-  await page.locator('#composer-text').fill('Я выключил плиту перед уходом?')
-  await page.getByRole('button', { name: 'Сохранить' }).click()
+  await page.getByTestId('search-target-input').fill('Я выключил плиту перед уходом?')
+  await page.getByTestId('add-search-target').click()
 
   await expect(page.getByTestId('case-safety-route')).toContainText('MD_SAFE_HAZARDOUS_ACTION')
   await expect.poll(async () => (await storedCase(page, caseValue.case_id))?.statements.length).toBe(0)
