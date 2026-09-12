@@ -6,6 +6,7 @@ GENERATOR_VERSION = "local-execution-generator/v1"
 SUPPORTED_CASE_SCHEMAS: tuple[str, ...] = ("mind-detective-case/v2",)
 SUPPORTED_COMMAND_TYPES: tuple[str, ...] = (
     "set_mode",
+    "record_free_account",
     "add_statement",
     "record_search_check",
     "refine_search_check",
@@ -24,5 +25,8 @@ STABLE_LOCAL_ERRORS: frozenset[str] = frozenset(
         "MD_WEB_COMMAND_ID_CONFLICT",
         "MD_WEB_CASE_ID_CONFLICT",
         "MD_WEB_EXECUTION_CONTRACT_MISMATCH",
+        "MD_RECON_MODE_REQUIRED",
+        "MD_RECON_FREE_ACCOUNT_REQUIRED",
+        "MD_RECON_FREE_ACCOUNT_EXISTS",
     }
 )
