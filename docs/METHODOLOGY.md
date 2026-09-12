@@ -17,9 +17,11 @@ Cognitive Interview разрабатывался и проверялся в witn
 
 ## Ключевые источники
 
-- Fisher, R. P., Geiselman, R. E., & Amador, M. (1989). *Field test of the Cognitive Interview*. DOI: `10.1037/0021-9010.74.5.722`. Reviewed: 2026-09-09. Class: scientific.
-- Loftus, E. F. (2005). *Planting misinformation in the human mind*. DOI: `10.1101/lm.94705`. Reviewed: 2026-09-09. Class: scientific.
-- Wiechert et al. (2026). replication/reassessment of misinformation effects. DOI: `10.1037/xlm0001529`. Reviewed: 2026-09-09. Class: scientific.
-- Ongchoco & Xu (2024), event-boundary work. DOI: `10.1167/jov.24.9.9`. Reviewed: 2026-09-09. Class: scientific. Event boundaries are not converted into location weights.
+- Fisher, R. P., Geiselman, R. E., & Amador, M. (1989). *Field test of the Cognitive Interview*. DOI: `10.1037/0021-9010.74.5.722`.
+- Loftus, E. F. (2005). *Planting misinformation in the human mind*. DOI: `10.1101/lm.94705`.
+- Wiechert et al. (2026). *The misinformation effect: A contemporary replication and extension of Loftus et al. (1978) to investigate its underlying mechanisms*. DOI: `10.1037/xlm0001529`.
+- Ongchoco, J. D. K., & Xu, Y. (2024). *Visual event boundaries trigger forgetting despite active maintenance in visual working memory*. DOI: `10.1167/jov.24.9.9`. Event boundaries are not converted into location weights.
 
-Числовые правила planner являются operational policy, а не научно калиброванной моделью вероятности. В P0 числовой location model вообще отсутствует.
+Все четыре DOI повторно проверены 2026-09-12. Машиночитаемая запись проверки: [`REFERENCE_VERIFICATION.json`](REFERENCE_VERIFICATION.json).
+
+Числовые правила planner являются operational policy, а не научно калиброванной моделью вероятности. Текущий product contract не содержит числовой location model.
