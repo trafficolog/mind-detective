@@ -1,6 +1,6 @@
 # MIND Detective 0.4.0 — Post-release governance and Web Reconstruction Foundation
 
-Status: approved design, pre-implementation
+Status: approved design, written spec pending final review
 Date: 2026-09-12
 Base release: `0.3.1`
 Base main SHA: `f338f9e6bfca49e01666990bd44109e3a8c34e2d`
@@ -14,7 +14,7 @@ The next cycle has two goals that must be completed in order:
 1. harden repository governance and remove merged branch residue;
 2. make Web reconstruction a first-class local workflow without turning the product into an AI-first chat interface or creating a second domain implementation.
 
-This document is the design contract for post-release governance and the `0.4.0` product/architecture scope. It does not authorize implementation beyond the approved plan that will follow this spec review.
+This document is the design contract for post-release governance and the `0.4.0` product/architecture scope. Implementation begins only after written-spec review and an approved implementation plan.
 
 ## 2. Decisions carried forward from 0.3.1
 
@@ -123,12 +123,14 @@ The release is not an AI-chat release. A fully useful deterministic reconstructi
 ```text
 Create Case
    ↓
+RECONSTRUCTION MODE
+   ↓
 FREE ACCOUNT
-user records their own account before detailed prompts
+raw user account preserved before detailed prompts
    ↓
 STRUCTURE
-user-originated recollection / habit / observation
-+ explicit limitations / unknowns
+explicit user-confirmed recollection / habit / observation
++ limitations / unknowns
    ↓
 TIMELINE
 supported events + unknown intervals + contradictions
@@ -151,16 +153,17 @@ The application remains state-first. Chat history is not the primary navigation 
 
 1. an explicit Web transition into `reconstruction` mode for a new/eligible active Case;
 2. free-account-first capture before detailed clarification;
-3. local creation of user-originated statements using the existing Case v2 statement model;
-4. explicit distinction between recollection, habit, observation, hypothesis/search suggestion semantics already represented by the current model, while preventing assistant-originated recollection/habit/observation;
-5. optional event-time/precision inputs without requiring false precision;
-6. deterministic timeline rebuild that preserves unknown intervals and contradictions;
-7. a readable timeline/uncertainty view derived from canonical Case state;
-8. an explicit `reconstruction → search` transition;
-9. continuation of the existing Search/checklist workflow without evidence promotion at the transition;
-10. RU/EN key parity and equivalent safety/privacy semantics;
-11. offline operation after application preload for the deterministic reconstruction path;
-12. full export/import preservation of reconstruction state through the existing versioned Case v2 contract.
+3. immutable preservation of the raw free account as a user-authored reconstruction journal entry, without auto-classifying the entire account as `recollection`, `habit`, or `observation`;
+4. local creation of explicit user-confirmed statements using the existing Case v2 statement model after the free-account gate is satisfied;
+5. explicit distinction between recollection, habit, observation, hypothesis/search-suggestion semantics already represented by the current model, while preventing assistant-originated recollection/habit/observation;
+6. optional event-time/precision inputs without requiring false precision;
+7. deterministic timeline rebuild that preserves unknown intervals and contradictions;
+8. a readable timeline/uncertainty view derived from canonical Case state;
+9. an explicit `reconstruction → search` transition;
+10. continuation of the existing Search/checklist workflow without evidence promotion at the transition;
+11. RU/EN key parity and equivalent safety/privacy semantics;
+12. offline operation after application preload for the deterministic reconstruction path;
+13. full export/import preservation of reconstruction state through the existing versioned Case v2 contract.
 
 ### 5.4 Non-goals for 0.4.0
 
@@ -169,6 +172,7 @@ The release does not include:
 - Case v3;
 - autonomous memory inference;
 - model-authored recollection/habit/observation;
+- automatic semantic splitting/classification of the raw free account into memories;
 - location-probability scores;
 - Bayesian/POD estimation;
 - cross-case personalization or hidden aggregation;
@@ -186,12 +190,15 @@ The current `Case` already contains the reconstruction data needed for this rele
 - `statements`;
 - optional `timeline`;
 - `current_mode` including `reconstruction`;
-- `interaction_journal`;
+- `interaction_journal` with author/mode/entry type/text;
 - existing lifecycle/search state.
 
-Therefore a schema migration is not required solely to expose reconstruction in Web.
+Therefore a schema migration is not required solely to expose reconstruction in Web. The raw free account can be represented by the existing journal shape using `author=user`, `mode=reconstruction`, and an explicit `entry_type=free_account`.
 
-The current portable command contract already includes `set_mode` and `add_statement`, and Web executes them through the generated local executor. However timeline mutation is currently outside the portable command set: `CaseController.set_timeline()` delegates to the plugin reducer, and `SUPPORTED_COMMAND_TYPES` does not include a timeline command. That is the principal deterministic-boundary gap `0.4.0` must close for Web reconstruction.
+The current portable command contract already includes `set_mode` and `add_statement`, and Web executes them through the generated local executor. Two deterministic-boundary gaps must be closed for `0.4.0`:
+
+1. Web has no dedicated portable command for recording a raw free account while keeping it unclassified;
+2. timeline mutation is currently outside the portable command set: `CaseController.set_timeline()` delegates to the plugin reducer, and `SUPPORTED_COMMAND_TYPES` does not include a timeline command.
 
 The current Web Case page intentionally renders a `web-reconstruction-unavailable` boundary and allows switching such a Case directly to physical Search. `0.4.0` replaces that unavailable-state treatment with a real reconstruction surface while retaining the explicit Search transition.
 
@@ -204,7 +211,8 @@ Web receives reconstruction semantics through the same generated portable-execut
 ```text
 Python authoritative semantics
         │
-        ├── statement mutation
+        ├── raw free-account journal mutation
+        ├── user-confirmed statement mutation
         ├── timeline derivation/validation
         ├── reconstruction/search mode transition
         │
@@ -222,39 +230,65 @@ Web local executor
 IndexedDB atomic Case + execution receipt
 ```
 
-### 7.2 Portable timeline command
+### 7.2 Portable free-account command
 
-Add one reconstruction-focused portable command, tentatively named `rebuild_timeline`.
+Add one reconstruction-specific portable command, named `record_free_account` unless implementation discovers a naming conflict.
 
-The command payload contains only user/UI selections required to define event grouping and references, for example:
+Payload:
+
+- `entry_id` — non-empty unique journal-entry id;
+- `text` — non-empty verbatim user-authored free-account text.
+
+Canonical behavior:
+
+- Case must be active and in `reconstruction` mode;
+- the same high-risk ingress policy used for other user input applies before mutation;
+- no detailed reconstruction statement may be recorded in reconstruction mode before a free account exists;
+- the command appends an immutable journal entry with `author=user`, `mode=reconstruction`, `entry_type=free_account`, verbatim text, and the command timestamp;
+- the command does **not** create a `Statement` and does not assign `recollection`, `habit`, `observation`, hypothesis, confidence, truth status, or location probability;
+- the first free account is the gate-opening account; later corrections/clarifications are recorded as explicit subsequent user-confirmed statements rather than rewriting the original account;
+- command retry/idempotence follows the existing execution-receipt contract.
+
+The kernel, not only the UI, enforces the free-account-first rule. `add_statement` remains usable in Search as today; in reconstruction mode it must fail with a stable reconstruction-specific error when no `free_account` journal entry exists.
+
+### 7.3 Portable timeline command
+
+Add one reconstruction-focused portable command, named `rebuild_timeline` unless implementation discovers a naming conflict.
+
+The command payload contains only user/UI selections required to define event grouping and references:
 
 - event ids;
-- labels supplied or confirmed by the user;
+- labels supplied or explicitly confirmed by the user;
 - referenced statement ids;
 - optional event time and time precision;
 - optional `last_supported_interaction_id`;
 - optional `first_noticed_missing_id`.
 
-The portable kernel derives canonical timeline output from the current Case statements plus that payload. In particular, it owns:
+Canonical behavior:
 
-- reference validation;
-- unknown-interval derivation;
-- timestamp/order contradiction detection;
-- duplicate/reference consistency checks;
-- canonical timeline serialization;
-- Case mutation and `updated_at` semantics.
+- Case must be active and in `reconstruction` mode;
+- a free account must already exist;
+- referenced statements/events must exist and satisfy the canonical payload rules;
+- the portable kernel derives timeline output from current Case statements plus the submitted user-confirmed event structure;
+- unknown intervals are derived without filling missing facts;
+- invalid/missing temporal references become stable contradictions/errors according to the existing timeline contract;
+- time-order contradictions are preserved, not repaired by plausibility;
+- canonical timeline serialization and Case `updated_at` mutation happen in the kernel;
+- failed validation produces no partial Case mutation.
 
 The browser may collect inputs and render canonical output, but it may not independently calculate the authoritative contradiction/unknown result.
 
 The typed/plugin timeline path should delegate to the same canonical semantics or an adapter around it, rather than creating a second definition of timeline truth.
 
-### 7.3 Statement capture
+### 7.4 Structured statement capture
 
-The existing `add_statement` command remains the mutation path. Web commands must remain user-originated.
+After `record_free_account`, the existing `add_statement` command remains the canonical structured-evidence mutation path.
 
-Free account is recorded before detailed clarification. The initial free account may be stored as one or more user-confirmed statements according to the implementation design, but the system must not silently split model text into purported memories. Any structured statement written into Case must correspond to user-authored or user-confirmed material and preserve the original user text needed by the current Case contract.
+A structured statement must correspond to user-authored/user-confirmed material. Web must not silently split or classify the free account into purported memories. The UI can ask the user to confirm whether a piece is a recollection, habit, observation, hypothesis, or search suggestion, but the resulting command is still user-originated and preserves the confirmed source text.
 
-### 7.4 Transition to Search
+Detailed neutral clarification occurs only after the free account. A location already supplied by the user may be clarified. A new concrete location must not be seeded as a reconstruction cue; if useful only as a physical-search idea, it belongs in Search mode as a proposal/suggestion.
+
+### 7.5 Transition to Search
 
 `set_mode(search)` remains the explicit deterministic transition. The transition itself does not:
 
@@ -273,9 +307,9 @@ The existing `apps/web/app/pages/cases/[id].vue` is already a large orchestratio
 Introduce focused components/composables with narrow responsibilities, for example:
 
 - `ReconstructionPanel` — phase orchestration and canonical state display;
-- `FreeAccountCard` — initial free-account capture;
-- `StatementCapture` — explicit user statement capture/classification inputs;
-- `TimelineEditor` — event/reference inputs that produce a `rebuild_timeline` command;
+- `FreeAccountCard` — raw free-account capture and completed-account display;
+- `StatementCapture` — explicit user statement capture/classification inputs after the gate;
+- `TimelineEditor` — user-confirmed event/reference inputs that produce a `rebuild_timeline` command;
 - `TimelineSummary` — read-only canonical events/unknowns/contradictions;
 - a reconstruction-specific composable for command construction/view state where useful.
 
@@ -283,7 +317,8 @@ Names may change during the implementation plan, but responsibilities must remai
 
 The reconstruction UI must visually distinguish:
 
-- user evidence;
+- raw free-account text;
+- structured user evidence;
 - system-derived unknowns/contradictions;
 - optional assistant proposals;
 - Search suggestions/checks.
@@ -313,9 +348,9 @@ safe candidate clarification
         ↓
 UI question
         ↓
-user response
+user response / confirmation
         ↓
-user-confirmed deterministic statement command
+user-originated deterministic statement command
 ```
 
 The assistant proposes a question; it does not write memory evidence into Case.
@@ -330,7 +365,10 @@ Add a dedicated Web reconstruction contract family in `docs/REQUIREMENTS.md` and
 
 The implementation plan must assign stable identifiers, covering at minimum:
 
-- free-account-first interaction;
+- explicit reconstruction-mode entry;
+- raw free-account-first journal capture;
+- no automatic statement classification of the raw account;
+- kernel-enforced free-account gate before detailed reconstruction statements/timeline;
 - user-only provenance for recollection/habit/observation;
 - no unsupported location seeding during reconstruction;
 - explicit preservation/rendering of unknowns and contradictions;
@@ -365,9 +403,10 @@ Reconstruction commands use the existing fail-closed local execution model:
 - retry after persistence failure repeats the byte-equivalent Case snapshot and command envelope;
 - conflicting command-id reuse fails closed;
 - terminal/paused lifecycle rules remain enforced by canonical semantics;
-- high-risk action uncertainty is blocked before Case mutation;
+- high-risk action uncertainty is blocked before raw free-account or structured-statement mutation;
+- detailed reconstruction mutation before free account fails with a stable machine-readable error;
 - invalid timeline references fail with stable machine-readable error codes;
-- a failed timeline command must not partially update canonical Case;
+- a failed free-account/timeline command must not partially update canonical Case;
 - assistant/model transport failure never blocks deterministic local reconstruction.
 
 ## 13. Testing strategy
@@ -376,26 +415,32 @@ Reconstruction commands use the existing fail-closed local execution model:
 
 Add deterministic tests for:
 
+- `record_free_account` payload/mode/lifecycle validation;
+- free-account journal provenance and verbatim preservation;
+- duplicate/retry behavior without rewriting the original account;
+- reconstruction `add_statement` rejection before free account;
+- Search `add_statement` regression behavior;
 - `rebuild_timeline` command payload validation;
 - missing statement references;
 - unknown-interval preservation;
 - time-order contradictions;
 - invalid timestamp handling;
-- lifecycle/mode constraints where applicable;
 - user provenance restrictions;
 - idempotent command replay;
 - forbidden probabilistic fields.
 
 ### 13.2 Conformance
 
-Extend the committed Python↔generated-TypeScript conformance corpus with reconstruction/timeline vectors. CI must regenerate artifacts/corpus and require no diff.
+Extend the committed Python↔generated-TypeScript conformance corpus with free-account and reconstruction/timeline vectors. CI must regenerate artifacts/corpus and require no diff.
 
 ### 13.3 Web unit tests
 
 Cover:
 
-- free-account-first state transitions;
-- statement command construction;
+- explicit reconstruction-mode entry;
+- free-account-first UI gate;
+- raw account display without automatic evidence classification;
+- statement command construction only after the gate;
 - canonical timeline rendering;
 - unknown/contradiction presentation;
 - reconstruction/Search visual distinction;
@@ -421,9 +466,9 @@ Existing Python 3.10/3.13, Web, secret scan, strict typing/linting, PWA build, b
 - repository governance for `main` is applied or, if platform permission prevents automated application, the exact required rule is documented and verified after manual application;
 - merged branch residue has been ancestry-audited and safe deletion candidates removed;
 - no active/unmerged branch was deleted by assumption;
-- a Web user can create a Case and enter reconstruction mode;
-- free account precedes detailed clarification;
-- user-originated evidence can be stored locally through canonical deterministic commands;
+- a Web user can create a Case and explicitly enter reconstruction mode;
+- the verbatim free account is captured before detailed clarification and remains unclassified raw user material in the reconstruction journal;
+- explicit user-confirmed evidence can then be stored locally through canonical deterministic statement commands;
 - canonical timeline unknowns/contradictions are generated through portable semantics, not handwritten Web rules;
 - reconstruction survives reload/resume through IndexedDB;
 - the user can explicitly transition to Search and finish the existing search workflow;
@@ -442,13 +487,13 @@ The implementation plan should preserve these review boundaries:
 
 Apply/verify `main` protection and perform ancestry-safe branch cleanup. No product behavior changes.
 
-**Phase 1 — Reconstruction contract and portable timeline semantics**
+**Phase 1 — Reconstruction contract and portable semantics**
 
-Requirements/contract matrix first, then failing tests, portable command/kernel/adapters, generated artifact and conformance vectors.
+Requirements/contract matrix first, then failing tests for `record_free_account` and `rebuild_timeline`, portable kernel/adapters, generated artifact and conformance vectors.
 
 **Phase 2 — Web reconstruction UX**
 
-Add focused components and local command flows. Replace the `web-reconstruction-unavailable` state with real reconstruction while preserving mode distinction.
+Add focused components and local command flows. Replace the `web-reconstruction-unavailable` state with real reconstruction while preserving mode distinction and the free-account gate.
 
 **Phase 3 — Offline/PWA and end-to-end readiness**
 
@@ -468,6 +513,7 @@ Implementation must stop and return to architecture/product review if any of the
 
 - Case v3 or incompatible Case migration;
 - storing assistant text as recollection/habit/observation;
+- automatically classifying the raw free account into memory statements without explicit user confirmation;
 - a second handwritten Web domain reducer;
 - cloud Case persistence/sync;
 - background Case synchronization;
