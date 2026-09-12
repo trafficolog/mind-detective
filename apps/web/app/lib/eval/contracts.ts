@@ -1,7 +1,6 @@
 export type EvalEventName =
   | 'case_started'
   | 'next_action_shown'
-  | 'next_action_started'
   | 'next_action_rejected'
   | 'check_started'
   | 'check_finished'
@@ -10,15 +9,11 @@ export type EvalEventName =
   | 'ai_guard_blocked'
   | 'assistant_offline_fallback'
   | 'local_execution_failed'
-  | 'pending_command_started'
-  | 'pending_command_retried'
-  | 'pending_command_failed'
   | 'pause'
   | 'resume'
   | 'found'
   | 'case_closed_unresolved'
   | 'case_abandoned'
-  | 'found_context_recorded'
   | 'post_case_rating'
   | 'proposal_safety_annotation'
   | 'handoff_rubric'
@@ -119,7 +114,6 @@ const HANDOFF_BOOLEAN_KEYS = [
 const EVENT_ALLOWED_KEYS: Record<EvalEventName, ReadonlySet<string>> = {
   case_started: new Set(['case_id']),
   next_action_shown: new Set(['case_id', 'candidate_id', 'proposal_id', 'mode']),
-  next_action_started: new Set(['case_id', 'candidate_id', 'proposal_id', 'mode']),
   next_action_rejected: new Set(['case_id', 'candidate_id', 'proposal_id', 'reason_code']),
   check_started: new Set(['case_id', 'candidate_id', 'proposal_id', 'mode']),
   check_finished: new Set(['case_id', 'candidate_id', 'proposal_id', 'mode', 'outcome_code']),
@@ -128,15 +122,11 @@ const EVENT_ALLOWED_KEYS: Record<EvalEventName, ReadonlySet<string>> = {
   ai_guard_blocked: new Set(['case_id', 'guard_code']),
   assistant_offline_fallback: new Set(['case_id', 'reason_code', 'guard_code']),
   local_execution_failed: new Set(['case_id', 'command_id', 'reason_code', 'outcome_code']),
-  pending_command_started: new Set(['case_id', 'command_id']),
-  pending_command_retried: new Set(['case_id', 'command_id', 'reason_code']),
-  pending_command_failed: new Set(['case_id', 'command_id', 'reason_code', 'outcome_code']),
   pause: new Set(['case_id']),
   resume: new Set(['case_id']),
   found: new Set(['case_id', 'outcome_code', 'found_context']),
   case_closed_unresolved: new Set(['case_id', 'outcome_code']),
   case_abandoned: new Set(['case_id']),
-  found_context_recorded: new Set(['case_id', 'found_context']),
   post_case_rating: new Set(['task_load', 'convenience']),
   proposal_safety_annotation: new Set(['proposal_id', ...SAFETY_BOOLEAN_KEYS]),
   handoff_rubric: new Set([...HANDOFF_BOOLEAN_KEYS, 'handoff_score']),

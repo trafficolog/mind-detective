@@ -32,6 +32,14 @@ Secondary evidence includes duplicate checks, fixed 1–5 task-load/convenience 
 
 A product-direction claim requires at least 32 protocol-complete staged participants and at least 8 per counterbalance cell. Arm A remains contextual and does not alter the C-vs-B product decision.
 
+## Decision event contract
+
+Current `mind-detective-evaluation/v1` instrumentation contains only events that have product semantics and a production path into the analyzer. The primary endpoint uses `case_started`, `next_action_shown`, `next_action_rejected`, `check_finished` and terminal `found` / `case_closed_unresolved` / `case_abandoned`. Secondary decision signals use `duplicate_check_detected`, `post_case_rating`, `proposal_safety_annotation`, `handoff_rubric`, `assistant_offline_fallback` and `local_execution_failed`.
+
+`next_action_started` is intentionally absent: the product has no separate “start checking” interaction, and adding one only for instrumentation would distort the UX and primary endpoint. The former `pending_command_*` vocabulary belonged to the retired network-command-queue model; local deterministic execution reports a real persistence/execution failure through `local_execution_failed` instead. `found_context` is metadata on the atomic terminal `found` event and is not duplicated as a separate `found_context_recorded` event.
+
+The offline analyzer may continue to accept older exported event names for backward-compatible reading of historical fixtures/exports. Such compatibility does not make those names part of the current Web emission contract. `tests/test_evaluation_event_paths.py` executablely checks the current metric → production emitter → analyzer path and rejects reintroduction of obsolete current event names.
+
 ## Privacy
 
 Evaluation storage/export is local-only by default, explicit-export only, and allowlist-based. It rejects Case payload/content, item/location text, journal/statement/user text, evaluator free text, and raw model output. Normal Case export and evaluation export remain separate.
