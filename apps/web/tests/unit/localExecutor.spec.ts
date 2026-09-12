@@ -118,4 +118,47 @@ describe('local executor wrapper', () => {
     expect(repository.writes).toBe(0)
     expect(repository.receipts.size).toBe(0)
   })
+
+  it('runs reconstruction commands through the existing generic receipt boundary', async () => {
+    const repository = new MemoryRepository()
+    const source = baseCase()
+    repository.cases.set(source.case_id, structuredClone(source))
+
+    const reconstruction = await applyLocalCommand(repository, source, {
+      command_id: 'cmd-reconstruction-mode',
+      expected_updated_at: source.updated_at,
+      command_type: 'set_mode',
+      now: '2026-09-10T18:01:00Z',
+      payload: { mode: 'reconstruction' },
+    })
+
+    const withFreeAccount = await applyLocalCommand(repository, reconstruction, {
+      command_id: 'cmd-free-account',
+      expected_updated_at: reconstruction.updated_at,
+      command_type: 'record_free_account',
+      now: '2026-09-10T18:02:00Z',
+      payload: {
+        entry_id: 'free-1',
+        text: 'Я пришёл домой и положил ключи, но не помню куда.',
+      },
+    })
+
+    const withTimeline = await applyLocalCommand(repository, withFreeAccount, {
+      command_id: 'cmd-rebuild-timeline',
+      expected_updated_at: withFreeAccount.updated_at,
+      command_type: 'rebuild_timeline',
+      now: '2026-09-10T18:03:00Z',
+      payload: {
+        events: [],
+        last_supported_interaction_id: null,
+        first_noticed_missing_id: null,
+      },
+    })
+
+    expect(withFreeAccount.interaction_journal).toHaveLength(1)
+    expect(withFreeAccount.interaction_journal[0]?.entry_type).toBe('free_account')
+    expect(withTimeline.timeline?.events).toEqual([])
+    expect(repository.writes).toBe(3)
+    expect(repository.receipts.size).toBe(3)
+  })
 })
