@@ -20,6 +20,34 @@ test('closed case keeps export and confirmed selective delete controls', async (
   await expect.poll(async () => await storedCase(page, caseValue.case_id)).toBeNull()
 })
 
+test('high-risk forgotten action exits lost-item creation before a Case is persisted', async ({ page }) => {
+  await page.goto('/')
+  await page.getByTestId('item-label').fill('Принимал ли я уже таблетки?')
+  await page.getByTestId('start-search').click()
+
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByTestId('safety-route')).toContainText('не использует поиск вещей')
+  await expect(page.getByTestId('safety-route')).toContainText('MD_SAFE_MEDICATION_ACTION')
+  await expect(page.getByTestId('case-list').getByText('Принимал ли я уже таблетки?')).toHaveCount(0)
+})
+
+test('high-risk forgotten action is not appended to an existing Case journal', async ({ page }) => {
+  const caseValue = caseFixture({
+    case_id: 'case-safety-journal',
+    current_mode: 'reconstruction',
+  })
+  await seedCase(page, caseValue)
+  await page.goto(`/cases/${caseValue.case_id}`)
+
+  await page.getByRole('button', { name: 'Написать' }).click()
+  await page.locator('#composer-text').fill('Я выключил плиту перед уходом?')
+  await page.getByRole('button', { name: 'Сохранить' }).click()
+
+  await expect(page.getByTestId('case-safety-route')).toContainText('MD_SAFE_HAZARDOUS_ACTION')
+  await expect.poll(async () => (await storedCase(page, caseValue.case_id))?.statements.length).toBe(0)
+  await expect.poll(async () => (await storedCase(page, caseValue.case_id))?.interaction_journal.length).toBe(0)
+})
+
 test.describe('English locale contract', () => {
   test.use({ locale: 'en-US' })
 

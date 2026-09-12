@@ -5,6 +5,7 @@ import {
   buildLocalChecklistProposal,
   createLocalCase,
 } from '~/lib/execution/localExecutor'
+import { enforceSafeInput } from '~/lib/safety'
 
 export interface LocalExecution {
   createCase(caseId: string, itemLabel: string, now: string): Promise<CaseV2>
@@ -16,14 +17,22 @@ function plainCase(caseValue: CaseV2): CaseV2 {
   return structuredClone(toRaw(caseValue))
 }
 
+function enforceCommandIngress(command: CommandEnvelope): void {
+  if (command.command_type !== 'add_statement') return
+  const text = command.payload.original_text
+  if (typeof text === 'string') enforceSafeInput(text)
+}
+
 export function useLocalExecution(): LocalExecution {
   const repository = useCaseRepository()
 
   async function createCase(caseId: string, itemLabel: string, now: string): Promise<CaseV2> {
+    enforceSafeInput(itemLabel)
     return await createLocalCase(repository, caseId, itemLabel, now)
   }
 
   async function sendCommand(caseValue: CaseV2, command: CommandEnvelope): Promise<CaseV2> {
+    enforceCommandIngress(command)
     return await applyLocalCommand(repository, plainCase(caseValue), command)
   }
 
