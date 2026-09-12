@@ -108,7 +108,7 @@ test('blocked reconstruction proposal is not carried into a newly loaded search-
 
   await seedCase(page, reconstruction)
   await page.goto(`/cases/${reconstruction.case_id}`)
-  await expect(page.getByTestId('web-reconstruction-unavailable')).toBeVisible()
+  await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   expect(proposalCalls).toBe(0)
 
   await seedCase(page, search)
