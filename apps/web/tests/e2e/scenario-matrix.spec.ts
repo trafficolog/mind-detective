@@ -70,7 +70,7 @@ test('dark reduced-motion increased-contrast and responsive presentation contrac
 test.describe('assistant guard isolation', () => {
   test.use({ baseURL: 'http://127.0.0.1:3001' })
 
-  test('blocked reconstruction proposal is not carried into a newly loaded search-mode proposal', async ({ page }) => {
+  test('legacy reconstruction does not request assistant proposals before a search-mode case is loaded', async ({ page }) => {
     const reconstruction = caseFixture({ current_mode: 'reconstruction', candidates: [] })
     const search = caseFixture({
       current_mode: 'search',
@@ -81,37 +81,6 @@ test.describe('assistant guard isolation', () => {
 
     await page.route('**/api/v1/proposal/next', async (route) => {
       proposalCalls += 1
-      if (proposalCalls === 1) {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            case: {
-              ...reconstruction,
-              interaction_journal: [{
-                id: 'guard-scenario',
-                author: 'system',
-                mode: 'system',
-                entry_type: 'guard_block',
-                text: 'guard.ai_proposal_blocked',
-                created_at: '2026-09-10T07:01:00Z',
-                statement_ids: [],
-                search_check_ids: [],
-              }],
-            },
-            proposal: {
-              kind: 'clarification',
-              candidate_id: null,
-              target: null,
-              copy_key: 'reconstruction.clarification',
-              rationale_codes: [],
-              related_statement_ids: [],
-            },
-            guard_code: 'MD_G_RECON_NEW_LOCATION',
-          }),
-        })
-        return
-      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -132,13 +101,14 @@ test.describe('assistant guard isolation', () => {
 
     await seedCase(page, reconstruction)
     await page.goto(`/cases/${reconstruction.case_id}`)
-    await expect(page.getByTestId('guard-block')).toBeVisible()
-    await expect(page.getByText('секретная машина')).toHaveCount(0)
+    await expect(page.getByTestId('web-reconstruction-unavailable')).toBeVisible()
+    await expect(page.getByTestId('provider-disclosure')).toHaveCount(0)
+    expect(proposalCalls).toBe(0)
 
     await seedCase(page, search)
     await page.goto(`/cases/${search.case_id}`)
     await expect(page.getByTestId('next-action-target')).toHaveText('сумка')
     await expect(page.getByTestId('guard-block')).toHaveCount(0)
-    await expect(page.getByText('секретная машина')).toHaveCount(0)
+    expect(proposalCalls).toBe(1)
   })
 })
