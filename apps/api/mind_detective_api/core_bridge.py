@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_PLUGIN_ROOT = _REPO_ROOT / "plugins/mind-detective"
+from .runtime_paths import resolve_plugin_root
+
+_PLUGIN_ROOT = resolve_plugin_root()
 if str(_PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(_PLUGIN_ROOT))
 

@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "references": [
+    {
+      "doi": "10.1037/0021-9010.74.5.722",
+      "url": "https://doi.org/10.1037/0021-9010.74.5.722",
+      "status": "verified",
+      "verified_on": "2026-09-12",
+      "title": "Field test of the Cognitive Interview: enhancing the recollection of actual victims and witnesses of crime",
+      "evidence": "PubMed PMID 2793772"
+    },
+    {
+      "doi": "10.1101/lm.94705",
+      "url": "https://doi.org/10.1101/lm.94705",
+      "status": "verified",
+      "verified_on": "2026-09-12",
+      "title": "Planting misinformation in the human mind: a 30-year investigation of the malleability of memory",
+      "evidence": "PubMed PMID 16027179 / Learning & Memory"
+    },
+    {
+      "doi": "10.1037/xlm0001529",
+      "url": "https://doi.org/10.1037/xlm0001529",
+      "status": "verified",
+      "verified_on": "2026-09-12",
+      "title": "The misinformation effect: A contemporary replication and extension of Loftus et al. (1978) to investigate its underlying mechanisms",
+      "evidence": "PubMed PMID 41021526"
+    },
+    {
+      "doi": "10.1167/jov.24.9.9",
+      "url": "https://doi.org/10.1167/jov.24.9.9",
+      "status": "verified",
+      "verified_on": "2026-09-12",
+      "title": "Visual event boundaries trigger forgetting despite active maintenance in visual working memory",
+      "evidence": "PubMed PMID 39259169 / PMCID PMC11401123"
+    }
+  ]
+}

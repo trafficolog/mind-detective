@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 CANONICAL_NAME = "mind-detective"
-CANONICAL_VERSION = "0.3.0"
 
 
 FORBIDDEN_IMPORT_PREFIXES: tuple[str, ...] = (
@@ -121,11 +120,14 @@ def validate_repository(root: Path) -> list[str]:
 
     if codex.get("name") != CANONICAL_NAME:
         errors.append("MD_REPO_NAME:codex")
-    if codex.get("version") != CANONICAL_VERSION:
+    canonical_version = codex.get("version")
+    if not isinstance(canonical_version, str) or not canonical_version.strip():
         errors.append("MD_REPO_VERSION:codex")
+        canonical_version = None
+
     if claude.get("name") != CANONICAL_NAME:
         errors.append("MD_REPO_NAME:claude")
-    if claude.get("version") != CANONICAL_VERSION:
+    if canonical_version is not None and claude.get("version") != canonical_version:
         errors.append("MD_REPO_VERSION:claude")
 
     for label, payload in (("agents", agents), ("claude-market", market)):
@@ -136,7 +138,7 @@ def validate_repository(root: Path) -> list[str]:
         plugin_payload = plugins[0]
         if plugin_payload.get("name") != CANONICAL_NAME:
             errors.append(f"MD_REPO_NAME:{label}")
-        if plugin_payload.get("version") != CANONICAL_VERSION:
+        if canonical_version is not None and plugin_payload.get("version") != canonical_version:
             errors.append(f"MD_REPO_VERSION:{label}")
 
     return errors

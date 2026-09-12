@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import json
 from functools import lru_cache
-from pathlib import Path
 
 from .contracts import ExecutionContractResponse, ExecutionIdentity
+from .runtime_paths import resolve_execution_metadata_path
 
 _MISMATCH_CODE = "MD_WEB_EXECUTION_CONTRACT_MISMATCH"
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_METADATA_PATH = _REPO_ROOT / "apps/web/app/generated/localExecution.meta.json"
 
 
 class ExecutionContractMismatch(ValueError):
@@ -18,7 +16,8 @@ class ExecutionContractMismatch(ValueError):
 @lru_cache(maxsize=1)
 def execution_contract() -> ExecutionContractResponse:
     try:
-        raw = json.loads(_METADATA_PATH.read_text(encoding="utf-8"))
+        metadata_path = resolve_execution_metadata_path()
+        raw = json.loads(metadata_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError("MD_WEB_EXECUTION_CONTRACT_METADATA_UNAVAILABLE") from exc
     if not isinstance(raw, dict):

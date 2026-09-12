@@ -2,6 +2,29 @@
 
 [English](CHANGELOG.en.md)
 
+## [0.3.1] — 2026-09-12
+
+### Исправлено
+- high-risk action uncertainty теперь блокируется на interaction ingress до мутации Case;
+- Web Search использует структурированный checklist target вместо эхо произвольного сообщения пользователя;
+- подпись проверки явно соответствует записываемому результату `not_found`: «Проверил — не нашёл»;
+- `checked` имеет приоритет над stale inaccessible metadata в progress summary;
+- active helpers в contract matrix проверяются на production reachability; удалены obsolete queue/privacy helpers;
+- live evaluation event vocabulary приведён к реально эмитируемым decision events;
+- Case import выполняет validation/migration локально без обязательного `/api/v1/case/validate`;
+- Web/PWA больше не имитирует незавершённую reconstruction surface: это физический Search/checklist workflow, полная reconstruction остаётся plugin/agent capability;
+- plugin-only reconstruction mutations заведены за явную reducer boundary;
+- semantic eval corpus честно объявлен manual review и не выдаётся за automated runner;
+- proposal `copy_key` типизирован и реально рендерится через RU/EN copy;
+- добавлены installable PNG 192/512 и Apple touch PWA icons;
+- API plugin root и execution metadata больше не зависят от фиксированной глубины монорепо;
+- RU/EN README, Getting Started, plugin standard, semantic scenarios и reference docs синхронизированы с текущим product contract;
+- четыре научных DOI повторно проверены и зафиксированы в `docs/REFERENCE_VERIFICATION.json`.
+
+### Не изменено
+- схема Case остаётся `mind-detective-case/v2`;
+- не добавлены Bayesian/POD state, calibrated location probabilities, cloud sync или новый production skill.
+
 ## [0.3.0] — 2026-09-11
 
 ### Добавлено

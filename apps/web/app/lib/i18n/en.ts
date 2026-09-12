@@ -113,7 +113,7 @@ export const en = {
   'outcome.unresolved': 'Search closed without a result',
   'outcome.retained': 'History stays local in this browser until you delete the case or site data yourself.',
   'storage.title': 'Local storage',
-  'storage.base': 'Cases are stored in this browser. Version 0.2.0 has no cloud backup; clearing site data can remove cases.',
+  'storage.base': 'Cases are stored in this browser. There is no cloud backup by default; clearing site data can remove cases.',
   'storage.granted': 'The browser granted persistent storage, but export remains the recovery method for important cases.',
   'storage.denied': 'The browser does not guarantee protection from automatic eviction. Export important cases.',
   'storage.unsupported': 'This browser does not report persistent-storage capability. Export important cases.',

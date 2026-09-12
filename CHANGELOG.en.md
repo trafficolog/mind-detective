@@ -2,6 +2,29 @@
 
 [Русский](CHANGELOG.md)
 
+## [0.3.1] — 2026-09-12
+
+### Fixed
+- high-risk action uncertainty is now stopped at interaction ingress before Case mutation;
+- Web Search uses a structured checklist target instead of echoing arbitrary user prose;
+- the check action now explicitly matches the stored `not_found` result: “Checked — not found”;
+- canonical `checked` state takes precedence over stale inaccessible metadata in the progress summary;
+- active contract-matrix helpers are checked for production reachability and obsolete queue/privacy helpers were removed;
+- the live evaluation-event vocabulary now matches the decision events the product actually emits;
+- Case import validates and migrates locally without requiring `/api/v1/case/validate`;
+- Web/PWA no longer presents an unfinished reconstruction surface: it is the physical Search/checklist workflow, while full reconstruction remains a plugin/agent capability;
+- plugin-only reconstruction mutations are behind an explicit reducer boundary;
+- the semantic eval corpus is explicitly governed as manual review and is not presented as an automated runner;
+- proposal `copy_key` is typed and rendered through RU/EN copy;
+- installable 192/512 PNG and Apple touch PWA icons were added;
+- API plugin-root and execution-metadata resolution no longer depend on fixed monorepo parent depth;
+- RU/EN README, Getting Started, plugin standard, semantic scenarios, and reference docs are aligned with the current product contract;
+- four scientific DOI references were re-verified and recorded in `docs/REFERENCE_VERIFICATION.json`.
+
+### Unchanged
+- the Case schema remains `mind-detective-case/v2`;
+- no Bayesian/POD state, calibrated location probabilities, cloud sync, or new production skill is introduced.
+
 ## [0.3.0] — 2026-09-11
 
 ### Added

@@ -8,4 +8,4 @@ The guard is a conservative deterministic filter for candidate investigative utt
 
 The RU/EN lexical coverage is intentionally bounded and conservative. Passing this helper does not prove an utterance is semantically safe in every phrasing.
 
-Generic Claude Code/Codex skill hosts do not expose a repository-controlled mandatory pre-send interception hook. Therefore this helper mechanically proves behavior only for candidates submitted to it. Production skills must invoke it where specified, and host-level compliance is additionally covered by adversarial evals and review. The project must not claim that every model utterance is technically intercepted in `0.1.0`.
+Generic Claude Code/Codex skill hosts do not expose a repository-controlled mandatory pre-send interception hook. Therefore this helper mechanically proves behavior only for candidates submitted to it. Production skills must invoke it where specified, and host-level compliance is additionally covered by adversarial evals and review. The project must not claim that every model utterance is technically intercepted end-to-end.
