@@ -41,9 +41,12 @@ class WebPwaContractTests(unittest.TestCase):
 
     def test_pwa_has_installable_png_icon_set_and_apple_touch_icon(self):
         manifest = json.loads((PUBLIC / "manifest.webmanifest").read_text(encoding="utf-8"))
-        icons = {(icon["src"], icon["sizes"], icon["type"]) for icon in manifest["icons"]}
-        self.assertIn(("/icon-192.png", "192x192", "image/png"), icons)
-        self.assertIn(("/icon-512.png", "512x512", "image/png"), icons)
+        icons = {
+            (icon["src"], icon["sizes"], icon["type"], icon.get("purpose"))
+            for icon in manifest["icons"]
+        }
+        self.assertIn(("/icon-192.png", "192x192", "image/png", "any maskable"), icons)
+        self.assertIn(("/icon-512.png", "512x512", "image/png", "any maskable"), icons)
 
         self.assertEqual(png_dimensions(PUBLIC / "icon-192.png"), (192, 192))
         self.assertEqual(png_dimensions(PUBLIC / "icon-512.png"), (512, 512))
