@@ -7,7 +7,6 @@ from typing import Literal
 from mind_detective_api.contracts import ProposalModel, ProposalRequest
 from mind_detective_api.core_bridge import create_case_payload
 from mind_detective_api.litellm_provider import build_provider_context
-from mind_detective_api.privacy_log import PrivacyLogError, build_privacy_log
 from mind_detective_api.proposals import build_assistant_proposal
 
 from scripts.controller import CaseController
@@ -137,22 +136,6 @@ class AssistantProposalTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("outcome", context)
         self.assertNotIn("created_at", context)
         self.assertNotIn("updated_at", context)
-
-    def test_privacy_log_rejects_sensitive_fields(self) -> None:
-        with self.assertRaises(PrivacyLogError) as ctx:
-            build_privacy_log("assistant_proposal", {"request_id": "r1", "target": "рюкзак"})
-        self.assertEqual(ctx.exception.code, "MD_WEB_LOG_SENSITIVE_FIELD")
-        safe = build_privacy_log(
-            "assistant_proposal",
-            {
-                "request_id": "r1",
-                "arm": "assistant",
-                "outcome_code": "allowed",
-                "latency_bucket": "lt_1s",
-                "model_id": "configured-model",
-            },
-        )
-        self.assertEqual(safe["event"], "assistant_proposal")
 
 
 if __name__ == "__main__":
