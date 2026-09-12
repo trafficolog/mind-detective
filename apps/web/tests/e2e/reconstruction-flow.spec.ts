@@ -79,15 +79,16 @@ test('state-first reconstruction preserves evidence and transitions explicitly t
   expect(persisted?.timeline?.unknown_intervals.join('\n')).toContain('точное время неизвестно')
 })
 
-
 test('raw free account passes safety ingress before reconstruction mutation', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Что потерялось?').fill('ключи')
   await page.getByTestId('start-search').click()
+  await expect(page).toHaveURL(/\/cases\//)
   const caseId = page.url().split('/cases/')[1]?.split(/[?#]/)[0]
   expect(caseId).toBeTruthy()
 
   await page.getByTestId('enter-reconstruction').click()
+  await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   await page.getByTestId('free-account-input').fill('Я выключил плиту перед уходом?')
   await page.getByTestId('free-account-submit').click()
 
