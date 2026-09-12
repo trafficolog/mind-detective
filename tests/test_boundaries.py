@@ -1,3 +1,4 @@
+import ast
 import json
 import unittest
 from pathlib import Path
@@ -66,6 +67,24 @@ class BoundaryTests(unittest.TestCase):
                 if token in text:
                     offenders.append(f"{path.relative_to(ROOT)}:{token}")
         self.assertEqual(offenders, [])
+
+    def test_case_controller_has_no_direct_dataclass_mutation_boundary(self):
+        controller = ROOT / "plugins/mind-detective/scripts/controller.py"
+        tree = ast.parse(controller.read_text(encoding="utf-8"))
+        replace_calls = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "replace"
+        ]
+        dataclass_replace_imports = [
+            node for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "dataclasses"
+            and any(alias.name == "replace" for alias in node.names)
+        ]
+        self.assertEqual(replace_calls, [])
+        self.assertEqual(dataclass_replace_imports, [])
 
     def test_ci_uses_python_matrix_quality_gates_and_full_sha_actions(self):
         ci = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")

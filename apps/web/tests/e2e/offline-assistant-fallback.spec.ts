@@ -48,7 +48,7 @@ test('execution contract skew is surfaced while local deterministic mutation rem
 
   await seedCase(page, caseValue)
   await page.goto(`/cases/${caseValue.case_id}`)
-  await page.getByTestId('mode-choice').getByRole('button', { name: 'Перейти к поиску' }).click()
+  await page.getByTestId('switch-to-search').click()
 
   await expect(page.getByTestId('execution-contract-mismatch')).toBeVisible()
   await expect(page.getByTestId('command-error')).toHaveCount(0)

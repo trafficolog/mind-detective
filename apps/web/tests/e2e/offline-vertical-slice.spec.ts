@@ -27,8 +27,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
   await page.getByTestId('start-search').click()
   await expect(page).toHaveURL(/\/cases\/([^/]+)$/)
   const caseId = page.url().split('/').at(-1)!
-
-  await page.getByRole('button', { name: 'Перейти к поиску' }).click()
+  await expect(page.getByTestId('mode-choice')).toHaveCount(0)
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 
   await page.getByTestId('search-target-input').fill('карман рюкзака')
