@@ -15,7 +15,7 @@ class RuntimePathTests(unittest.TestCase):
         (scripts / "controller.py").write_text("# test marker\n", encoding="utf-8")
         return plugin
 
-    def test_explicit_plugin_root_allows_relocated_api(self):
+    def test_explicit_plugin_root_allows_relocated_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             plugin = self.make_plugin_root(root)
@@ -26,13 +26,13 @@ class RuntimePathTests(unittest.TestCase):
             with patch.dict(os.environ, {"MIND_DETECTIVE_PLUGIN_ROOT": str(plugin)}, clear=False):
                 self.assertEqual(resolve_plugin_root(unrelated_api_file), plugin.resolve())
 
-    def test_repository_discovery_does_not_depend_on_fixed_parent_depth(self):
+    def test_repository_discovery_does_not_depend_on_fixed_parent_depth(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             resolved = resolve_plugin_root(Path(__file__).resolve())
         self.assertEqual(resolved.name, "mind-detective")
         self.assertTrue((resolved / "scripts/controller.py").is_file())
 
-    def test_missing_plugin_root_fails_with_stable_code(self):
+    def test_missing_plugin_root_fails_with_stable_code(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             isolated = Path(tmp) / "api" / "core_bridge.py"
             isolated.parent.mkdir(parents=True)
@@ -41,7 +41,7 @@ class RuntimePathTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "MD_API_PLUGIN_ROOT_NOT_FOUND"):
                     resolve_plugin_root(isolated)
 
-    def test_explicit_execution_metadata_allows_relocated_api(self):
+    def test_explicit_execution_metadata_allows_relocated_api(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             metadata = root / "contract" / "localExecution.meta.json"
@@ -60,7 +60,7 @@ class RuntimePathTests(unittest.TestCase):
                     resolve_execution_metadata_path(unrelated_api_file), metadata.resolve()
                 )
 
-    def test_repository_execution_metadata_discovery_has_no_fixed_parent_depth(self):
+    def test_repository_execution_metadata_discovery_has_no_fixed_parent_depth(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
             resolved = resolve_execution_metadata_path(Path(__file__).resolve())
         self.assertEqual(resolved.name, "localExecution.meta.json")
