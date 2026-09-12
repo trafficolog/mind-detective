@@ -127,7 +127,7 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def set_timeline(self, case: Case, timeline: Timeline, now: str) -> Case:
-        event_payloads = [
+        event_payloads: list[dict[str, object]] = [
             {
                 "id": event.id,
                 "label": event.label,
