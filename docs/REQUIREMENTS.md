@@ -28,6 +28,8 @@
 
 ## Web/PWA contracts, сохранённые и уточнённые в 0.3.0
 
+Web/PWA реализует физический Search/checklist surface. Полная reconstruction остаётся plugin/agent capability: Web может безопасно читать сохранённые reconstruction evidence/journal entries и переводить такое дело в Search, но не собирает новый reconstruction account, не добавляет recollection через placeholder composer и не запрашивает assistant proposal в reconstruction mode.
+
 - `MD-WEB-REQ-SHELL-01` — checklist и AI используют один shell/navigation/action-card/input structure. **Status: active.**
 - `MD-WEB-REQ-MODE-01` — journal entry сохраняет immutable provenance reconstruction/search/system. **Status: active.**
 - `MD-WEB-REQ-MODE-02` — mode представлен label + icon + typography/treatment, не одним цветом. **Status: active.**
