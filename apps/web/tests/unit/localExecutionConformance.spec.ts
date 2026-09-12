@@ -21,6 +21,14 @@ type CorpusVector = {
 const corpusPath = resolve(process.cwd(), '../../conformance/local-execution/v1/vectors.json')
 const vectors = JSON.parse(readFileSync(corpusPath, 'utf8')) as CorpusVector[]
 
+const requiredReconstructionVectorIds = [
+  'reconstruction_record_free_account',
+  'reconstruction_statement_requires_free_account',
+  'reconstruction_rebuild_timeline_unknowns',
+  'reconstruction_rebuild_timeline_contradiction',
+  'reconstruction_transition_to_search_preserves_evidence',
+] as const
+
 function execute(vector: CorpusVector): Expected {
   try {
     if (vector.operation === 'create_case') {
@@ -62,6 +70,13 @@ function execute(vector: CorpusVector): Expected {
 describe('generated local execution differential conformance', () => {
   it('contains a non-trivial committed corpus', () => {
     expect(vectors.length).toBeGreaterThanOrEqual(50)
+  })
+
+  it('contains the required reconstruction vectors', () => {
+    const ids = new Set(vectors.map((vector) => vector.id))
+    for (const vectorId of requiredReconstructionVectorIds) {
+      expect(ids.has(vectorId)).toBe(true)
+    }
   })
 
   it('matches every committed conformance vector', () => {

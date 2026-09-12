@@ -142,6 +142,179 @@ def generate_vectors() -> list[dict[str, object]]:
     )
     reconstruction = apply_command(base, set_reconstruction)
 
+    free_account = _command(
+        reconstruction,
+        "record_free_account",
+        command_id="cmd-free-account",
+        now="2026-09-10T17:31:03Z",
+        payload={
+            "entry_id": "free-1",
+            "text": "Я пришёл домой и положил ключи, но не помню куда.",
+        },
+    )
+    vectors.append(
+        _vector(
+            "reconstruction_record_free_account",
+            "command",
+            {"case": reconstruction, "command": free_account},
+        )
+    )
+    reconstruction_with_free_account = apply_command(reconstruction, free_account)
+
+    statement_requires_free_account = _command(
+        reconstruction,
+        "add_statement",
+        command_id="cmd-statement-requires-free-account",
+        now="2026-09-10T17:31:04Z",
+        payload={
+            "statement_id": "stmt-before-free",
+            "source": "user",
+            "statement_type": "recollection",
+            "original_text": "Ключи были у двери",
+            "event_time": "2026-09-10T17:10:00Z",
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": [],
+        },
+    )
+    vectors.append(
+        _vector(
+            "reconstruction_statement_requires_free_account",
+            "command",
+            {"case": reconstruction, "command": statement_requires_free_account},
+        )
+    )
+
+    known_statement = _command(
+        reconstruction_with_free_account,
+        "add_statement",
+        command_id="cmd-timeline-known",
+        now="2026-09-10T17:31:05Z",
+        payload={
+            "statement_id": "stmt-timeline-known",
+            "source": "user",
+            "statement_type": "recollection",
+            "original_text": "Последний раз держал ключи у двери",
+            "event_time": "2026-09-10T17:10:00Z",
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": [],
+        },
+    )
+    reconstruction_known = apply_command(reconstruction_with_free_account, known_statement)
+    unknown_statement = _command(
+        reconstruction_known,
+        "add_statement",
+        command_id="cmd-timeline-unknown",
+        now="2026-09-10T17:31:06Z",
+        payload={
+            "statement_id": "stmt-timeline-unknown",
+            "source": "user",
+            "statement_type": "observation",
+            "original_text": "Позже заметил, что ключей нет",
+            "event_time": None,
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": ["точное время неизвестно"],
+        },
+    )
+    reconstruction_unknown = apply_command(reconstruction_known, unknown_statement)
+    rebuild_unknowns = _command(
+        reconstruction_unknown,
+        "rebuild_timeline",
+        command_id="cmd-rebuild-unknowns",
+        now="2026-09-10T17:31:07Z",
+        payload={
+            "events": [
+                {
+                    "id": "event-last-supported",
+                    "label": "Последний подтверждённый контакт с ключами",
+                    "statement_ids": ["stmt-timeline-known"],
+                    "event_time": "2026-09-10T17:10:00Z",
+                    "time_precision": "approximate",
+                }
+            ],
+            "last_supported_interaction_id": "stmt-timeline-known",
+            "first_noticed_missing_id": None,
+        },
+    )
+    vectors.append(
+        _vector(
+            "reconstruction_rebuild_timeline_unknowns",
+            "command",
+            {"case": reconstruction_unknown, "command": rebuild_unknowns},
+        )
+    )
+    reconstruction_with_timeline = apply_command(reconstruction_unknown, rebuild_unknowns)
+
+    contradiction_last = _command(
+        reconstruction_with_free_account,
+        "add_statement",
+        command_id="cmd-contradiction-last",
+        now="2026-09-10T17:31:08Z",
+        payload={
+            "statement_id": "stmt-contradiction-last",
+            "source": "user",
+            "statement_type": "recollection",
+            "original_text": "Последний контакт был позже",
+            "event_time": "2026-09-10T17:20:00Z",
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": [],
+        },
+    )
+    contradiction_case = apply_command(reconstruction_with_free_account, contradiction_last)
+    contradiction_missing = _command(
+        contradiction_case,
+        "add_statement",
+        command_id="cmd-contradiction-missing",
+        now="2026-09-10T17:31:09Z",
+        payload={
+            "statement_id": "stmt-contradiction-missing",
+            "source": "user",
+            "statement_type": "observation",
+            "original_text": "Пропажу заметил раньше",
+            "event_time": "2026-09-10T17:15:00Z",
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": [],
+        },
+    )
+    contradiction_case = apply_command(contradiction_case, contradiction_missing)
+    rebuild_contradiction = _command(
+        contradiction_case,
+        "rebuild_timeline",
+        command_id="cmd-rebuild-contradiction",
+        now="2026-09-10T17:31:10Z",
+        payload={
+            "events": [],
+            "last_supported_interaction_id": "stmt-contradiction-last",
+            "first_noticed_missing_id": "stmt-contradiction-missing",
+        },
+    )
+    vectors.append(
+        _vector(
+            "reconstruction_rebuild_timeline_contradiction",
+            "command",
+            {"case": contradiction_case, "command": rebuild_contradiction},
+        )
+    )
+
+    transition_to_search = _command(
+        reconstruction_with_timeline,
+        "set_mode",
+        command_id="cmd-reconstruction-to-search",
+        now="2026-09-10T17:31:11Z",
+        payload={"mode": "search"},
+    )
+    vectors.append(
+        _vector(
+            "reconstruction_transition_to_search_preserves_evidence",
+            "command",
+            {"case": reconstruction_with_timeline, "command": transition_to_search},
+        )
+    )
+
     reconstruction_statement = _command(
         reconstruction,
         "add_statement",
