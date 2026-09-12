@@ -4,6 +4,9 @@ from dataclasses import replace
 
 from .case import Case, CaseError, CaseLifecycle
 from .planner import CandidateCheck, select_next_action
+from .portable_intrinsics import PortableKernelError
+from .portable_kernel import set_timeline_json
+from .store import case_from_dict, case_to_dict
 from .timeline import Timeline
 
 
@@ -17,9 +20,29 @@ def _ensure_mutable(case: Case) -> None:
 
 
 def set_timeline(case: Case, timeline: Timeline, now: str) -> Case:
-    """Apply plugin-only reconstruction timeline state outside the portable Web contract."""
-    _ensure_mutable(case)
-    return replace(case, timeline=timeline, updated_at=now)
+    """Compatibility adapter that delegates timeline truth to portable semantics."""
+    event_payloads = [
+        {
+            "id": event.id,
+            "label": event.label,
+            "statement_ids": list(event.statement_ids),
+            "event_time": event.event_time,
+            "time_precision": event.time_precision,
+        }
+        for event in timeline.events
+    ]
+    try:
+        return case_from_dict(
+            set_timeline_json(
+                case_to_dict(case),
+                event_payloads,
+                timeline.last_supported_interaction_id,
+                timeline.first_noticed_missing_id,
+                now,
+            )
+        )
+    except PortableKernelError as exc:
+        raise CaseError(exc.code, str(exc)) from exc
 
 
 def replace_candidates(
