@@ -40,6 +40,17 @@ export interface TimelineV2 {
   contradictions: string[]
 }
 
+export type RecordFreeAccountPayload = {
+  entry_id: string
+  text: string
+}
+
+export type RebuildTimelinePayload = {
+  events: TimelineEventV2[]
+  last_supported_interaction_id: string | null
+  first_noticed_missing_id: string | null
+}
+
 export interface SearchCheckV2 {
   id: string
   target: string
@@ -111,7 +122,7 @@ export interface CaseV2 {
 export interface CommandEnvelope {
   command_id: string
   expected_updated_at: string
-  command_type: 'set_mode' | 'add_statement' | 'record_search_check' | 'refine_search_check' | 'reject_next_action' | 'pause' | 'resume' | 'close_found' | 'close_unresolved'
+  command_type: 'set_mode' | 'add_statement' | 'record_free_account' | 'rebuild_timeline' | 'record_search_check' | 'refine_search_check' | 'reject_next_action' | 'pause' | 'resume' | 'close_found' | 'close_unresolved'
   now: string
   payload: Record<string, unknown>
 }
