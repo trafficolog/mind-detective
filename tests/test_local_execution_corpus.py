@@ -57,6 +57,11 @@ class LocalExecutionCorpusTests(unittest.TestCase):
             "planner-effort",
             "planner-id-unicode",
             "planner-unsafe-excluded",
+            "reconstruction_record_free_account",
+            "reconstruction_statement_requires_free_account",
+            "reconstruction_rebuild_timeline_unknowns",
+            "reconstruction_rebuild_timeline_contradiction",
+            "reconstruction_transition_to_search_preserves_evidence",
         }
         self.assertTrue(required_ids <= ids)
 
