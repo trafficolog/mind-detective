@@ -39,7 +39,7 @@ def build_timeline(
         }
         for statement in statements
     ]
-    event_payloads = [
+    event_payloads: list[dict[str, object]] = [
         {
             "id": event.id,
             "label": event.label,
