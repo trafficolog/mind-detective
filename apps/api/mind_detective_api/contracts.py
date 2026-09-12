@@ -5,6 +5,14 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
+ProposalCopyKey = Literal[
+    "reconstruction.clarify_supported_sequence",
+    "next_action.check_target",
+    "empty.resolve_partial_check",
+    "empty.add_supported_place_or_reconstruct",
+]
+
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -50,7 +58,7 @@ class ProposalModel(StrictModel):
     kind: Literal["next_action", "clarification", "need_more_information", "fallback"]
     candidate_id: str | None = None
     target: str | None = None
-    copy_key: str = Field(min_length=1)
+    copy_key: ProposalCopyKey
     rationale_codes: list[str] = Field(default_factory=list)
     related_statement_ids: list[str] = Field(default_factory=list)
 

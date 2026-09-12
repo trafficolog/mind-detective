@@ -18,6 +18,9 @@ export default defineNuxtConfig({
       link: [
         { rel: 'manifest', href: '/manifest.webmanifest' },
         { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' },
+        { rel: 'icon', href: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+        { rel: 'icon', href: '/icon-512.png', type: 'image/png', sizes: '512x512' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png', sizes: '180x180' },
       ],
     },
   },
@@ -32,9 +35,9 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: false,
-    includeAssets: ['icon.svg'],
+    includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
     workbox: {
-      globPatterns: ['**/*.{js,css,html,svg}'],
+      globPatterns: ['**/*.{js,css,html,svg,png}'],
       globIgnores: ['200.html', '404.html'],
       runtimeCaching: [],
       navigateFallback: '/',

@@ -6,6 +6,11 @@ export type SearchMethod = 'reported_check' | 'glance' | 'visual_systematic' | '
 export type SearchResult = 'found' | 'not_found' | 'partial' | 'inaccessible'
 export type CheckState = 'unchecked' | 'partial' | 'checked'
 export type ExperimentalArm = 'checklist' | 'assistant'
+export type ProposalCopyKey =
+  | 'reconstruction.clarify_supported_sequence'
+  | 'next_action.check_target'
+  | 'empty.resolve_partial_check'
+  | 'empty.add_supported_place_or_reconstruct'
 
 export interface StatementV2 {
   id: string
@@ -115,7 +120,7 @@ export interface ProposalModel {
   kind: 'next_action' | 'clarification' | 'need_more_information' | 'fallback'
   candidate_id: string | null
   target: string | null
-  copy_key: string
+  copy_key: ProposalCopyKey
   rationale_codes: string[]
   related_statement_ids: string[]
 }
