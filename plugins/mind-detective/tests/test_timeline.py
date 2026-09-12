@@ -61,6 +61,17 @@ class TimelineTests(unittest.TestCase):
         self.assertIn("MD_TIME_ORDER_CONTRADICTION", timeline.contradictions)
 
     def test_explicit_events_are_preserved_only_as_supplied(self):
+        statement = create_statement(
+            statement_id="s1",
+            source=StatementSource.USER,
+            statement_type=StatementType.RECOLLECTION,
+            original_text="Вошёл на кухню.",
+            recorded_at="2026-09-09T18:00:00Z",
+            event_time="2026-09-09T18:10:00Z",
+            user_confirmation=True,
+            supporting_evidence_ids=(),
+            limitations=(),
+        )
         event = TimelineEvent(
             id="e1",
             label="entered kitchen",
@@ -68,5 +79,9 @@ class TimelineTests(unittest.TestCase):
             event_time="2026-09-09T18:10:00Z",
             time_precision="minute",
         )
-        timeline = build_timeline([], [event], None, None)
+        timeline = build_timeline([statement], [event], None, None)
         self.assertEqual(timeline.events, (event,))
+
+
+if __name__ == "__main__":
+    unittest.main()
