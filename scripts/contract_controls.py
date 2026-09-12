@@ -13,6 +13,7 @@ _TS_TEST_RE = re.compile(
     re.DOTALL,
 )
 _WEB_SOURCE_SUFFIXES = {".ts", ".tsx", ".vue"}
+_SEMANTIC_REVIEW_PROTOCOL = "docs/evaluation/SEMANTIC_SCENARIO_REVIEW.md"
 
 
 def collect_requirement_ids(path: Path) -> tuple[set[str], set[str]]:
@@ -241,10 +242,26 @@ def validate_contract_matrix(root: Path) -> list[str]:
     return errors
 
 
+def _validate_semantic_governance(data: dict[str, Any]) -> list[str]:
+    governance = data.get("semantic_validation")
+    if not isinstance(governance, dict):
+        return ["MD_EVAL_SEMANTIC_GOVERNANCE"]
+
+    errors: list[str] = []
+    if governance.get("automated_runner") is not False:
+        errors.append("MD_EVAL_SEMANTIC_AUTOMATION_UNAVAILABLE")
+    if governance.get("mode") != "manual":
+        errors.append("MD_EVAL_SEMANTIC_MODE")
+    if governance.get("protocol") != _SEMANTIC_REVIEW_PROTOCOL:
+        errors.append("MD_EVAL_SEMANTIC_PROTOCOL")
+    return errors
+
+
 def validate_eval_data(data: dict[str, Any], registry: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if data.get("schema_version") != 2:
         errors.append("MD_EVAL_SCHEMA_VERSION")
+    errors.extend(_validate_semantic_governance(data))
     known_tokens = set(registry.get("tokens", []))
     known_outcomes = set(registry.get("outcomes", []))
     known_routes = set(registry.get("routes", []))
@@ -292,4 +309,9 @@ def validate_eval_files(root: Path) -> list[str]:
         data = _load_json_object(root / "plugins/mind-detective/evals/scenarios.json")
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         return [f"MD_EVAL_JSON:{exc.__class__.__name__}"]
-    return validate_eval_data(data, registry)
+    errors = validate_eval_data(data, registry)
+    governance = data.get("semantic_validation")
+    if isinstance(governance, dict) and governance.get("protocol") == _SEMANTIC_REVIEW_PROTOCOL:
+        if not (root / _SEMANTIC_REVIEW_PROTOCOL).is_file():
+            errors.append("MD_EVAL_SEMANTIC_PROTOCOL_PATH")
+    return errors

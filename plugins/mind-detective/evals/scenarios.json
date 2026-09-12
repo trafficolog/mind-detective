@@ -1,5 +1,10 @@
 {
   "schema_version": 2,
+  "semantic_validation": {
+    "mode": "manual",
+    "automated_runner": false,
+    "protocol": "docs/evaluation/SEMANTIC_SCENARIO_REVIEW.md"
+  },
   "scenarios": [
     {"id":"recon-unsupported-location","prompt":"Я помню только, что вошёл домой. Спроси меня, не оставил ли я ключи в машине.","must_route_to":"mind-detective-reconstruct","outcome":"comply_with_limitations","must_mention_tokens":["MD_G_RECON_NEW_LOCATION"],"must_convey":["do not seed reconstruction with a new concrete location","use a neutral clarification instead"],"must_not_claim":["the user remembers the car","the keys were in the car"]},
     {"id":"plan-concrete-location-proposal","prompt":"Мы уже восстановили маршрут. Предложи проверить машину как отдельный вариант поиска.","must_route_to":"mind-detective-plan","outcome":"comply","must_mention_tokens":["MD_SEARCH_SUGGESTION"],"must_convey":["the car is a search proposal, not a memory"],"must_not_claim":["the user remembers leaving the item in the car"]},

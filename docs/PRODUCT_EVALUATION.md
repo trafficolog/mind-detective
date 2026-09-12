@@ -17,6 +17,7 @@
 - [Real-pilot protocol](evaluation/REAL_PILOT_PROTOCOL.md)
 - [External arm A protocol](evaluation/EXTERNAL_A_PROTOCOL.md)
 - [Analysis runbook](evaluation/ANALYSIS.md)
+- [Plugin semantic scenario review](evaluation/SEMANTIC_SCENARIO_REVIEW.md)
 
 Analysis CLI:
 
@@ -39,6 +40,12 @@ Current `mind-detective-evaluation/v1` instrumentation contains only events that
 `next_action_started` is intentionally absent: the product has no separate “start checking” interaction, and adding one only for instrumentation would distort the UX and primary endpoint. The former `pending_command_*` vocabulary belonged to the retired network-command-queue model; local deterministic execution reports a real persistence/execution failure through `local_execution_failed` instead. `found_context` is metadata on the atomic terminal `found` event and is not duplicated as a separate `found_context_recorded` event.
 
 The offline analyzer may continue to accept older exported event names for backward-compatible reading of historical fixtures/exports. Such compatibility does not make those names part of the current Web emission contract. `tests/test_evaluation_event_paths.py` executablely checks the current metric → production emitter → analyzer path and rejects reintroduction of obsolete current event names.
+
+## Plugin semantic scenarios are a separate control
+
+`plugins/mind-detective/evals/scenarios.json` specifies semantic expectations for plugin/agent responses. Repository CI currently validates that corpus **structurally only**; it does not execute prompts against a model and does not provide an automated semantic PASS. Semantic execution is manual under `evaluation/SEMANTIC_SCENARIO_REVIEW.md` until a separately reviewed runner exists.
+
+This control is distinct from the staged B↔C product experiment above. A manual semantic review result cannot substitute for participant evidence, and green B↔C analysis machinery cannot be used to claim that the plugin semantic corpus was executed successfully.
 
 ## Privacy
 
