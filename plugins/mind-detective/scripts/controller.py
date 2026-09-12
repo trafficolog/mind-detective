@@ -1,11 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import replace
-
-from .case import Case, CaseError, CaseLifecycle
+from .case import Case, CaseError
 from .feedback import ActionFeedback
 from .journal import InteractionMode, JournalAuthor, JournalEntry
-from .planner import CandidateCheck, select_next_action
+from .planner import CandidateCheck
+from .plugin_reducer import (
+    mark_deleted as reduce_mark_deleted,
+    refresh_next_action as reduce_refresh_next_action,
+    replace_candidates as reduce_replace_candidates,
+    set_constraints as reduce_set_constraints,
+    set_timeline as reduce_set_timeline,
+)
 from .portable_intrinsics import PortableKernelError
 from .portable_kernel import (
     add_statement_json,
@@ -46,14 +51,6 @@ class CaseController:
             return self._from_portable(create_case(case_id, item_label, now))
         except PortableKernelError as exc:
             raise self._case_error(exc) from exc
-
-    def _ensure_mutable(self, case: Case) -> None:
-        if case.lifecycle in {
-            CaseLifecycle.CLOSED_FOUND,
-            CaseLifecycle.CLOSED_UNRESOLVED,
-            CaseLifecycle.DELETED,
-        }:
-            raise CaseError("MD_CASE_TERMINAL", f"case is terminal: {case.lifecycle.value}")
 
     def set_mode(self, case: Case, mode: InteractionMode, now: str) -> Case:
         try:
@@ -114,8 +111,7 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def set_timeline(self, case: Case, timeline: Timeline, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, timeline=timeline, updated_at=now)
+        return reduce_set_timeline(case, timeline, now)
 
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
         check_payload: dict[str, object] = {
@@ -168,16 +164,13 @@ class CaseController:
         candidates: tuple[CandidateCheck, ...],
         now: str,
     ) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, candidates=tuple(candidates), updated_at=now)
+        return reduce_replace_candidates(case, candidates, now)
 
     def refresh_next_action(self, case: Case, now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, next_action=select_next_action(list(case.candidates)), updated_at=now)
+        return reduce_refresh_next_action(case, now)
 
     def set_constraints(self, case: Case, constraints: tuple[str, ...], now: str) -> Case:
-        self._ensure_mutable(case)
-        return replace(case, constraints=tuple(constraints), updated_at=now)
+        return reduce_set_constraints(case, constraints, now)
 
     def pause(self, case: Case, now: str) -> Case:
         try:
@@ -214,6 +207,4 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def mark_deleted(self, case: Case, now: str) -> Case:
-        if case.lifecycle is CaseLifecycle.DELETED:
-            raise CaseError("MD_CASE_TERMINAL", "case is already deleted")
-        return replace(case, lifecycle=CaseLifecycle.DELETED, updated_at=now)
+        return reduce_mark_deleted(case, now)
