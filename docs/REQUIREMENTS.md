@@ -54,6 +54,21 @@ Web/PWA реализует физический Search/checklist surface. Пол
 - `MD-WEB-REQ-PRIVACY-01` — local persistence отделена от transient minimum-context processing через LiteLLM/provider; server secrets отсутствуют в client bundle. **Status: active.**
 - `MD-WEB-REQ-RELEASE-01` — publication идёт только через hardened publisher после exact-main CI и human-approved full 40-hex SHA. **Status: active.**
 
+## Web Reconstruction Foundation 0.4.0
+
+Следующие контракты зарезервированы для Web Reconstruction 0.4.0. До появления production path и exact selector они остаются `planned`; Task 8 переводит их в `active` только после реализации и проверок.
+
+- `MD-WEB-REQ-RECONSTRUCT-01` — raw free account предшествует detailed reconstruction statements. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-02` — recollection/habit/observation в Web имеют user provenance и остаются user-originated/user-confirmed. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-03` — reconstruction не вводит неподдержанные concrete locations как cues. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-04` — unknown intervals и contradictions сохраняются и отображаются канонически. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-05` — timeline mutation выполняется через portable authoritative semantics и generated Web execution. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-06` — raw account, structured evidence, derived uncertainty, proposals и Search семантически и визуально различимы. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-07` — переход reconstruction → Search явный и не повышает evidence status. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-08` — deterministic reconstruction работает offline после PWA preload. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-09` — RU/EN reconstruction copy имеет exact key parity и эквивалентную safety/privacy semantics. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-10` — Case v2 export/import сохраняет reconstruction state без server validation dependency. **Status: planned for 0.4.0.**
+
 ## Offline deterministic execution 0.3.0
 
 - `MD-OFFLINE-REQ-KERNEL-01` — portable kernel имеет exact versioned contract и JSON-compatible observable surface. **Status: active.**

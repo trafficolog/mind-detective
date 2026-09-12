@@ -54,6 +54,10 @@ OFFLINE_REQUIREMENTS = {
     "MD-OFFLINE-REQ-RELEASE-01",
 }
 
+RECONSTRUCTION_REQUIREMENTS = {
+    f"MD-WEB-REQ-RECONSTRUCT-{index:02d}" for index in range(1, 11)
+}
+
 
 class ContractMatrixTests(unittest.TestCase):
     def test_exact_selector_exists_for_real_unittest_method(self):
@@ -102,6 +106,21 @@ class ContractMatrixTests(unittest.TestCase):
         ids, duplicates = collect_requirement_ids(ROOT / "docs/REQUIREMENTS.md")
         self.assertEqual(duplicates, set())
         self.assertTrue(OFFLINE_REQUIREMENTS.issubset(ids))
+
+    def test_repository_declares_planned_reconstruction_requirements(self):
+        ids, duplicates = collect_requirement_ids(ROOT / "docs/REQUIREMENTS.md")
+        self.assertEqual(duplicates, set())
+        self.assertTrue(RECONSTRUCTION_REQUIREMENTS.issubset(ids))
+
+        matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))
+        rows = {
+            row["requirement_id"]: row
+            for row in matrix["entries"]
+            if row["requirement_id"] in RECONSTRUCTION_REQUIREMENTS
+        }
+        self.assertEqual(set(rows), RECONSTRUCTION_REQUIREMENTS)
+        self.assertTrue(all(row["status"] == "planned" for row in rows.values()))
+        self.assertTrue(all("test" not in row and "helper" not in row for row in rows.values()))
 
     def test_privacy_requirement_is_active_and_exactly_traced(self):
         matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))
