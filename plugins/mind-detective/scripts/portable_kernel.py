@@ -28,6 +28,35 @@ _FEEDBACK_REASONS = frozenset(
 _FORBIDDEN_KEYS = frozenset(
     {"probability", "pod", "belief_weight", "posterior", "prior_probability"}
 )
+_LEAP_SUFFIXES = frozenset(
+    {
+        "00",
+        "04",
+        "08",
+        "12",
+        "16",
+        "20",
+        "24",
+        "28",
+        "32",
+        "36",
+        "40",
+        "44",
+        "48",
+        "52",
+        "56",
+        "60",
+        "64",
+        "68",
+        "72",
+        "76",
+        "80",
+        "84",
+        "88",
+        "92",
+        "96",
+    }
+)
 _ALLOWED_PAYLOAD_KEYS: dict[str, frozenset[str]] = {
     "set_mode": frozenset({"mode"}),
     "record_free_account": frozenset({"entry_id", "text"}),
@@ -42,6 +71,9 @@ _ALLOWED_PAYLOAD_KEYS: dict[str, frozenset[str]] = {
             "supporting_evidence_ids",
             "limitations",
         }
+    ),
+    "rebuild_timeline": frozenset(
+        {"events", "last_supported_interaction_id", "first_noticed_missing_id"}
     ),
     "record_search_check": frozenset(
         {
@@ -105,6 +137,15 @@ def _optional_str(data: dict[str, object], key: str) -> str | None:
         return None
     if not isinstance(value, str):
         portable_error("MD_WEB_COMMAND_PAYLOAD", f"{key} must be a string or null")
+    return value
+
+
+def _optional_nonempty_str(data: dict[str, object], key: str) -> str | None:
+    value = data.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", f"{key} must be a non-empty string or null")
     return value
 
 
@@ -285,6 +326,331 @@ def add_statement_json(
     statements = _as_list(result["statements"], "statements")
     statements.append(clone_json(statement))
     return result
+
+
+def _times_ten(value: int) -> int:
+    return value + value + value + value + value + value + value + value + value + value
+
+
+def _times_sixty(value: int) -> int:
+    ten = _times_ten(value)
+    return ten + ten + ten + ten + ten + ten
+
+
+def _digit_value(value: str) -> int | None:
+    if value == "0":
+        return 0
+    if value == "1":
+        return 1
+    if value == "2":
+        return 2
+    if value == "3":
+        return 3
+    if value == "4":
+        return 4
+    if value == "5":
+        return 5
+    if value == "6":
+        return 6
+    if value == "7":
+        return 7
+    if value == "8":
+        return 8
+    if value == "9":
+        return 9
+    return None
+
+
+def _decimal_two(value: str) -> int | None:
+    first = _digit_value(value[0:1])
+    second = _digit_value(value[1:2])
+    if first is None or second is None or value[2:] != "":
+        return None
+    return _times_ten(first) + second
+
+
+def _decimal_four(value: str) -> int | None:
+    first = _digit_value(value[0:1])
+    second = _digit_value(value[1:2])
+    third = _digit_value(value[2:3])
+    fourth = _digit_value(value[3:4])
+    if first is None or second is None or third is None or fourth is None or value[4:] != "":
+        return None
+    result = _times_ten(first) + second
+    result = _times_ten(result) + third
+    return _times_ten(result) + fourth
+
+
+def _is_leap_year(year_text: str) -> bool:
+    suffix = year_text[2:4]
+    if suffix not in _LEAP_SUFFIXES:
+        return False
+    if suffix != "00":
+        return True
+    return year_text[0:2] in _LEAP_SUFFIXES
+
+
+def _days_in_month(month: int, leap_year: bool) -> int:
+    if month in {1, 3, 5, 7, 8, 10, 12}:
+        return 31
+    if month in {4, 6, 9, 11}:
+        return 30
+    if month == 2 and leap_year:
+        return 29
+    if month == 2:
+        return 28
+    return 0
+
+
+def _timestamp_parts(value: str) -> list[int] | None:
+    if (
+        value[4:5] != "-"
+        or value[7:8] != "-"
+        or value[10:11] not in {"T", " "}
+        or value[13:14] != ":"
+        or value[16:17] != ":"
+    ):
+        return None
+    year_text = value[0:4]
+    year = _decimal_four(year_text)
+    month = _decimal_two(value[5:7])
+    day = _decimal_two(value[8:10])
+    hour = _decimal_two(value[11:13])
+    minute = _decimal_two(value[14:16])
+    second = _decimal_two(value[17:19])
+    if (
+        year is None
+        or month is None
+        or day is None
+        or hour is None
+        or minute is None
+        or second is None
+    ):
+        return None
+    leap_year = _is_leap_year(year_text)
+    days_in_month = _days_in_month(month, leap_year)
+    if (
+        month < 1
+        or month > 12
+        or day < 1
+        or day > days_in_month
+        or hour < 0
+        or hour > 23
+        or minute < 0
+        or minute > 59
+        or second < 0
+        or second > 59
+    ):
+        return None
+
+    suffix = value[19:]
+    offset_minutes = 0
+    offset_sign = "+"
+    if suffix not in {"", "Z"}:
+        offset_sign = suffix[0:1]
+        offset_hour = _decimal_two(suffix[1:3])
+        offset_minute = _decimal_two(suffix[4:6])
+        if (
+            offset_sign not in {"+", "-"}
+            or suffix[3:4] != ":"
+            or suffix[6:] != ""
+            or offset_hour is None
+            or offset_minute is None
+            or offset_hour > 23
+            or offset_minute > 59
+        ):
+            return None
+        offset_minutes = _times_sixty(offset_hour) + offset_minute
+
+    utc_minutes = _times_sixty(hour) + minute
+    if suffix not in {"", "Z"}:
+        if offset_sign == "+":
+            utc_minutes = utc_minutes - offset_minutes
+        else:
+            utc_minutes = utc_minutes + offset_minutes
+
+    day_shift = 0
+    if utc_minutes < 0:
+        utc_minutes = utc_minutes + 1440
+        day_shift = -1
+    if utc_minutes >= 1440:
+        utc_minutes = utc_minutes - 1440
+        day_shift = 1
+
+    if day_shift > 0:
+        if day < days_in_month:
+            day = day + 1
+        elif month < 12:
+            month = month + 1
+            day = 1
+        else:
+            year = year + 1
+            month = 1
+            day = 1
+    if day_shift < 0:
+        if day > 1:
+            day = day - 1
+        elif month > 1:
+            month = month - 1
+            day = _days_in_month(month, leap_year)
+        else:
+            year = year - 1
+            month = 12
+            day = 31
+
+    return [year, month, day, utc_minutes, second]
+
+
+def _compare_timestamps(left: str, right: str) -> int | None:
+    left_parts = _timestamp_parts(left)
+    right_parts = _timestamp_parts(right)
+    if left_parts is None or right_parts is None:
+        return None
+    for index in (0, 1, 2, 3, 4):
+        if left_parts[index] < right_parts[index]:
+            return -1
+        if left_parts[index] > right_parts[index]:
+            return 1
+    return 0
+
+
+def _append_unique(items: list[str], value: str) -> None:
+    if value not in items:
+        items.append(value)
+
+
+def derive_timeline_json(
+    statements: list[object],
+    events: list[dict[str, object]],
+    last_supported_interaction_id: str | None,
+    first_noticed_missing_id: str | None,
+) -> dict[str, object]:
+    by_id: dict[str, dict[str, object]] = {}
+    normalized_statements: list[dict[str, object]] = []
+    for raw in statements:
+        statement = _as_dict(raw, "statement")
+        statement_id = _required_str(statement, "id")
+        by_id[statement_id] = statement
+        normalized_statements.append(statement)
+
+    normalized_events: list[dict[str, object]] = []
+    event_ids: set[str] = set()
+    for raw_event in events:
+        event = _as_dict(raw_event, "timeline_event")
+        event_id = _required_str(event, "id")
+        if event_id in event_ids:
+            portable_error(
+                "MD_RECON_TIMELINE_EVENT_DUPLICATE",
+                f"duplicate timeline event id: {event_id}",
+            )
+        event_ids.add(event_id)
+        statement_ids = _string_list(event, "statement_ids")
+        for statement_id in statement_ids:
+            if statement_id not in by_id:
+                portable_error(
+                    "MD_RECON_STATEMENT_NOT_FOUND",
+                    f"timeline statement not found: {statement_id}",
+                )
+        normalized_events.append(
+            {
+                "id": event_id,
+                "label": _required_str(event, "label"),
+                "statement_ids": statement_ids,
+                "event_time": _optional_str(event, "event_time"),
+                "time_precision": _required_str(event, "time_precision"),
+            }
+        )
+
+    unknown_intervals: list[str] = []
+    for statement in normalized_statements:
+        if statement.get("event_time") is None:
+            for limitation in _string_list(statement, "limitations"):
+                unknown_intervals.append(
+                    f"statement:{_required_str(statement, 'id')}:{limitation}"
+                )
+
+    contradictions: list[str] = []
+    if (
+        last_supported_interaction_id is not None
+        and last_supported_interaction_id not in by_id
+    ):
+        _append_unique(contradictions, "MD_TIME_REFERENCE_MISSING")
+    if first_noticed_missing_id is not None and first_noticed_missing_id not in by_id:
+        _append_unique(contradictions, "MD_TIME_REFERENCE_MISSING")
+
+    if (
+        last_supported_interaction_id is not None
+        and first_noticed_missing_id is not None
+        and last_supported_interaction_id in by_id
+        and first_noticed_missing_id in by_id
+    ):
+        last = by_id[last_supported_interaction_id]
+        missing = by_id[first_noticed_missing_id]
+        last_time = last.get("event_time")
+        missing_time = missing.get("event_time")
+        if last_time is not None and missing_time is not None:
+            if not isinstance(last_time, str) or not isinstance(missing_time, str):
+                _append_unique(contradictions, "MD_TIME_INVALID_TIMESTAMP")
+            else:
+                ordering = _compare_timestamps(last_time, missing_time)
+                if ordering is None:
+                    _append_unique(contradictions, "MD_TIME_INVALID_TIMESTAMP")
+                elif ordering > 0:
+                    _append_unique(contradictions, "MD_TIME_ORDER_CONTRADICTION")
+
+    return {
+        "last_supported_interaction_id": last_supported_interaction_id,
+        "first_noticed_missing_id": first_noticed_missing_id,
+        "events": normalized_events,
+        "unknown_intervals": unknown_intervals,
+        "contradictions": contradictions,
+    }
+
+
+def set_timeline_json(
+    case: dict[str, object],
+    events: list[dict[str, object]],
+    last_supported_interaction_id: str | None,
+    first_noticed_missing_id: str | None,
+    now: str,
+) -> dict[str, object]:
+    _ensure_case_shape(case)
+    timeline = derive_timeline_json(
+        _as_list(case["statements"], "statements"),
+        events,
+        last_supported_interaction_id,
+        first_noticed_missing_id,
+    )
+    result = _primitive_copy(case, now)
+    result["timeline"] = timeline
+    return result
+
+
+def rebuild_timeline_json(
+    case: dict[str, object],
+    events: list[dict[str, object]],
+    last_supported_interaction_id: str | None,
+    first_noticed_missing_id: str | None,
+    now: str,
+) -> dict[str, object]:
+    _ensure_case_shape(case)
+    _ensure_mutable(case)
+    if _required_str(case, "lifecycle") != "active":
+        portable_error("MD_CASE_STATE", "timeline rebuild requires an active case")
+    if _required_str(case, "current_mode") != "reconstruction":
+        portable_error("MD_RECON_MODE_REQUIRED", "timeline rebuild requires reconstruction mode")
+    if not has_free_account_json(case):
+        portable_error(
+            "MD_RECON_FREE_ACCOUNT_REQUIRED",
+            "record a free account before rebuilding the reconstruction timeline",
+        )
+    return set_timeline_json(
+        case,
+        events,
+        last_supported_interaction_id,
+        first_noticed_missing_id,
+        now,
+    )
 
 
 def _candidate_state_for_check(check: dict[str, object]) -> str:
@@ -554,6 +920,17 @@ def apply_command(
             ),
             now,
         )
+    if command_type == "rebuild_timeline":
+        events: list[dict[str, object]] = []
+        for raw_event in _as_list(payload.get("events", []), "events"):
+            events.append(_as_dict(raw_event, "timeline_event"))
+        return rebuild_timeline_json(
+            case,
+            events,
+            _optional_nonempty_str(payload, "last_supported_interaction_id"),
+            _optional_nonempty_str(payload, "first_noticed_missing_id"),
+            now,
+        )
     if command_type == "record_search_check":
         mode = _journal_mode(case)
         check = _check_from_payload(payload, now)
@@ -757,8 +1134,10 @@ __all__ = [
     "close_found_json",
     "close_unresolved_json",
     "create_case",
+    "derive_timeline_json",
     "has_free_account_json",
     "pause_json",
+    "rebuild_timeline_json",
     "record_action_feedback_json",
     "record_free_account_json",
     "record_search_check_json",
@@ -766,4 +1145,5 @@ __all__ = [
     "resume_json",
     "select_next_action_json",
     "set_mode_json",
+    "set_timeline_json",
 ]
