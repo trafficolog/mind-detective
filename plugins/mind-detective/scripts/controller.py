@@ -20,6 +20,7 @@ from .portable_kernel import (
     create_case,
     pause_json,
     record_action_feedback_json,
+    record_free_account_json,
     record_search_check_json,
     refine_search_check_json,
     resume_json,
@@ -55,6 +56,21 @@ class CaseController:
     def set_mode(self, case: Case, mode: InteractionMode, now: str) -> Case:
         try:
             return self._from_portable(set_mode_json(case_to_dict(case), mode.value, now))
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
+
+    def record_free_account(
+        self,
+        case: Case,
+        entry_id: str,
+        text: str,
+        now: str,
+    ) -> Case:
+        self._enforce_safe_ingress(text)
+        try:
+            return self._from_portable(
+                record_free_account_json(case_to_dict(case), entry_id, text, now)
+            )
         except PortableKernelError as exc:
             raise self._case_error(exc) from exc
 

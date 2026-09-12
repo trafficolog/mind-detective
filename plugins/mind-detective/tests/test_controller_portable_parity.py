@@ -14,6 +14,7 @@ from scripts.portable_kernel import (  # noqa: E402
     close_found_json,
     pause_json,
     record_action_feedback_json,
+    record_free_account_json,
     resume_json,
     set_mode_json,
 )
@@ -28,6 +29,32 @@ class ControllerPortableParityTests(unittest.TestCase):
     def test_set_mode_matches_portable_primitive(self):
         typed = self.controller.set_mode(self.case, InteractionMode.SEARCH, "2026-09-10T18:01:00Z")
         portable = set_mode_json(case_to_dict(self.case), "search", "2026-09-10T18:01:00Z")
+        self.assertEqual(case_to_dict(typed), portable)
+
+    def test_free_account_matches_portable_primitive(self):
+        typed_reconstruction = self.controller.set_mode(
+            self.case,
+            InteractionMode.RECONSTRUCTION,
+            "2026-09-10T18:01:00Z",
+        )
+        portable_reconstruction = set_mode_json(
+            case_to_dict(self.case),
+            "reconstruction",
+            "2026-09-10T18:01:00Z",
+        )
+        text = "Я пришёл домой и положил ключи, но не помню куда."
+        typed = self.controller.record_free_account(
+            typed_reconstruction,
+            "free-1",
+            text,
+            "2026-09-10T18:02:00Z",
+        )
+        portable = record_free_account_json(
+            portable_reconstruction,
+            "free-1",
+            text,
+            "2026-09-10T18:02:00Z",
+        )
         self.assertEqual(case_to_dict(typed), portable)
 
     def test_lifecycle_matches_portable_primitives(self):

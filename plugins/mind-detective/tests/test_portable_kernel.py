@@ -62,6 +62,175 @@ class PortableKernelTests(unittest.TestCase):
         self.assertEqual(search["current_mode"], "search")
         self.assertEqual(paused["lifecycle"], "paused")
 
+    def test_record_free_account_appends_verbatim_journal_entry_only(self):
+        case = create_case("case-1", "ключи", "2026-09-10T18:00:00Z")
+        reconstruction = apply_command(
+            case,
+            command(
+                "set_mode",
+                command_id="cmd-mode",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "reconstruction"},
+            ),
+        )
+        text = "Я пришёл домой и положил ключи, но не помню куда."
+        result = apply_command(
+            reconstruction,
+            command(
+                "record_free_account",
+                command_id="cmd-free",
+                expected="2026-09-10T18:01:00Z",
+                now="2026-09-10T18:02:00Z",
+                payload={"entry_id": "free-1", "text": text},
+            ),
+        )
+        self.assertEqual(result["statements"], [])
+        self.assertEqual(
+            result["interaction_journal"],
+            [
+                {
+                    "id": "free-1",
+                    "author": "user",
+                    "mode": "reconstruction",
+                    "entry_type": "free_account",
+                    "text": text,
+                    "created_at": "2026-09-10T18:02:00Z",
+                    "statement_ids": [],
+                    "search_check_ids": [],
+                }
+            ],
+        )
+        self.assertEqual(reconstruction["interaction_journal"], [])
+
+    def test_record_free_account_requires_reconstruction_mode(self):
+        unselected = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
+        search = apply_command(
+            unselected,
+            command(
+                "set_mode",
+                command_id="cmd-search",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "search"},
+            ),
+        )
+        for name, case, expected in (
+            ("unselected", unselected, "2026-09-10T18:00:00Z"),
+            ("search", search, "2026-09-10T18:01:00Z"),
+        ):
+            with self.subTest(mode=name):
+                with self.assertRaises(PortableKernelError) as ctx:
+                    apply_command(
+                        case,
+                        command(
+                            "record_free_account",
+                            command_id=f"cmd-free-{name}",
+                            expected=expected,
+                            now="2026-09-10T18:02:00Z",
+                            payload={"entry_id": "free-1", "text": "Свободный рассказ"},
+                        ),
+                    )
+                self.assertEqual(ctx.exception.code, "MD_RECON_MODE_REQUIRED")
+
+    def test_record_free_account_rejects_empty_id_or_text(self):
+        case = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
+        reconstruction = apply_command(
+            case,
+            command(
+                "set_mode",
+                command_id="cmd-mode",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "reconstruction"},
+            ),
+        )
+        for payload in (
+            {"entry_id": "", "text": "Свободный рассказ"},
+            {"entry_id": "free-1", "text": ""},
+        ):
+            with self.subTest(payload=payload):
+                with self.assertRaises(PortableKernelError) as ctx:
+                    apply_command(
+                        reconstruction,
+                        command(
+                            "record_free_account",
+                            command_id="cmd-free",
+                            expected="2026-09-10T18:01:00Z",
+                            now="2026-09-10T18:02:00Z",
+                            payload=payload,
+                        ),
+                    )
+                self.assertEqual(ctx.exception.code, "MD_WEB_COMMAND_PAYLOAD")
+
+    def test_second_distinct_free_account_is_rejected(self):
+        case = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
+        reconstruction = apply_command(
+            case,
+            command(
+                "set_mode",
+                command_id="cmd-mode",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "reconstruction"},
+            ),
+        )
+        first = apply_command(
+            reconstruction,
+            command(
+                "record_free_account",
+                command_id="cmd-free-1",
+                expected="2026-09-10T18:01:00Z",
+                now="2026-09-10T18:02:00Z",
+                payload={"entry_id": "free-1", "text": "Первый рассказ"},
+            ),
+        )
+        with self.assertRaises(PortableKernelError) as ctx:
+            apply_command(
+                first,
+                command(
+                    "record_free_account",
+                    command_id="cmd-free-2",
+                    expected="2026-09-10T18:02:00Z",
+                    now="2026-09-10T18:03:00Z",
+                    payload={"entry_id": "free-2", "text": "Второй рассказ"},
+                ),
+            )
+        self.assertEqual(ctx.exception.code, "MD_RECON_FREE_ACCOUNT_EXISTS")
+        self.assertEqual(len(first["interaction_journal"]), 1)
+
+    def test_reconstruction_statement_requires_free_account(self):
+        case = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
+        reconstruction = apply_command(
+            case,
+            command(
+                "set_mode",
+                command_id="cmd-mode",
+                expected="2026-09-10T18:00:00Z",
+                now="2026-09-10T18:01:00Z",
+                payload={"mode": "reconstruction"},
+            ),
+        )
+        with self.assertRaises(PortableKernelError) as ctx:
+            apply_command(
+                reconstruction,
+                command(
+                    "add_statement",
+                    command_id="cmd-statement",
+                    expected="2026-09-10T18:01:00Z",
+                    now="2026-09-10T18:02:00Z",
+                    payload={
+                        "statement_id": "stmt-1",
+                        "source": "user",
+                        "statement_type": "recollection",
+                        "original_text": "Ключи были в руке у двери",
+                    },
+                ),
+            )
+        self.assertEqual(ctx.exception.code, "MD_RECON_FREE_ACCOUNT_REQUIRED")
+        self.assertEqual(reconstruction["statements"], [])
+        self.assertEqual(reconstruction["interaction_journal"], [])
+
     def test_search_suggestion_creates_exact_user_supported_candidate_and_journal(self):
         case = create_case("case-1", "ключи", "2026-09-10T18:00:00Z")
         case = apply_command(
@@ -123,13 +292,23 @@ class PortableKernelTests(unittest.TestCase):
                 payload={"mode": "reconstruction"},
             ),
         )
+        case = apply_command(
+            case,
+            command(
+                "record_free_account",
+                command_id="cmd-free",
+                expected="2026-09-10T18:01:00Z",
+                now="2026-09-10T18:02:00Z",
+                payload={"entry_id": "free-1", "text": "Сначала свободно вспоминаю эпизод"},
+            ),
+        )
         result = apply_command(
             case,
             command(
                 "add_statement",
                 command_id="cmd-statement",
-                expected="2026-09-10T18:01:00Z",
-                now="2026-09-10T18:02:00Z",
+                expected="2026-09-10T18:02:00Z",
+                now="2026-09-10T18:03:00Z",
                 payload={
                     "statement_id": "stmt-1",
                     "source": "user",
