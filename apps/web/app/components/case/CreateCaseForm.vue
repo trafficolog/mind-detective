@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CaseV2, CommandEnvelope } from '~/lib/api/contracts'
+import type { CaseV2 } from '~/lib/api/contracts'
 import { startEvaluationSessionCase } from '~/lib/eval/store'
 import { safetyCodeForInput } from '~/lib/safety'
 
@@ -41,15 +41,7 @@ async function submit(): Promise<void> {
   const caseId = crypto.randomUUID()
   const now = new Date().toISOString()
   try {
-    const created = await localExecution.createCase(caseId, label, now)
-    const selectSearch: CommandEnvelope = {
-      command_id: crypto.randomUUID(),
-      expected_updated_at: created.updated_at,
-      command_type: 'set_mode',
-      now,
-      payload: { mode: 'search' },
-    }
-    const caseValue = await localExecution.sendCommand(created, selectSearch)
+    const caseValue = await localExecution.createCase(caseId, label, now)
     if (props.evaluationSessionId) {
       await startEvaluationSessionCase(props.evaluationSessionId, caseValue.case_id, now)
     }
