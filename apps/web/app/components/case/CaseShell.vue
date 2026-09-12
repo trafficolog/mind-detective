@@ -10,7 +10,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   checked: []
   reject: []
-  write: []
   journal: []
   found: []
   pause: []
@@ -39,7 +38,13 @@ const emit = defineEmits<{
     </header>
     <div class="case-shell__body">
       <ProgressStrip :case-value="props.caseValue" />
-      <NextActionCard :proposal="proposal" :pending="pending" @checked="emit('checked')" @reject="emit('reject')" />
+      <NextActionCard
+        v-if="props.caseValue.current_mode === 'search'"
+        :proposal="proposal"
+        :pending="pending"
+        @checked="emit('checked')"
+        @reject="emit('reject')"
+      />
       <SearchTargetForm
         v-if="props.caseValue.current_mode === 'search' && props.caseValue.lifecycle === 'active'"
         :pending="pending"
@@ -48,8 +53,6 @@ const emit = defineEmits<{
       <InteractionJournal :entries="props.caseValue.interaction_journal" />
       <InteractionDock
         :pending="pending"
-        :show-write="props.caseValue.current_mode === 'reconstruction'"
-        @write="emit('write')"
         @journal="emit('journal')"
         @found="emit('found')"
       />
