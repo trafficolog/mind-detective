@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from mind_detective_api.runtime_paths import resolve_plugin_root
+from mind_detective_api.runtime_paths import resolve_execution_metadata_path, resolve_plugin_root
 
 
 class RuntimePathTests(unittest.TestCase):
@@ -40,6 +40,31 @@ class RuntimePathTests(unittest.TestCase):
             with patch.dict(os.environ, {}, clear=True):
                 with self.assertRaisesRegex(RuntimeError, "MD_API_PLUGIN_ROOT_NOT_FOUND"):
                     resolve_plugin_root(isolated)
+
+    def test_explicit_execution_metadata_allows_relocated_api(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            metadata = root / "contract" / "localExecution.meta.json"
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text("{}\n", encoding="utf-8")
+            unrelated_api_file = root / "elsewhere" / "installed" / "execution_contract.py"
+            unrelated_api_file.parent.mkdir(parents=True)
+            unrelated_api_file.write_text("# relocated\n", encoding="utf-8")
+
+            with patch.dict(
+                os.environ,
+                {"MIND_DETECTIVE_EXECUTION_METADATA": str(metadata)},
+                clear=False,
+            ):
+                self.assertEqual(
+                    resolve_execution_metadata_path(unrelated_api_file), metadata.resolve()
+                )
+
+    def test_repository_execution_metadata_discovery_has_no_fixed_parent_depth(self):
+        with patch.dict(os.environ, {}, clear=True):
+            resolved = resolve_execution_metadata_path(Path(__file__).resolve())
+        self.assertEqual(resolved.name, "localExecution.meta.json")
+        self.assertTrue(resolved.is_file())
 
 
 if __name__ == "__main__":
