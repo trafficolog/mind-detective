@@ -7,7 +7,6 @@ import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import type { EvalEventName } from '~/lib/eval/contracts'
 import { appendEvalEvent } from '~/lib/eval/log'
 import { finishEvaluationSession } from '~/lib/eval/store'
-import { safetyCodeForInput } from '~/lib/safety'
 
 type FoundContext = 'current_suggested_action' | 'elsewhere_unplanned' | 'after_previous_check' | 'unknown'
 type RefinedMethod = Exclude<SearchMethod, 'reported_check' | 'inaccessible'>
@@ -29,12 +28,10 @@ const busy = ref(false)
 const errorCode = ref<string | null>(null)
 const guardCode = ref<string | null>(null)
 const assistantOfflineFallback = ref(false)
-const showComposer = ref(false)
 const showReject = ref(false)
 const showClose = ref(false)
 const suppressedQualityCheckId = ref<string | null>(null)
 const retryCommandState = shallowRef<RetryableCommand | null>(null)
-const composerText = ref('')
 
 const caseId = computed(() => String(route.params.id || ''))
 const evaluationSession = computed(() => evaluation.session.value)
@@ -122,12 +119,13 @@ function envelope(commandType: CommandEnvelope['command_type'], payload: Record<
 }
 
 async function setLocalProposal(current: CaseV2): Promise<void> {
-  if (current.current_mode === 'unselected') {
+  if (current.current_mode !== 'search') {
     proposal.value = null
     currentProposalId.value = null
+    guardCode.value = null
     return
   }
-  const next = localExecution.checklistProposal(current, current.current_mode)
+  const next = localExecution.checklistProposal(current)
   await trackProposal(current, next)
   guardCode.value = null
 }
@@ -144,7 +142,7 @@ async function useAssistantFallback(current: CaseV2, reasonCode: 'offline' | 'tr
 async function refreshProposal(): Promise<void> {
   const current = caseValue.value
   assistantOfflineFallback.value = false
-  if (!current || current.lifecycle !== 'active' || current.current_mode === 'unselected') {
+  if (!current || current.lifecycle !== 'active' || current.current_mode !== 'search') {
     proposal.value = null
     currentProposalId.value = null
     guardCode.value = null
@@ -166,7 +164,7 @@ async function refreshProposal(): Promise<void> {
       current,
       crypto.randomUUID(),
       new Date().toISOString(),
-      current.current_mode,
+      'search',
       locale.value,
       arm.value,
     )
@@ -226,7 +224,6 @@ async function runCommand(
       proposal.value = null
       currentProposalId.value = null
       guardCode.value = null
-      showComposer.value = false
       return null
     }
     if (normalizedCode === 'MD_WEB_LOCAL_EXECUTION_FAILED' || normalizedCode.startsWith('MD_WEB_IDB_')) {
@@ -256,14 +253,12 @@ async function retryLastCommand(): Promise<void> {
 
 async function resumeAfterSafety(): Promise<void> {
   errorCode.value = null
-  composerText.value = ''
-  showComposer.value = false
   const current = caseValue.value
-  if (current?.lifecycle === 'active') await refreshProposal()
+  if (current?.lifecycle === 'active' && current.current_mode === 'search') await refreshProposal()
 }
 
-async function chooseMode(mode: 'reconstruction' | 'search'): Promise<void> {
-  await runCommand(envelope('set_mode', { mode }))
+async function switchToSearch(): Promise<void> {
+  await runCommand(envelope('set_mode', { mode: 'search' }))
 }
 
 async function pauseCase(): Promise<void> {
@@ -403,38 +398,6 @@ async function closeUnresolved(): Promise<void> {
   }
 }
 
-async function submitComposer(): Promise<void> {
-  const text = composerText.value.trim()
-  const current = caseValue.value
-  if (!text || !current || current.current_mode !== 'reconstruction') return
-
-  const safetyCode = safetyCodeForInput(text)
-  if (safetyCode) {
-    errorCode.value = safetyCode
-    retryCommandState.value = null
-    proposal.value = null
-    currentProposalId.value = null
-    guardCode.value = null
-    showComposer.value = false
-    return
-  }
-
-  const returned = await runCommand(envelope('add_statement', {
-    statement_id: crypto.randomUUID(),
-    source: 'user',
-    statement_type: 'recollection',
-    original_text: text,
-    event_time: null,
-    user_confirmation: true,
-    supporting_evidence_ids: [],
-    limitations: [],
-  }))
-  if (returned) {
-    composerText.value = ''
-    showComposer.value = false
-  }
-}
-
 function handleDeleted(): void {
   caseValue.value = null
   proposal.value = null
@@ -480,14 +443,26 @@ onMounted(async () => {
         <button class="primary-action" type="button" :disabled="busy" @click="resumeCase">{{ t('case.resume') }}</button>
       </div>
 
-      <div v-if="caseValue.current_mode === 'unselected' && caseValue.lifecycle === 'active'" class="privacy-note" data-testid="mode-choice">
-        <strong>{{ t('case.mode_question') }}</strong>
-        <p>{{ t('case.mode_help') }}</p>
-        <div class="dialog-actions">
-          <button class="secondary-action" type="button" :disabled="busy" @click="chooseMode('reconstruction')">{{ t('case.mode_reconstruct_action') }}</button>
-          <button class="primary-action" type="button" :disabled="busy" @click="chooseMode('search')">{{ t('case.mode_search_action') }}</button>
-        </div>
-      </div>
+      <aside
+        v-if="caseValue.current_mode !== 'search' && caseValue.lifecycle === 'active'"
+        class="privacy-note"
+        :data-testid="caseValue.current_mode === 'reconstruction' ? 'web-reconstruction-unavailable' : 'web-search-only-boundary'"
+      >
+        <strong>{{ locale === 'ru' ? 'В Web доступен физический поиск' : 'Web supports physical search' }}</strong>
+        <p v-if="caseValue.current_mode === 'reconstruction'">
+          {{ locale === 'ru'
+            ? 'Это дело содержит состояние восстановления из plugin/agent workflow. Web сохраняет и показывает эти данные, но не продолжает реконструкцию и не выдаёт AI-предложения в этом режиме.'
+            : 'This Case contains reconstruction state from the plugin/agent workflow. Web preserves and displays that evidence, but does not continue reconstruction or request AI proposals in this mode.' }}
+        </p>
+        <p v-else>
+          {{ locale === 'ru'
+            ? 'Для этого ранее созданного дела режим ещё не выбран. Web продолжает его только как физический поиск.'
+            : 'This earlier Case does not have a selected mode yet. Web continues it only as physical search.' }}
+        </p>
+        <button class="primary-action" data-testid="switch-to-search" type="button" :disabled="busy" @click="switchToSearch">
+          {{ locale === 'ru' ? 'Перейти к физическому поиску' : 'Switch to physical search' }}
+        </button>
+      </aside>
 
       <aside v-if="safetyErrorCode" class="system-event" role="alert" data-testid="case-safety-route">
         {{ locale === 'ru'
@@ -529,7 +504,7 @@ onMounted(async () => {
         {{ t('assistant.offline_fallback') }}
       </aside>
 
-      <aside v-if="arm === 'assistant'" class="privacy-note" data-testid="provider-disclosure">
+      <aside v-if="arm === 'assistant' && caseValue.current_mode === 'search'" class="privacy-note" data-testid="provider-disclosure">
         {{ t('privacy.assistant_provider') }}
       </aside>
 
@@ -539,7 +514,6 @@ onMounted(async () => {
         :pending="busy"
         @checked="markChecked"
         @reject="showReject = true"
-        @write="showComposer = true"
         @add-search-target="addSearchTarget"
         @journal="scrollJournal"
         @found="showClose = true"
@@ -580,20 +554,6 @@ onMounted(async () => {
         @found="closeFound"
         @unresolved="closeUnresolved"
       />
-
-      <div v-if="showComposer" class="dialog-backdrop" data-testid="composer-dialog" @click.self="showComposer = false">
-        <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="composer-title">
-          <h2 id="composer-title">{{ t('composer.title') }}</h2>
-          <form @submit.prevent="submitComposer">
-            <label class="field-label" for="composer-text">{{ t('composer.label') }}</label>
-            <textarea id="composer-text" v-model="composerText" rows="4" required />
-            <div class="dialog-actions">
-              <button class="secondary-action" type="button" @click="showComposer = false">{{ t('common.cancel') }}</button>
-              <button class="primary-action" type="submit" :disabled="busy || !composerText.trim()">{{ t('common.save') }}</button>
-            </div>
-          </form>
-        </section>
-      </div>
     </template>
   </main>
 </template>
