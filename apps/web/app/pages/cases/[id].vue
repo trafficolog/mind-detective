@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { shallowRef, toRaw } from 'vue'
 import { caseApiErrorCode, isCaseApiTransportError } from '~/composables/useCaseApi'
-import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, SearchMethod } from '~/lib/api/contracts'
+import type { ActionFeedbackV2, CaseV2, CommandEnvelope, ProposalModel, RebuildTimelinePayload, SearchMethod } from '~/lib/api/contracts'
+import { buildRecordFreeAccountPayload } from '~/composables/useReconstruction'
 import { EXECUTION_CONTRACT_MISMATCH } from '~/lib/api/executionContract'
 import { derivePriorCheckAnnotation } from '~/lib/case/derived'
 import type { EvalEventName } from '~/lib/eval/contracts'
@@ -36,6 +37,17 @@ const retryCommandState = shallowRef<RetryableCommand | null>(null)
 const caseId = computed(() => String(route.params.id || ''))
 const evaluationSession = computed(() => evaluation.session.value)
 const executionContractMismatch = computed(() => errorCode.value === EXECUTION_CONTRACT_MISMATCH)
+const canEnterReconstruction = computed(() => {
+  const current = caseValue.value
+  if (!current || current.lifecycle !== 'active') return false
+  const activeSession = evaluationSession.value
+  if (activeSession && activeSession.outcome === null && activeSession.case_id === current.case_id) return false
+  if (current.current_mode === 'unselected') return true
+  if (current.current_mode !== 'search') return false
+  return current.statements.length === 0
+    && current.search_checks.length === 0
+    && current.action_feedback.length === 0
+})
 const safetyErrorCode = computed(() => errorCode.value?.startsWith('MD_SAFE_') ? errorCode.value : null)
 const engaged = computed(() => {
   const current = caseValue.value
@@ -261,6 +273,26 @@ async function switchToSearch(): Promise<void> {
   await runCommand(envelope('set_mode', { mode: 'search' }))
 }
 
+
+async function enterReconstruction(): Promise<void> {
+  if (!canEnterReconstruction.value) return
+  await runCommand(envelope('set_mode', { mode: 'reconstruction' }))
+}
+
+async function recordFreeAccount(text: string): Promise<void> {
+  await runCommand(envelope('record_free_account', {
+    ...buildRecordFreeAccountPayload(crypto.randomUUID(), text),
+  }))
+}
+
+async function addReconstructionStatement(payload: Record<string, unknown>): Promise<void> {
+  await runCommand(envelope('add_statement', payload))
+}
+
+async function rebuildReconstructionTimeline(payload: RebuildTimelinePayload): Promise<void> {
+  await runCommand(envelope('rebuild_timeline', { ...payload }))
+}
+
 async function pauseCase(): Promise<void> {
   const returned = await runCommand(envelope('pause', {}))
   if (returned) await logEvaluationEvent('pause', { case_id: returned.case_id })
@@ -444,25 +476,33 @@ onMounted(async () => {
       </div>
 
       <aside
-        v-if="caseValue.current_mode !== 'search' && caseValue.lifecycle === 'active'"
-        class="privacy-note"
-        :data-testid="caseValue.current_mode === 'reconstruction' ? 'web-reconstruction-unavailable' : 'web-search-only-boundary'"
-      >
-        <strong>{{ locale === 'ru' ? 'В Web доступен физический поиск' : 'Web supports physical search' }}</strong>
-        <p v-if="caseValue.current_mode === 'reconstruction'">
-          {{ locale === 'ru'
-            ? 'Это дело содержит состояние восстановления из plugin/agent workflow. Web сохраняет и показывает эти данные, но не продолжает реконструкцию и не выдаёт AI-предложения в этом режиме.'
-            : 'This Case contains reconstruction state from the plugin/agent workflow. Web preserves and displays that evidence, but does not continue reconstruction or request AI proposals in this mode.' }}
-        </p>
-        <p v-else>
-          {{ locale === 'ru'
-            ? 'Для этого ранее созданного дела режим ещё не выбран. Web продолжает его только как физический поиск.'
-            : 'This earlier Case does not have a selected mode yet. Web continues it only as physical search.' }}
-        </p>
-        <button class="primary-action" data-testid="switch-to-search" type="button" :disabled="busy" @click="switchToSearch">
-          {{ locale === 'ru' ? 'Перейти к физическому поиску' : 'Switch to physical search' }}
+      v-if="caseValue.current_mode === 'search' && canEnterReconstruction && caseValue.lifecycle === 'active'"
+      class="privacy-note"
+      data-testid="reconstruction-entry"
+    >
+      <strong>{{ t('reconstruction.entry.title') }}</strong>
+      <p>{{ t('reconstruction.entry.help') }}</p>
+      <button class="secondary-action" data-testid="enter-reconstruction" type="button" :disabled="busy" @click="enterReconstruction">
+        {{ t('reconstruction.entry.action') }}
+      </button>
+    </aside>
+
+    <aside
+      v-if="caseValue.current_mode === 'unselected' && caseValue.lifecycle === 'active'"
+      class="privacy-note"
+      data-testid="mode-choice"
+    >
+      <strong>{{ t('reconstruction.entry.title') }}</strong>
+      <p>{{ t('reconstruction.entry.help') }}</p>
+      <div class="action-row">
+        <button class="secondary-action" data-testid="enter-reconstruction" type="button" :disabled="busy" @click="enterReconstruction">
+          {{ t('reconstruction.entry.action') }}
         </button>
-      </aside>
+        <button class="primary-action" data-testid="switch-to-search" type="button" :disabled="busy" @click="switchToSearch">
+          {{ t('reconstruction.to_search') }}
+        </button>
+      </div>
+    </aside>
 
       <aside v-if="safetyErrorCode" class="system-event" role="alert" data-testid="case-safety-route">
         {{ locale === 'ru'
@@ -508,8 +548,37 @@ onMounted(async () => {
         {{ t('privacy.assistant_provider') }}
       </aside>
 
-      <CaseShell
+      <article v-if="caseValue.current_mode === 'reconstruction'" class="hero-panel reconstruction-case" data-testid="reconstruction-case">
+      <header class="reconstruction-case__header">
+        <div>
+          <NuxtLink to="/" class="muted">← {{ locale === 'ru' ? 'Все дела' : 'All cases' }}</NuxtLink>
+          <h1>{{ caseValue.item_label }}</h1>
+        </div>
+        <button
+          v-if="caseValue.lifecycle === 'active'"
+          class="secondary-action"
+          data-testid="pause-case"
+          type="button"
+          :disabled="busy"
+          @click="pauseCase"
+        >
+          {{ locale === 'ru' ? 'Приостановить' : 'Pause' }}
+        </button>
+      </header>
+      <ModeBanner :mode="caseValue.current_mode" />
+      <ReconstructionPanel
         :case-value="caseValue"
+        :pending="busy"
+        @record-free-account="recordFreeAccount"
+        @add-statement="addReconstructionStatement"
+        @rebuild-timeline="rebuildReconstructionTimeline"
+        @switch-to-search="switchToSearch"
+      />
+    </article>
+
+    <CaseShell
+      v-if="caseValue.current_mode !== 'reconstruction'"
+      :case-value="caseValue"
         :proposal="proposal"
         :pending="busy"
         @checked="markChecked"

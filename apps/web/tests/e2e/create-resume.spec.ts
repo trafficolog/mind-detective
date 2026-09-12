@@ -29,7 +29,7 @@ test('production creation is one field and preserves a paused case for resume', 
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 })
 
-test('legacy reconstruction case is read-only in Web and offers an explicit handoff to physical search', async ({ page }) => {
+test('legacy reconstruction case opens the state-first panel and preserves explicit handoff to physical search', async ({ page }) => {
   const legacy = caseFixture({
     case_id: 'case-reconstruction-boundary',
     current_mode: 'reconstruction',
@@ -38,7 +38,7 @@ test('legacy reconstruction case is read-only in Web and offers an explicit hand
   await seedCase(page, legacy)
   await page.goto(`/cases/${legacy.case_id}`)
 
-  await expect(page.getByTestId('web-reconstruction-unavailable')).toBeVisible()
+  await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   await expect(page.getByTestId('interaction-dock').getByRole('button', { name: 'Написать' })).toHaveCount(0)
   await expect(page.getByTestId('next-action-card')).toHaveCount(0)
 
