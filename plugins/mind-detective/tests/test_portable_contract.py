@@ -23,6 +23,7 @@ class PortableContractTests(unittest.TestCase):
             SUPPORTED_COMMAND_TYPES,
             (
                 "set_mode",
+                "record_free_account",
                 "add_statement",
                 "record_search_check",
                 "refine_search_check",
@@ -45,6 +46,9 @@ class PortableContractTests(unittest.TestCase):
                     "MD_WEB_COMMAND_ID_CONFLICT",
                     "MD_WEB_CASE_ID_CONFLICT",
                     "MD_WEB_EXECUTION_CONTRACT_MISMATCH",
+                    "MD_RECON_MODE_REQUIRED",
+                    "MD_RECON_FREE_ACCOUNT_REQUIRED",
+                    "MD_RECON_FREE_ACCOUNT_EXISTS",
                 }
             ),
         )
