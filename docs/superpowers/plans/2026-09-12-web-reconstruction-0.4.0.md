@@ -4,49 +4,49 @@
 
 **Goal:** Make reconstruction a first-class deterministic/offline Web workflow from raw free account through uncertainty-preserving timeline and explicit transition to the existing Search/checklist flow.
 
-**Architecture:** Keep Python portable semantics authoritative. Add `record_free_account` and `rebuild_timeline` to the portable command surface, regenerate the committed TypeScript executor/conformance corpus, then build focused Vue components that only collect inputs and render canonical Case state. AI clarification is not required for 0.4.0 and may not mutate memory evidence.
+**Architecture:** Python portable semantics remain authoritative. Add `record_free_account` and `rebuild_timeline` to the portable command surface, regenerate the committed TypeScript executor/conformance corpus, then build focused Vue components that collect inputs and render canonical Case state. AI clarification is not required for 0.4.0 and never mutates memory evidence.
 
-**Tech Stack:** Python 3.10/3.13 stdlib-first domain kernel, deterministic Python→TypeScript generator, Nuxt 4/Vue, TypeScript, IndexedDB, Vitest, Playwright, PWA service worker, GitHub Actions.
+**Tech Stack:** Python 3.10/3.13, stdlib-first domain kernel, deterministic Python→TypeScript generator, Nuxt 4/Vue, TypeScript, IndexedDB, Vitest, Playwright, PWA, GitHub Actions.
 
 **Spec:** `docs/superpowers/specs/2026-09-12-mind-detective-0.4.0-web-reconstruction-design.md`
 
 ## Global Constraints
 
-- Keep `mind-detective-case/v2`; do not introduce Case v3.
-- Python portable semantics remain the authoritative deterministic source.
+- Keep `mind-detective-case/v2`; no Case v3.
 - No handwritten Web Case reducer or independent timeline semantics.
-- Raw free account is stored verbatim as `author=user`, `mode=reconstruction`, `entry_type=free_account`; it is not automatically classified as recollection/habit/observation.
-- In reconstruction mode, structured statements are blocked until a free account exists.
-- Assistant output may not originate recollection/habit/observation or directly mutate canonical Case.
-- Preserve unknowns and contradictions; do not resolve them by plausibility.
+- Raw free account is verbatim `author=user`, `mode=reconstruction`, `entry_type=free_account`; it is not auto-classified.
+- Duplicate free-account recording fails closed with `MD_RECONSTRUCTION_FREE_ACCOUNT_EXISTS`; the gate-opening account is immutable.
+- Reconstruction `add_statement` before free account fails with `MD_RECONSTRUCTION_FREE_ACCOUNT_REQUIRED`.
+- Assistant output cannot originate recollection/habit/observation or directly mutate canonical Case.
+- Preserve unknowns/contradictions; do not resolve by plausibility.
 - Do not seed unsupported concrete locations during reconstruction.
 - No Bayesian/POD state, calibrated location probabilities, hidden belief weights, cloud Case DB/sync, or cross-case learning.
-- Deterministic reconstruction must work offline after application preload.
-- RU/EN copy must have exact key parity and equivalent safety/privacy semantics.
-- Each active requirement must have a production-reachability selector in `docs/CONTRACT_MATRIX.json`.
-- Use TDD: failing test → minimal implementation → passing focused tests → broader regression gate → commit/PR review.
+- Deterministic reconstruction works offline after preload.
+- RU/EN copy has exact key parity and equivalent safety/privacy semantics.
+- Every active requirement has an exact production-reachability selector in `docs/CONTRACT_MATRIX.json`.
+- TDD per task: failing focused test → minimal implementation → focused green → broader regression gate → review/commit.
 
 ---
 
-### Task 1: Add normative Web reconstruction requirements and trace contract
+### Task 1: Define executable Web reconstruction contracts
 
 **Files:**
 - Modify: `docs/REQUIREMENTS.md`
 - Modify: `docs/CONTRACT_MATRIX.json`
-- Test: `tests/test_contract_matrix.py`
-- Test: `tests/test_web_contracts.py` or the existing repository contract-test module that owns Web selectors
+- Modify: `tests/test_contract_matrix.py`
+- Modify: `tests/test_contract_reachability.py`
 
 **Interfaces:**
-- Consumes: existing `MD-WEB-REQ-*` contract style.
-- Produces: stable IDs used by all subsequent implementation PRs.
+- Consumes: existing `MD-WEB-REQ-*` contract format.
+- Produces: stable reconstruction requirement IDs used by all later tasks.
 
-Use these requirement IDs:
+Use exactly:
 
 ```text
 MD-WEB-REQ-RECONSTRUCT-01 free account precedes structured reconstruction statements
 MD-WEB-REQ-RECONSTRUCT-02 raw free account preserves user provenance without auto-classification
 MD-WEB-REQ-RECONSTRUCT-03 unsupported concrete locations are not seeded as reconstruction cues
-MD-WEB-REQ-RECONSTRUCT-04 timeline preserves/represents unknown intervals and contradictions canonically
+MD-WEB-REQ-RECONSTRUCT-04 timeline preserves unknown intervals and contradictions canonically
 MD-WEB-REQ-RECONSTRUCT-05 reconstruction mutation uses generated portable local execution
 MD-WEB-REQ-RECONSTRUCT-06 reconstruction and Search remain semantically/visually distinct
 MD-WEB-REQ-RECONSTRUCT-07 transition to Search does not promote evidence
@@ -55,9 +55,7 @@ MD-WEB-REQ-RECONSTRUCT-09 RU/EN copy has semantic/key parity
 MD-WEB-REQ-RECONSTRUCT-10 Case v2 export/import preserves reconstruction state
 ```
 
-- [ ] **Step 1: Write failing contract tests**
-
-Add assertions that all ten IDs exist, are active, and have non-empty exact selectors that resolve to production paths/tests rather than existence-only helpers.
+- [ ] **Step 1: Add failing matrix/reachability assertions**
 
 ```python
 for requirement_id in RECONSTRUCTION_REQUIREMENTS:
@@ -66,114 +64,75 @@ for requirement_id in RECONSTRUCTION_REQUIREMENTS:
     self.assertTrue(row["selectors"])
 ```
 
-- [ ] **Step 2: Run the focused repository contract test**
-
-Run:
+- [ ] **Step 2: Verify RED**
 
 ```bash
-python -m unittest tests.test_contract_matrix -v
+python -m unittest tests.test_contract_matrix tests.test_contract_reachability -v
 ```
 
-Expected: FAIL because the ten IDs do not yet exist.
+Expected: missing reconstruction requirements/selectors.
 
-- [ ] **Step 3: Add requirements and provisional selectors**
+- [ ] **Step 3: Add requirements and selectors targeting the exact symbols/tests specified in Tasks 2–9**
 
-Selectors may reference the tests/files introduced by later tasks, but the final repository gate must reject unresolved selectors before merge.
+The implementation branch may remain red until those targets exist; unresolved selectors must be impossible at final merge.
 
-- [ ] **Step 4: Run the contract tests**
-
-Expected: selectors are syntactically valid; any selector that requires later code remains intentionally red on the implementation branch until its task lands.
-
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit the contract delta**
 
 ```bash
-git add docs/REQUIREMENTS.md docs/CONTRACT_MATRIX.json tests/
+git add docs/REQUIREMENTS.md docs/CONTRACT_MATRIX.json tests/test_contract_matrix.py tests/test_contract_reachability.py
 git commit -m "contract: define web reconstruction requirements"
 ```
 
-### Task 2: Add portable `record_free_account` semantics
+### Task 2: Implement canonical `record_free_account`
 
 **Files:**
 - Modify: `plugins/mind-detective/scripts/portable_contract.py`
 - Modify: `plugins/mind-detective/scripts/portable_kernel.py`
 - Modify: `plugins/mind-detective/scripts/controller.py`
-- Test: `plugins/mind-detective/tests/test_portable_kernel.py`
-- Test: `plugins/mind-detective/tests/test_controller.py`
-- Test: `tests/test_web_contracts.py`
+- Modify: `plugins/mind-detective/tests/test_portable_kernel.py`
+- Modify: `plugins/mind-detective/tests/test_controller.py`
 
 **Interfaces:**
-- Consumes: `Case v2`, `interaction_journal`, `InteractionMode.RECONSTRUCTION`.
-- Produces: command type `record_free_account`; kernel function `record_free_account_json(case, entry_id, text, now) -> dict[str, object]`; controller method `record_free_account(case, entry_id, text, now) -> Case`.
+- Produces: command `record_free_account`; `record_free_account_json(case, entry_id, text, now) -> dict[str, object]`; `CaseController.record_free_account(...) -> Case`.
 
-- [ ] **Step 1: Write failing portable-kernel tests**
-
-Test successful shape:
+- [ ] **Step 1: Write RED tests for the exact journal shape**
 
 ```python
 result = record_free_account_json(case_in_reconstruction, "entry-1", "Последний раз помню...", NOW)
 entry = result["interaction_journal"][-1]
-assert entry == {
-    "id": "entry-1",
-    "author": "user",
-    "mode": "reconstruction",
-    "entry_type": "free_account",
-    "text": "Последний раз помню...",
-    "created_at": NOW,
-    "statement_ids": [],
-    "search_check_ids": [],
-}
+assert entry["author"] == "user"
+assert entry["mode"] == "reconstruction"
+assert entry["entry_type"] == "free_account"
+assert entry["text"] == "Последний раз помню..."
 assert result["statements"] == []
 ```
 
-Also fail on empty text/id, wrong mode, paused/terminal Case, duplicate `free_account` rewrite attempt if the contract chooses one immutable gate-opening entry, and probabilistic forbidden fields.
+Also test empty id/text, wrong mode, paused/terminal Case, duplicate account → `MD_RECONSTRUCTION_FREE_ACCOUNT_EXISTS`, and reconstruction statement before free account → `MD_RECONSTRUCTION_FREE_ACCOUNT_REQUIRED`.
 
-- [ ] **Step 2: Run focused tests and confirm RED**
+- [ ] **Step 2: Run only the two test files and confirm RED**
 
 ```bash
-python -m unittest plugins.mind-detective.tests.test_portable_kernel -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_portable_kernel.py' -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_controller.py' -v
 ```
 
-Expected: missing command/function failures.
-
-- [ ] **Step 3: Extend the command contract**
-
-Add:
+- [ ] **Step 3: Extend portable contract**
 
 ```python
 SUPPORTED_COMMAND_TYPES = (..., "record_free_account", ...)
 ```
 
-and payload allowlist:
+and:
 
 ```python
 "record_free_account": frozenset({"entry_id", "text"})
 ```
 
-- [ ] **Step 4: Implement minimal canonical mutation**
+- [ ] **Step 4: Implement canonical mutation and free-account-first guard**
 
-`record_free_account_json` must call the same `_primitive_copy` lifecycle/shape guard, require reconstruction mode, preserve verbatim text, and append exactly one journal entry without creating a statement.
+Use `_primitive_copy`, require active reconstruction mode, append one immutable journal entry, create no Statement, and gate reconstruction-mode `add_statement`. Search-mode `add_statement` remains unchanged.
 
-- [ ] **Step 5: Enforce free-account-first in reconstruction `add_statement`**
-
-Before accepting an `add_statement` command while `current_mode == "reconstruction"`, require a journal entry where:
-
-```text
-author == user
-mode == reconstruction
-entry_type == free_account
-```
-
-Fail with stable code:
-
-```text
-MD_RECONSTRUCTION_FREE_ACCOUNT_REQUIRED
-```
-
-Search-mode `add_statement` remains unchanged.
-
-- [ ] **Step 6: Add controller adapter and safety-ingress coverage**
-
-Controller method:
+- [ ] **Step 5: Add controller safety ingress**
 
 ```python
 def record_free_account(self, case: Case, entry_id: str, text: str, now: str) -> Case:
@@ -181,142 +140,114 @@ def record_free_account(self, case: Case, entry_id: str, text: str, now: str) ->
     ...
 ```
 
-- [ ] **Step 7: Run focused + repository/plugin tests**
+- [ ] **Step 6: Run plugin + repository regressions**
 
 ```bash
 python -m unittest discover -s plugins/mind-detective/tests -v
 python -m unittest discover -s tests -v
 ```
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add plugins/mind-detective/scripts plugins/mind-detective/tests tests
+git add plugins/mind-detective/scripts plugins/mind-detective/tests
 git commit -m "feat: add canonical free account command"
 ```
 
-### Task 3: Move timeline mutation into the portable canonical boundary
+### Task 3: Make timeline rebuild portable and canonical
 
 **Files:**
 - Modify: `plugins/mind-detective/scripts/portable_contract.py`
 - Modify: `plugins/mind-detective/scripts/portable_kernel.py`
 - Modify: `plugins/mind-detective/scripts/timeline.py`
 - Modify: `plugins/mind-detective/scripts/controller.py`
-- Modify only as needed: `plugins/mind-detective/scripts/plugin_reducer.py`
-- Test: `plugins/mind-detective/tests/test_timeline.py`
-- Test: `plugins/mind-detective/tests/test_portable_kernel.py`
-- Test: `plugins/mind-detective/tests/test_controller.py`
+- Modify: `plugins/mind-detective/tests/test_timeline.py`
+- Modify: `plugins/mind-detective/tests/test_portable_kernel.py`
+- Modify: `plugins/mind-detective/tests/test_controller.py`
 
 **Interfaces:**
-- Consumes: current Case statements and user-confirmed event/reference payload.
-- Produces: command `rebuild_timeline`; kernel function `rebuild_timeline_json(case, payload, now) -> dict[str, object]` and a typed adapter used by `CaseController.set_timeline`/replacement method.
+- Produces: `rebuild_timeline`; `rebuild_timeline_json(case, payload, now) -> dict[str, object]`; typed controller delegation to the same semantics.
 
-Canonical payload shape:
+Canonical payload:
 
 ```json
 {
-  "events": [
-    {
-      "id": "event-1",
-      "label": "Вышел из машины",
-      "statement_ids": ["statement-1"],
-      "event_time": null,
-      "time_precision": "unknown"
-    }
-  ],
+  "events": [{
+    "id": "event-1",
+    "label": "Вышел из машины",
+    "statement_ids": ["statement-1"],
+    "event_time": null,
+    "time_precision": "unknown"
+  }],
   "last_supported_interaction_id": "statement-1",
   "first_noticed_missing_id": "statement-2"
 }
 ```
 
-- [ ] **Step 1: Write failing timeline command tests**
+- [ ] **Step 1: Add RED tests**
 
-Cover valid rebuild, missing statement references, free-account requirement, wrong mode/lifecycle, unknown interval preservation, time-order contradiction, invalid timestamp handling, duplicate event ids, and no partial mutation on failure.
+Cover success, missing statement refs, duplicate event ids, free-account requirement, wrong mode/lifecycle, unknown intervals, time-order contradiction, invalid timestamps, and atomic failure.
 
 - [ ] **Step 2: Confirm RED**
 
 ```bash
-python -m unittest plugins.mind-detective.tests.test_timeline plugins.mind-detective.tests.test_portable_kernel -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_timeline.py' -v
+python -m unittest discover -s plugins/mind-detective/tests -p 'test_portable_kernel.py' -v
 ```
 
-- [ ] **Step 3: Add `rebuild_timeline` to portable command allowlists**
+- [ ] **Step 3: Add command allowlist**
 
 ```python
 "rebuild_timeline": frozenset({"events", "last_supported_interaction_id", "first_noticed_missing_id"})
 ```
 
-- [ ] **Step 4: Implement canonical parsing/validation**
+- [ ] **Step 4: Reuse/refactor `build_timeline()` for canonical derivation**
 
-Keep timeline truth in Python. Reuse/refactor `build_timeline()` rather than duplicating contradiction logic inside the command dispatcher.
+The browser must never own contradiction/unknown inference.
 
-- [ ] **Step 5: Make the typed controller delegate canonical semantics**
+- [ ] **Step 5: Move `CaseController` timeline mutation onto the portable function**
 
-Do not leave `CaseController.set_timeline()` mutating through a separate reducer path. The typed path must serialize to the same portable function and deserialize the resulting Case.
+Remove the separate reducer mutation as the authoritative path; adapters may remain only if they delegate the same semantics.
 
-- [ ] **Step 6: Run plugin tests**
+- [ ] **Step 6: Run all plugin tests and commit**
 
 ```bash
 python -m unittest discover -s plugins/mind-detective/tests -v
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
 git add plugins/mind-detective/scripts plugins/mind-detective/tests
 git commit -m "feat: make timeline rebuild portable and canonical"
 ```
 
-### Task 4: Extend generated execution and differential conformance
+### Task 4: Regenerate executor and add differential conformance
 
 **Files:**
 - Modify: `plugins/mind-detective/scripts/conformance_vectors.py`
-- Modify as required: generator/certifier modules under `scripts/` and `plugins/mind-detective/scripts/`
+- Modify exact generator/certifier files only if new Python constructs require certified support
 - Regenerate: `apps/web/app/generated/localExecution.ts`
 - Regenerate: `apps/web/app/generated/localExecution.meta.json`
 - Regenerate: `conformance/local-execution/v1/manifest.json`
 - Regenerate: `conformance/local-execution/v1/vectors.json`
-- Test: `apps/web/tests/unit/localExecutionConformance.spec.ts`
-- Test: Python generator/certification tests under `tests/`
+- Modify: `apps/web/tests/unit/localExecutionConformance.spec.ts`
+- Modify as required: `tests/test_local_execution_generator.py`, `tests/test_local_execution_emitter.py`, `tests/test_local_execution_corpus.py`
 
 **Interfaces:**
-- Consumes: Task 2/3 portable functions.
-- Produces: generated TypeScript support for `record_free_account` and `rebuild_timeline`, with Python↔TS observable parity vectors.
+- Produces: Python↔generated-TypeScript parity for both commands and their stable failures.
 
-- [ ] **Step 1: Add failing conformance vectors**
-
-Vectors must include at least:
-
-```text
-record_free_account success
-record_free_account wrong mode
-add_statement before free account -> MD_RECONSTRUCTION_FREE_ACCOUNT_REQUIRED
-rebuild_timeline success
-rebuild_timeline unknown interval
-rebuild_timeline time-order contradiction
-rebuild_timeline missing reference failure
-```
-
-- [ ] **Step 2: Run generator/conformance tests before regeneration**
+- [ ] **Step 1: Add vectors for free-account success/wrong-mode/duplicate/gate and timeline success/unknown/contradiction/missing-ref**
+- [ ] **Step 2: Run Python generator/corpus tests and verify initial RED where unsupported**
 
 ```bash
-python -m scripts.generate_local_execution_corpus
-pnpm --dir apps/web exec vitest run apps/web/tests/unit/localExecutionConformance.spec.ts
+python -m unittest tests.test_local_execution_generator tests.test_local_execution_emitter tests.test_local_execution_corpus -v
 ```
 
-Expected: generated artifact/corpus mismatch or unsupported-call failure before generator support is complete.
-
-- [ ] **Step 3: Extend restricted generator/certified surface minimally**
-
-Do not loosen the AST whitelist globally to make one function compile. Add only the exact constructs/intrinsics required by the new canonical functions.
-
-- [ ] **Step 4: Regenerate committed artifacts**
+- [ ] **Step 3: Extend the certified generator minimally; do not globally relax AST restrictions**
+- [ ] **Step 4: Regenerate artifacts**
 
 ```bash
 python -m scripts.write_local_execution_artifacts
 python -m scripts.generate_local_execution_corpus
 ```
 
-- [ ] **Step 5: Verify reproducibility and TypeScript parity**
+- [ ] **Step 5: Verify reproducibility and TS parity**
 
 ```bash
 python -m scripts.write_local_execution_artifacts
@@ -326,67 +257,42 @@ git diff --exit-code -- conformance/local-execution/v1/manifest.json conformance
 pnpm --dir apps/web exec vitest run apps/web/tests/unit/localExecutionConformance.spec.ts
 ```
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit generated and source changes together**
 
-```bash
-git add plugins/mind-detective/scripts scripts apps/web/app/generated conformance apps/web/tests/unit/localExecutionConformance.spec.ts tests
-git commit -m "feat: generate reconstruction execution semantics"
-```
-
-### Task 5: Extend Web command types/local executor without new domain logic
+### Task 5: Extend typed Web local execution
 
 **Files:**
 - Modify: `apps/web/app/lib/api/contracts.ts`
 - Modify: `apps/web/app/lib/execution/localExecutor.ts`
-- Modify: `apps/web/app/composables/useLocalExecution.ts` if command typing lives there
-- Test: `apps/web/tests/unit/localExecutor.spec.ts`
-- Test: `apps/web/tests/unit/localStorageContract.spec.ts`
+- Modify: `apps/web/app/composables/useLocalExecution.ts`
+- Modify: `apps/web/tests/unit/localExecutor.spec.ts`
+- Modify: `apps/web/tests/unit/localStorageContract.spec.ts`
 
 **Interfaces:**
-- Consumes: generated executor from Task 4.
-- Produces: typed command envelopes for `record_free_account` and `rebuild_timeline`; IndexedDB atomic persistence and receipts remain unchanged.
+- Produces typed `record_free_account` and `rebuild_timeline` envelopes through the existing atomic IndexedDB/receipt path.
 
-- [ ] **Step 1: Write failing unit tests for the two command envelopes**
-
-Assert that commands pass through generated execution, persist Case+receipt atomically, and idempotent retry returns the stored canonical result.
-
+- [ ] **Step 1: Add RED tests for command execution, atomic persistence, idempotent retry, and command-id conflict**
 - [ ] **Step 2: Confirm RED**
 
 ```bash
 pnpm --dir apps/web exec vitest run apps/web/tests/unit/localExecutor.spec.ts apps/web/tests/unit/localStorageContract.spec.ts
 ```
 
-- [ ] **Step 3: Extend TypeScript union types**
+- [ ] **Step 3: Extend `CommandEnvelope` command union/payload types in `contracts.ts`**
+- [ ] **Step 4: Pass both commands through existing `localExecutor.ts`/`useLocalExecution.ts`; add no handwritten reconstruction reducer**
+- [ ] **Step 5: Run focused tests and commit**
 
-Add the exact command names and payload types; do not add handwritten reconstruction state transformation.
-
-- [ ] **Step 4: Pass commands through the existing local executor path**
-
-No special persistence transaction is introduced for reconstruction.
-
-- [ ] **Step 5: Run unit tests**
-
-Expected: PASS, including existing Search command regressions.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add apps/web/app/lib/api apps/web/app/lib/execution apps/web/app/composables apps/web/tests/unit
-git commit -m "feat: expose reconstruction commands to web executor"
-```
-
-### Task 6: Add a reconstruction view-model/composable boundary
+### Task 6: Add reconstruction presentation/view-model helpers
 
 **Files:**
 - Create: `apps/web/app/lib/case/reconstruction.ts`
 - Create: `apps/web/app/composables/useReconstruction.ts`
-- Test: `apps/web/tests/unit/reconstruction.spec.ts`
+- Create: `apps/web/tests/unit/reconstruction.spec.ts`
 
 **Interfaces:**
-- Consumes: canonical `CaseV2`, `CommandEnvelope` constructor callback.
-- Produces: presentation-only derivations and command builders; no canonical domain mutation.
+- Produces only pure derivations and command builders.
 
-Define pure derivations such as:
+Required pure functions:
 
 ```ts
 export function freeAccountEntry(caseValue: CaseV2): JournalEntryV2 | null
@@ -395,45 +301,17 @@ export function reconstructionStatements(caseValue: CaseV2): StatementV2[]
 export function timelineView(caseValue: CaseV2): TimelineV2 | null
 ```
 
-`useReconstruction` may construct envelopes:
-
-```ts
-recordFreeAccount(text: string): Promise<CaseV2 | null>
-addConfirmedStatement(input: ConfirmedStatementInput): Promise<CaseV2 | null>
-rebuildTimeline(input: TimelineInput): Promise<CaseV2 | null>
-switchToSearch(): Promise<CaseV2 | null>
-```
-
-but delegates execution to the existing page/local-execution callback.
-
-- [ ] **Step 1: Write failing pure-function tests**
-
-Include free-account detection, statement filtering, timeline passthrough, and no inference from raw journal text.
-
+- [ ] **Step 1: Test free-account detection and prove raw prose is never parsed into Statements**
 - [ ] **Step 2: Implement pure derivations**
-
-Do not parse raw free-account prose into memories.
-
-- [ ] **Step 3: Write composable command-builder tests**
-
-Assert exact command names/payloads and that original text remains verbatim.
-
-- [ ] **Step 4: Implement minimal composable**
-
-- [ ] **Step 5: Run unit tests**
+- [ ] **Step 3: Test exact command builders for `record_free_account`, `add_statement`, `rebuild_timeline`, `set_mode(search)`**
+- [ ] **Step 4: Implement `useReconstruction` as a thin envelope/event helper; execution remains owned by existing Case-page/local execution path**
+- [ ] **Step 5: Run**
 
 ```bash
 pnpm --dir apps/web exec vitest run apps/web/tests/unit/reconstruction.spec.ts
 ```
 
-- [ ] **Step 6: Commit**
-
-```bash
-git add apps/web/app/lib/case/reconstruction.ts apps/web/app/composables/useReconstruction.ts apps/web/tests/unit/reconstruction.spec.ts
-git commit -m "feat: add reconstruction web view model"
-```
-
-### Task 7: Build focused reconstruction UI components
+### Task 7: Build focused reconstruction components and bilingual copy
 
 **Files:**
 - Create: `apps/web/app/components/ReconstructionPanel.vue`
@@ -443,16 +321,13 @@ git commit -m "feat: add reconstruction web view model"
 - Create: `apps/web/app/components/TimelineSummary.vue`
 - Modify: `apps/web/app/lib/i18n/ru.ts`
 - Modify: `apps/web/app/lib/i18n/en.ts`
-- Test: `apps/web/tests/unit/i18n.spec.ts`
-- Test: component/reconstruction unit tests under `apps/web/tests/unit/`
+- Modify: `apps/web/tests/unit/i18n.spec.ts`
+- Modify: `apps/web/tests/unit/reconstruction.spec.ts`
 
 **Interfaces:**
-- Consumes: canonical Case/read-only timeline view and event callbacks.
-- Produces: semantic UI events only: `record-free-account`, `add-statement`, `rebuild-timeline`, `switch-to-search`.
+- Emits semantic events only: `record-free-account`, `add-statement`, `rebuild-timeline`, `switch-to-search`.
 
-- [ ] **Step 1: Add RU/EN copy keys and failing parity assertions**
-
-Required concepts include:
+Required copy keys include:
 
 ```text
 reconstruction.title
@@ -469,70 +344,29 @@ reconstruction.to_search
 reconstruction.free_account_required
 ```
 
-- [ ] **Step 2: Build `FreeAccountCard`**
+- [ ] **Step 1: Add RU/EN parity tests and copy keys**
+- [ ] **Step 2: Implement neutral `FreeAccountCard`; no candidate rooms/containers/actions in its prompt**
+- [ ] **Step 3: Implement `StatementCapture`, disabled until free account exists; source is always user**
+- [ ] **Step 4: Implement `TimelineEditor` input only and `TimelineSummary` canonical output only**
+- [ ] **Step 5: Implement state-first `ReconstructionPanel`; no chat-first transcript architecture**
+- [ ] **Step 6: Verify reconstruction/Search distinction uses text/icon/structure, not color alone**
+- [ ] **Step 7: Run unit/i18n tests and commit**
 
-The prompt must remain neutral and must not list candidate rooms/containers/actions. Once saved, display the original free account read-only; later corrections go through structured statements rather than overwriting it.
-
-- [ ] **Step 3: Build `StatementCapture`**
-
-Only enable after `hasFreeAccount`. Require the user to choose/confirm statement type. Do not expose assistant as a source option.
-
-- [ ] **Step 4: Build `TimelineEditor` and `TimelineSummary`**
-
-Editor submits user-confirmed event/reference structure; Summary renders canonical `events`, `unknown_intervals`, and `contradictions`. No browser-side contradiction inference.
-
-- [ ] **Step 5: Build `ReconstructionPanel` orchestration**
-
-Panel remains state-first: free account → structured evidence → timeline → explicit Search transition. It is not a chat transcript UI.
-
-- [ ] **Step 6: Verify keyboard/semantic accessibility in component tests where practical**
-
-Use labels, headings, `aria-live` only for state updates that need announcement, and text/icon/treatment—not color alone—to identify reconstruction vs Search.
-
-- [ ] **Step 7: Run unit/i18n tests**
-
-```bash
-pnpm --dir apps/web exec vitest run apps/web/tests/unit/i18n.spec.ts apps/web/tests/unit/reconstruction.spec.ts
-```
-
-- [ ] **Step 8: Commit**
-
-```bash
-git add apps/web/app/components apps/web/app/lib/i18n apps/web/tests/unit
-git commit -m "feat: add deterministic reconstruction interface"
-```
-
-### Task 8: Integrate reconstruction into the Case page without expanding page-domain logic
+### Task 8: Integrate the real reconstruction flow into Case page
 
 **Files:**
 - Modify: `apps/web/app/pages/cases/[id].vue`
-- Modify if needed: `apps/web/app/components/CaseShell.vue`
-- Test: `apps/web/tests/e2e/reconstruction-flow.spec.ts`
-- Test: `apps/web/tests/e2e/accessibility.spec.ts`
+- Create: `apps/web/tests/e2e/reconstruction-flow.spec.ts`
+- Modify: `apps/web/tests/e2e/accessibility.spec.ts`
 
 **Interfaces:**
-- Consumes: `ReconstructionPanel`, existing `runCommand`, `CaseV2` lifecycle/state.
-- Produces: real Web reconstruction instead of `web-reconstruction-unavailable` placeholder.
+- Replaces `web-reconstruction-unavailable` with `ReconstructionPanel`; reuses existing `runCommand` retry/receipt behavior.
 
-- [ ] **Step 1: Add failing browser test for entering reconstruction**
-
-The test should create/open an active Case, select reconstruction, see the neutral free-account UI, and confirm no Search proposal is requested while reconstruction is active.
-
-- [ ] **Step 2: Replace the unavailable boundary**
-
-For active `current_mode === 'reconstruction'`, mount `ReconstructionPanel` instead of `web-reconstruction-unavailable`.
-
-For `unselected`, offer an explicit mode choice that includes reconstruction and Search; selecting reconstruction sends `set_mode(reconstruction)`.
-
-- [ ] **Step 3: Wire panel events to canonical commands**
-
-Use the same immutable command envelope/retry semantics as Search. Do not create a second command execution helper that bypasses `runCommand`/local execution receipts.
-
-- [ ] **Step 4: Keep Search proposal behavior strictly mode-gated**
-
-`refreshProposal()` remains Search-only. Reconstruction does not accidentally call live assistant proposal endpoints in 0.4.0 core.
-
-- [ ] **Step 5: Run browser tests**
+- [ ] **Step 1: Add RED browser journey: select reconstruction → free account UI → no Search proposal call**
+- [ ] **Step 2: For `unselected`, present explicit reconstruction/Search mode choice**
+- [ ] **Step 3: For active reconstruction mode, mount `ReconstructionPanel` and wire emitted events to canonical local commands**
+- [ ] **Step 4: Keep `refreshProposal()` strictly Search-only**
+- [ ] **Step 5: Run**
 
 ```bash
 pnpm --dir apps/web exec playwright test apps/web/tests/e2e/reconstruction-flow.spec.ts apps/web/tests/e2e/accessibility.spec.ts
@@ -540,78 +374,30 @@ pnpm --dir apps/web exec playwright test apps/web/tests/e2e/reconstruction-flow.
 
 - [ ] **Step 6: Commit**
 
-```bash
-git add apps/web/app/pages/cases/'[id].vue' apps/web/app/components apps/web/tests/e2e
-git commit -m "feat: enable reconstruction in web cases"
-```
-
-### Task 9: Verify Case v2 export/import, reload/resume, and offline reconstruction
+### Task 9: Prove Case v2 portability, reload/resume, and offline reconstruction
 
 **Files:**
-- Modify tests as required: `apps/web/tests/unit/exportImport.spec.ts`
-- Create/modify: `apps/web/tests/e2e/reconstruction-offline.spec.ts`
-- Modify: `apps/web/tests/e2e/helpers.ts` only for reusable setup helpers
-- Production storage/export code only if a failing test proves a gap.
+- Modify: `apps/web/tests/unit/exportImport.spec.ts`
+- Create: `apps/web/tests/e2e/reconstruction-offline.spec.ts`
+- Modify: `apps/web/tests/e2e/helpers.ts` only for reusable setup
+- Modify production storage/export code only if a RED test demonstrates a real gap
 
-**Interfaces:**
-- Consumes: existing Case v2 export/import and IndexedDB repository.
-- Produces: evidence that reconstruction state survives portability/offline boundaries without schema change.
-
-- [ ] **Step 1: Add export/import round-trip test**
-
-Fixture must include:
-
-```text
-free_account journal entry
-user statements
-canonical timeline with unknown_intervals/contradictions
-current_mode=reconstruction
-```
-
-Expected imported object: semantically/exactly preserved under Case v2 validation.
-
-- [ ] **Step 2: Add reload/resume Playwright test**
-
-Record free account + statement + timeline, reload, and assert the same canonical state renders from IndexedDB.
-
-- [ ] **Step 3: Add preload→offline reconstruction vertical slice**
-
-Canonical path:
-
-```text
-online preload
-create/open Case
-enter reconstruction
-browser context offline
-record free account
-add confirmed statement
-rebuild timeline
-switch to Search
-add/check a deterministic target
-close or leave resumable
-```
-
-No Case API network request may be required for deterministic mutations.
-
-- [ ] **Step 4: Run focused tests**
+- [ ] **Step 1: Round-trip Case v2 fixture containing free account, statements, timeline unknowns/contradictions, and `current_mode=reconstruction`**
+- [ ] **Step 2: Reload after free account + statement + timeline and assert identical canonical IndexedDB state renders**
+- [ ] **Step 3: Preload online, go offline, then run `record free account → add statement → rebuild timeline → switch to Search → deterministic check` with no Case API mutation dependency**
+- [ ] **Step 4: Run**
 
 ```bash
 pnpm --dir apps/web exec vitest run apps/web/tests/unit/exportImport.spec.ts
 pnpm --dir apps/web exec playwright test apps/web/tests/e2e/reconstruction-offline.spec.ts
 ```
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add apps/web/tests apps/web/app/lib/storage apps/web/app/composables
-git commit -m "test: prove reconstruction portability and offline continuity"
-```
-
-### Task 10: Close production reachability and regression gates
+### Task 10: Close reachability, docs, and full regression gates
 
 **Files:**
 - Modify: `docs/CONTRACT_MATRIX.json`
-- Modify tests: repository contract/reachability modules under `tests/`
+- Modify: `tests/test_contract_matrix.py`
+- Modify: `tests/test_contract_reachability.py`
 - Modify: `docs/ARCHITECTURE.md`
 - Modify: `docs/ARCHITECTURE.en.md`
 - Modify: `README.md`
@@ -619,25 +405,13 @@ git commit -m "test: prove reconstruction portability and offline continuity"
 - Modify: `docs/GETTING_STARTED.md`
 - Modify: `docs/GETTING_STARTED.en.md`
 
-**Interfaces:**
-- Consumes: Tasks 1–9 production paths.
-- Produces: exact requirement→production→test trace and accurate RU/EN public documentation.
-
-- [ ] **Step 1: Replace provisional reconstruction selectors with exact production/test selectors**
-
-Every `MD-WEB-REQ-RECONSTRUCT-*` row must point to actual symbols/components/tests now present.
-
-- [ ] **Step 2: Add/extend reachability tests**
-
-A helper existing in a file is insufficient; tests must prove the command/component is used by the production flow.
-
-- [ ] **Step 3: Update architecture/public docs**
-
-Remove the statement that Web reconstruction is unavailable. Describe raw-free-account provenance, canonical timeline execution, offline reconstruction, and explicit transition to Search. Preserve all non-goals.
-
-- [ ] **Step 4: Run the complete local gate**
+- [ ] **Step 1: Replace all provisional reconstruction selectors with exact production/test selectors**
+- [ ] **Step 2: Add reachability assertions proving commands/components are in the production path**
+- [ ] **Step 3: Update RU/EN docs: Web reconstruction is now available; raw free-account provenance, portable timeline, offline boundary, and retained non-goals must be explicit**
+- [ ] **Step 4: Build changed-files input and run full CI-equivalent gate**
 
 ```bash
+git diff --name-only main...HEAD > /tmp/changed-files.txt
 python scripts/validate_repo.py
 python scripts/check_reference_freshness.py --changed-files-file /tmp/changed-files.txt
 python -m unittest discover -s tests -v
@@ -656,55 +430,24 @@ pnpm --dir apps/web build
 pnpm --dir apps/web exec playwright test
 ```
 
-Expected: all green; generated artifacts/corpus clean after regeneration.
+Expected: all green and generated artifacts/corpus clean.
 
-- [ ] **Step 5: Commit**
-
-```bash
-git add docs README.md README.en.md tests
-git commit -m "docs: document web reconstruction contract"
-```
-
-### Task 11: Prepare 0.4.0 version/release declaration only after implementation is green
+### Task 11: Declare 0.4.0 only after implementation is green
 
 **Files:**
-- Modify version surfaces validated by `scripts/validate_repo.py`
+- Modify version SSOT/dependent surfaces enforced by `scripts/validate_repo.py`
 - Create: `.github/releases/0.4.0.md`
 - Modify: `.github/releases/release.json`
-- Modify RU/EN CHANGELOG/version docs if present in current repository policy
-- Test: repository release/version contract tests under `tests/`
+- Modify: `tests/test_release_contract.py`
+- Modify RU/EN release/version docs required by current policy
 
 **Interfaces:**
-- Consumes: fully green implementation head.
-- Produces: declarative `0.4.0` repository/plugin release intent; publication remains a separate human authorization gate.
+- Produces declarative repository tag `0.4.0` and plugin tag `mind-detective-v0.4.0`; publication remains a separate human authorization gate.
 
-- [ ] **Step 1: Write failing version/release contract test for 0.4.0 surfaces**
-
-Expected tags:
-
-```text
-repository: 0.4.0
-plugin: mind-detective-v0.4.0
-```
-
-- [ ] **Step 2: Update all version SSOT/dependent surfaces consistently**
-
-Do not hardcode historical/current version assertions in generic validators where SSOT lookup is appropriate.
-
-- [ ] **Step 3: Write release notes that state actual delivered scope**
-
-Include deterministic Web reconstruction, free-account provenance, canonical timeline, offline continuity, and retained non-goals. Do not claim assistant reconstruction superiority.
-
-- [ ] **Step 4: Run complete CI-equivalent gate again**
-
-Use the commands from Task 10.
-
-- [ ] **Step 5: Open final implementation PR and require exact-head CI**
-
-Do not merge until exact-head CI is successful.
-
-- [ ] **Step 6: After explicit merge authorization, merge using merge commit and require exact-main CI**
-
-- [ ] **Step 7: Stop at release authorization gate**
-
-Do not dispatch `Publish current declared release` until the user separately authorizes publication of exact verified `main` SHA.
+- [ ] **Step 1: Add RED release-contract assertions for 0.4.0 declaration**
+- [ ] **Step 2: Update version surfaces consistently; validators should derive current version from SSOT rather than hardcode history**
+- [ ] **Step 3: Write release notes describing only delivered scope and retained non-goals**
+- [ ] **Step 4: Re-run Task 10 full gate**
+- [ ] **Step 5: Open implementation PR and require exact-head CI**
+- [ ] **Step 6: Merge only after explicit merge authorization, then require exact-main CI**
+- [ ] **Step 7: Stop at a separate release authorization gate; do not dispatch the canonical publisher without explicit approval of the exact verified main SHA**
