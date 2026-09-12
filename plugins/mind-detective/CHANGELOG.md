@@ -2,6 +2,10 @@
 
 [English](CHANGELOG.en.md)
 
+## [0.3.1] — 2026-09-12
+
+Patch-hardening после внешнего review: safety routing применяется на interaction ingress, plugin reconstruction mutations проходят через явную reducer boundary, production helper reachability проверяется механически, semantic scenario corpus честно обозначен как manual review, а plugin/API portability больше не зависит от фиксированной глубины монорепо. Сохранены пять production skills, `mind-detective-case/v2`, provenance/search invariants и отсутствие calibrated location probabilities.
+
 ## [0.3.0] — 2026-09-11
 
 Плагин `0.3.0` выделяет restricted portable execution kernel и certified intrinsic semantics, которые остаются Python source of truth и используются генератором Web local executor. Сохранены пять production skills, safety/provenance/search invariants и case-local persistence contract. Web/PWA может выполнять deterministic Case transitions локально только через generated certified artifact; вручную поддерживаемого второго reducer нет.
