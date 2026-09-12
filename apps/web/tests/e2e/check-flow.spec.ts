@@ -14,6 +14,7 @@ test('one-tap check commits canonical progress locally without command network',
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
   await expect(page.getByTestId('progress-checked')).toContainText('0')
   await expect(page.getByTestId('progress-remaining')).toContainText('1')
+  await expect(page.getByTestId('mark-checked')).toHaveText('Проверил — не нашёл')
 
   await page.getByTestId('mark-checked').click()
   await expect(page.getByTestId('progress-checked')).toContainText('1')
@@ -21,6 +22,7 @@ test('one-tap check commits canonical progress locally without command network',
   const persisted = await storedCase(page, caseValue.case_id)
   expect(persisted?.search_checks).toHaveLength(1)
   expect(persisted?.search_checks[0]?.method).toBe('reported_check')
+  expect(persisted?.search_checks[0]?.result).toBe('not_found')
   expect(commandCalls).toBe(0)
   await expect(page.getByTestId('check-quality-dialog')).toHaveCount(0)
 })

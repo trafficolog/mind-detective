@@ -22,9 +22,8 @@ test('deterministic create and mutations do not require case API network calls',
   await page.getByRole('button', { name: 'Перейти к поиску' }).click()
   await expect(page.getByTestId('mode-banner')).toContainText('Физический поиск')
 
-  await page.getByRole('button', { name: 'Написать' }).click()
-  await page.locator('#composer-text').fill('карман рюкзака')
-  await page.getByRole('button', { name: 'Сохранить' }).click()
+  await page.getByTestId('search-target-input').fill('карман рюкзака')
+  await page.getByTestId('add-search-target').click()
   await expect(page.getByTestId('next-action-target')).toHaveText('карман рюкзака')
 
   await page.getByTestId('mark-checked').click()

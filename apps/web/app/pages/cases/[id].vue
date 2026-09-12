@@ -276,6 +276,23 @@ async function resumeCase(): Promise<void> {
   if (returned) await logEvaluationEvent('resume', { case_id: returned.case_id })
 }
 
+async function addSearchTarget(target: string): Promise<void> {
+  const current = caseValue.value
+  const normalizedTarget = target.trim()
+  if (!current || current.current_mode !== 'search' || !normalizedTarget) return
+
+  await runCommand(envelope('add_statement', {
+    statement_id: crypto.randomUUID(),
+    source: 'user',
+    statement_type: 'search_suggestion',
+    original_text: normalizedTarget,
+    event_time: null,
+    user_confirmation: true,
+    supporting_evidence_ids: [],
+    limitations: [],
+  }))
+}
+
 async function markChecked(): Promise<void> {
   const action = proposal.value
   const current = caseValue.value
@@ -389,7 +406,7 @@ async function closeUnresolved(): Promise<void> {
 async function submitComposer(): Promise<void> {
   const text = composerText.value.trim()
   const current = caseValue.value
-  if (!text || !current) return
+  if (!text || !current || current.current_mode !== 'reconstruction') return
 
   const safetyCode = safetyCodeForInput(text)
   if (safetyCode) {
@@ -405,7 +422,7 @@ async function submitComposer(): Promise<void> {
   const returned = await runCommand(envelope('add_statement', {
     statement_id: crypto.randomUUID(),
     source: 'user',
-    statement_type: current.current_mode === 'search' ? 'search_suggestion' : 'recollection',
+    statement_type: 'recollection',
     original_text: text,
     event_time: null,
     user_confirmation: true,
@@ -523,6 +540,7 @@ onMounted(async () => {
         @checked="markChecked"
         @reject="showReject = true"
         @write="showComposer = true"
+        @add-search-target="addSearchTarget"
         @journal="scrollJournal"
         @found="showClose = true"
         @pause="pauseCase"
@@ -567,9 +585,7 @@ onMounted(async () => {
         <section class="dialog-sheet" role="dialog" aria-modal="true" aria-labelledby="composer-title">
           <h2 id="composer-title">{{ t('composer.title') }}</h2>
           <form @submit.prevent="submitComposer">
-            <label class="field-label" for="composer-text">
-              {{ caseValue.current_mode === 'search' ? t('composer.search_label') : t('composer.label') }}
-            </label>
+            <label class="field-label" for="composer-text">{{ t('composer.label') }}</label>
             <textarea id="composer-text" v-model="composerText" rows="4" required />
             <div class="dialog-actions">
               <button class="secondary-action" type="button" @click="showComposer = false">{{ t('common.cancel') }}</button>

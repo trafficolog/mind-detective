@@ -57,7 +57,9 @@ test.describe('English locale contract', () => {
     await page.goto(`/cases/${caseValue.case_id}`)
 
     await expect(page.getByTestId('mode-banner')).toContainText('Physical search')
-    await expect(page.getByRole('button', { name: 'Write' })).toBeVisible()
+    await expect(page.getByTestId('search-target-form')).toContainText('Add a place to the checklist')
+    await expect(page.getByTestId('add-search-target')).toHaveText('Add to checklist')
+    await expect(page.getByRole('button', { name: 'Write' })).toHaveCount(0)
   })
 })
 

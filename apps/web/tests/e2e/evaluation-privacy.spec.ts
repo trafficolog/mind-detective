@@ -19,7 +19,7 @@ test('post-case ratings store one bounded categorical event without free text', 
   const { caseId } = await startStagedCase(page, 1, 'rating privacy item')
   await seedCase(page, caseFixture({ case_id: caseId }))
   await page.goto(`/cases/${caseId}`)
-  await page.getByRole('button', { name: 'Нашёл' }).click()
+  await page.getByTestId('found-case').click()
   await page.getByTestId('close-unresolved').click()
   await expect(page.getByTestId('case-outcome')).toBeVisible()
   await expect(page.getByTestId('evaluation-ratings')).toBeVisible()
