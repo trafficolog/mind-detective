@@ -18,6 +18,22 @@ class EvalContractTests(unittest.TestCase):
     def test_repository_eval_contract_is_valid(self):
         self.assertEqual(validate_eval_data(self.eval_data, self.registry), [])
 
+    def test_semantic_validation_governance_is_declared(self):
+        governance = self.eval_data.get("semantic_validation")
+        self.assertIsInstance(governance, dict)
+        self.assertEqual(governance.get("mode"), "manual")
+        self.assertFalse(governance.get("automated_runner"))
+        self.assertEqual(governance.get("protocol"), "docs/evaluation/SEMANTIC_SCENARIO_REVIEW.md")
+
+    def test_automated_semantic_runner_claim_is_rejected(self):
+        broken = copy.deepcopy(self.eval_data)
+        broken["semantic_validation"] = {
+            "mode": "automated",
+            "automated_runner": True,
+            "protocol": "docs/evaluation/SEMANTIC_SCENARIO_REVIEW.md",
+        }
+        self.assertIn("MD_EVAL_SEMANTIC_AUTOMATION_UNAVAILABLE", validate_eval_data(broken, self.registry))
+
     def test_unknown_token_is_rejected(self):
         broken = copy.deepcopy(self.eval_data)
         broken["scenarios"][0]["must_mention_tokens"] = ["UNKNOWN_TOKEN"]
