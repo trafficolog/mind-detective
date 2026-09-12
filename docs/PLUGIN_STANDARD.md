@@ -8,11 +8,11 @@
 
 ## Skills
 
-0.1.0 содержит ровно пять production skills. Каждый skill фиксирует inputs, deterministic calls, outputs, limitations и mode/lifecycle transition. Runtime helpers находятся внутри plugin и не зависят от root-package installation.
+Текущий production contract содержит ровно пять skills: router, reconstruct, plan, resume и close. Каждый skill фиксирует inputs, deterministic calls, outputs, limitations и mode/lifecycle transition. Runtime helpers находятся внутри plugin и не зависят от root-package installation.
 
 ## Contracts
 
-Поведенческие инварианты получают `MD-REQ-*`. Active high-risk requirement обязан иметь owning skill, helper, exact unittest selector и reference в `CONTRACT_MATRIX.json`. Host-semantic enforcement, который нельзя доказать механически, должен быть назван `skill_contract+eval+review`, а не «machine enforced end-to-end».
+Поведенческие инварианты получают `MD-REQ-*`. Active high-risk requirement обязан иметь owning skill, helper, exact unittest selector и reference в `CONTRACT_MATRIX.json`. Active helper должен быть достижим от production surface; одного существования файла недостаточно. Host-semantic enforcement, который нельзя доказать механически, должен быть назван `skill_contract+eval+review`, а не «machine enforced end-to-end».
 
 ## Distribution boundary
 
