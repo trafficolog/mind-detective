@@ -10,7 +10,7 @@ import { enforceSafeInput } from '~/lib/safety'
 export interface LocalExecution {
   createCase(caseId: string, itemLabel: string, now: string): Promise<CaseV2>
   sendCommand(caseValue: CaseV2, command: CommandEnvelope): Promise<CaseV2>
-  checklistProposal(caseValue: CaseV2, mode: 'reconstruction' | 'search'): ProposalModel
+  checklistProposal(caseValue: CaseV2): ProposalModel
 }
 
 function plainCase(caseValue: CaseV2): CaseV2 {
@@ -36,8 +36,8 @@ export function useLocalExecution(): LocalExecution {
     return await applyLocalCommand(repository, plainCase(caseValue), command)
   }
 
-  function checklistProposal(caseValue: CaseV2, mode: 'reconstruction' | 'search'): ProposalModel {
-    return buildLocalChecklistProposal(plainCase(caseValue), mode)
+  function checklistProposal(caseValue: CaseV2): ProposalModel {
+    return buildLocalChecklistProposal(plainCase(caseValue), 'search')
   }
 
   return { createCase, sendCommand, checklistProposal }
