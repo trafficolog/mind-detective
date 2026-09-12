@@ -56,18 +56,18 @@ Web/PWA реализует физический Search/checklist surface. Пол
 
 ## Web Reconstruction Foundation 0.4.0
 
-Следующие контракты зарезервированы для Web Reconstruction 0.4.0. До появления production path и exact selector они остаются `planned`; Task 8 переводит их в `active` только после реализации и проверок.
+Следующие контракты реализованы Tasks 2–7 и активированы только после появления production path, exact test selector и проверки production reachability.
 
-- `MD-WEB-REQ-RECONSTRUCT-01` — raw free account предшествует detailed reconstruction statements. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-02` — recollection/habit/observation в Web имеют user provenance и остаются user-originated/user-confirmed. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-03` — reconstruction не вводит неподдержанные concrete locations как cues. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-04` — unknown intervals и contradictions сохраняются и отображаются канонически. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-05` — timeline mutation выполняется через portable authoritative semantics и generated Web execution. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-06` — raw account, structured evidence, derived uncertainty, proposals и Search семантически и визуально различимы. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-07` — переход reconstruction → Search явный и не повышает evidence status. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-08` — deterministic reconstruction работает offline после PWA preload. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-09` — RU/EN reconstruction copy имеет exact key parity и эквивалентную safety/privacy semantics. **Status: planned for 0.4.0.**
-- `MD-WEB-REQ-RECONSTRUCT-10` — Case v2 export/import сохраняет reconstruction state без server validation dependency. **Status: planned for 0.4.0.**
+- `MD-WEB-REQ-RECONSTRUCT-01` — raw free account предшествует detailed reconstruction statements. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-02` — recollection/habit/observation в Web имеют user provenance и остаются user-originated/user-confirmed. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-03` — reconstruction не вводит неподдержанные concrete locations как cues. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-04` — unknown intervals и contradictions сохраняются и отображаются канонически. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-05` — timeline mutation выполняется через portable authoritative semantics и generated Web execution. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-06` — raw account, structured evidence, derived uncertainty, proposals и Search семантически и визуально различимы. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-07` — переход reconstruction → Search явный и не повышает evidence status. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-08` — deterministic reconstruction работает offline после PWA preload. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-09` — RU/EN reconstruction copy имеет exact key parity и эквивалентную safety/privacy semantics. **Status: active.**
+- `MD-WEB-REQ-RECONSTRUCT-10` — Case v2 export/import сохраняет reconstruction state без server validation dependency. **Status: active.**
 
 ## Offline deterministic execution 0.3.0
 

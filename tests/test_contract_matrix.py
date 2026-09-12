@@ -58,6 +58,49 @@ RECONSTRUCTION_REQUIREMENTS = {
     f"MD-WEB-REQ-RECONSTRUCT-{index:02d}" for index in range(1, 11)
 }
 
+RECONSTRUCTION_TRACES = {
+    "MD-WEB-REQ-RECONSTRUCT-01": (
+        "apps/web/app/pages/cases/[id].vue",
+        "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-02": (
+        "plugins/mind-detective/scripts/statements.py",
+        "plugins/mind-detective/tests/test_statements.py::StatementTests.test_assistant_cannot_originate_recollection",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-03": (
+        "apps/web/app/components/reconstruction/ReconstructionPanel.vue",
+        "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-04": (
+        "apps/web/app/components/reconstruction/TimelineSummary.vue",
+        "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-05": (
+        "plugins/mind-detective/scripts/portable_kernel.py",
+        "apps/web/tests/unit/localExecutionConformance.spec.ts::matches every committed conformance vector",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-06": (
+        "apps/web/app/components/reconstruction/ReconstructionPanel.vue",
+        "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-07": (
+        "apps/web/app/pages/cases/[id].vue",
+        "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-08": (
+        "apps/web/app/lib/execution/localExecutor.ts",
+        "apps/web/tests/e2e/offline-reconstruction.spec.ts::preloaded PWA continues reconstruction and Search deterministically while offline",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-09": (
+        "apps/web/app/lib/i18n/index.ts",
+        "apps/web/tests/unit/i18n.spec.ts::keeps the complete reconstruction copy contract and epistemic boundary",
+    ),
+    "MD-WEB-REQ-RECONSTRUCT-10": (
+        "apps/web/app/lib/storage/exportImport.ts",
+        "apps/web/tests/unit/exportImport.spec.ts::round-trips reconstruction evidence and derived timeline through Case v2 export/import",
+    ),
+}
+
 
 class ContractMatrixTests(unittest.TestCase):
     def test_exact_selector_exists_for_real_unittest_method(self):
@@ -107,7 +150,7 @@ class ContractMatrixTests(unittest.TestCase):
         self.assertEqual(duplicates, set())
         self.assertTrue(OFFLINE_REQUIREMENTS.issubset(ids))
 
-    def test_repository_declares_planned_reconstruction_requirements(self):
+    def test_repository_declares_active_reconstruction_requirements_with_exact_traces(self):
         ids, duplicates = collect_requirement_ids(ROOT / "docs/REQUIREMENTS.md")
         self.assertEqual(duplicates, set())
         self.assertTrue(RECONSTRUCTION_REQUIREMENTS.issubset(ids))
@@ -119,8 +162,18 @@ class ContractMatrixTests(unittest.TestCase):
             if row["requirement_id"] in RECONSTRUCTION_REQUIREMENTS
         }
         self.assertEqual(set(rows), RECONSTRUCTION_REQUIREMENTS)
-        self.assertTrue(all(row["status"] == "planned" for row in rows.values()))
-        self.assertTrue(all("test" not in row and "helper" not in row for row in rows.values()))
+        for requirement_id, row in rows.items():
+            self.assertEqual(row["status"], "active", requirement_id)
+            self.assertNotIn("planned_task", row, requirement_id)
+            self.assertNotIn("reason", row, requirement_id)
+            for field in ("enforcement", "skill", "helper", "test", "reference"):
+                self.assertIsInstance(row.get(field), str, f"{requirement_id}:{field}")
+                self.assertTrue(row[field], f"{requirement_id}:{field}")
+            expected_helper, expected_test = RECONSTRUCTION_TRACES[requirement_id]
+            self.assertEqual(row["helper"], expected_helper, requirement_id)
+            self.assertEqual(row["test"], expected_test, requirement_id)
+            self.assertTrue(selector_exists(ROOT, row["test"]), requirement_id)
+            self.assertNotIn("docs/superpowers/specs/", row["reference"], requirement_id)
 
     def test_privacy_requirement_is_active_and_exactly_traced(self):
         matrix = json.loads((ROOT / "docs/CONTRACT_MATRIX.json").read_text(encoding="utf-8"))
