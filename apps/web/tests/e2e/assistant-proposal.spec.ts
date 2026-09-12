@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { candidate, caseFixture, seedCase } from './helpers'
 
 test('guard block shows reviewed fallback and never exposes rejected raw proposal text', async ({ page }) => {
-  const caseValue = caseFixture({ current_mode: 'reconstruction', candidates: [] })
+  const caseValue = caseFixture({ current_mode: 'search', candidates: [] })
   await page.route('**/api/v1/proposal/next', async (route) => {
     await route.fulfill({
       status: 200,
@@ -23,10 +23,10 @@ test('guard block shows reviewed fallback and never exposes rejected raw proposa
           }],
         },
         proposal: {
-          kind: 'clarification',
+          kind: 'need_more_information',
           candidate_id: null,
           target: null,
-          copy_key: 'reconstruction.clarification',
+          copy_key: 'empty.add_supported_place_or_reconstruct',
           rationale_codes: [],
           related_statement_ids: [],
         },
@@ -88,37 +88,6 @@ test('blocked reconstruction proposal is not carried into a newly loaded search-
 
   await page.route('**/api/v1/proposal/next', async (route) => {
     proposalCalls += 1
-    if (proposalCalls === 1) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          case: {
-            ...reconstruction,
-            interaction_journal: [{
-              id: 'guard-scenario',
-              author: 'system',
-              mode: 'system',
-              entry_type: 'guard_block',
-              text: 'guard.ai_proposal_blocked',
-              created_at: '2026-09-10T07:01:00Z',
-              statement_ids: [],
-              search_check_ids: [],
-            }],
-          },
-          proposal: {
-            kind: 'clarification',
-            candidate_id: null,
-            target: null,
-            copy_key: 'reconstruction.clarification',
-            rationale_codes: [],
-            related_statement_ids: [],
-          },
-          guard_code: 'MD_G_RECON_NEW_LOCATION',
-        }),
-      })
-      return
-    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -139,12 +108,12 @@ test('blocked reconstruction proposal is not carried into a newly loaded search-
 
   await seedCase(page, reconstruction)
   await page.goto(`/cases/${reconstruction.case_id}`)
-  await expect(page.getByTestId('guard-block')).toBeVisible()
-  await expect(page.getByText('секретная машина')).toHaveCount(0)
+  await expect(page.getByTestId('web-reconstruction-unavailable')).toBeVisible()
+  expect(proposalCalls).toBe(0)
 
   await seedCase(page, search)
   await page.goto(`/cases/${search.case_id}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('сумка')
   await expect(page.getByTestId('guard-block')).toHaveCount(0)
-  await expect(page.getByText('секретная машина')).toHaveCount(0)
+  expect(proposalCalls).toBe(1)
 })
