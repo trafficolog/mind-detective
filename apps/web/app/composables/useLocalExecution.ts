@@ -3,7 +3,7 @@ import type { CaseV2, CommandEnvelope, ProposalModel } from '~/lib/api/contracts
 import {
   applyLocalCommand,
   buildLocalChecklistProposal,
-  createLocalCase,
+  createLocalSearchCase,
 } from '~/lib/execution/localExecutor'
 import { enforceSafeInput } from '~/lib/safety'
 
@@ -28,7 +28,7 @@ export function useLocalExecution(): LocalExecution {
 
   async function createCase(caseId: string, itemLabel: string, now: string): Promise<CaseV2> {
     enforceSafeInput(itemLabel)
-    return await createLocalCase(repository, caseId, itemLabel, now)
+    return await createLocalSearchCase(repository, caseId, itemLabel, now)
   }
 
   async function sendCommand(caseValue: CaseV2, command: CommandEnvelope): Promise<CaseV2> {
