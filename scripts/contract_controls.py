@@ -76,17 +76,54 @@ def _read_text(path: Path) -> str:
         return ""
 
 
-def _web_sources(root: Path, helper: Path) -> list[Path]:
+def _web_sources(root: Path) -> list[Path]:
     app_root = root / "apps/web/app"
     if not app_root.is_dir():
         return []
     return [
         path
         for path in app_root.rglob("*")
-        if path.is_file()
-        and path != helper
-        and path.suffix in _WEB_SOURCE_SUFFIXES
+        if path.is_file() and path.suffix in _WEB_SOURCE_SUFFIXES
     ]
+
+
+def _web_source_references(source: Path, target: Path, app_root: Path) -> bool:
+    if source == target:
+        return False
+    try:
+        relative = target.relative_to(app_root)
+    except ValueError:
+        return False
+    parts = relative.parts
+    if not parts:
+        return False
+
+    text = _read_text(source)
+    stem = target.stem
+    if parts[0] == "components":
+        marker = re.compile(rf"(?:<|\b){re.escape(stem)}\b")
+        return bool(marker.search(text))
+
+    if parts[0] == "composables":
+        direct_call = re.compile(rf"\b{re.escape(stem)}\s*\(")
+        module_import = re.compile(rf"from\s+['\"][^'\"]*{re.escape(stem)}['\"]")
+        return bool(direct_call.search(text) or module_import.search(text))
+
+    if parts[0] == "lib":
+        module_key = target.parent.name if stem == "index" else stem
+        marker = re.compile(rf"(?:/|\b){re.escape(module_key)}(?:['\"/]|\b)")
+        return bool(marker.search(text))
+
+    return False
+
+
+def _web_production_root(path: Path, app_root: Path) -> bool:
+    try:
+        relative = path.relative_to(app_root)
+    except ValueError:
+        return False
+    parts = relative.parts
+    return relative.as_posix() == "app.vue" or bool(parts and parts[0] == "pages")
 
 
 def _web_helper_reachable(root: Path, helper_text: str) -> bool:
@@ -109,29 +146,22 @@ def _web_helper_reachable(root: Path, helper_text: str) -> bool:
     if parts and parts[0] == "pages":
         return True
 
-    sources = _web_sources(root, helper)
+    sources = _web_sources(root)
     if not sources:
         return False
 
-    stem = helper.stem
-    if parts and parts[0] == "components":
-        marker = re.compile(rf"(?:<|\b){re.escape(stem)}\b")
-        return any(marker.search(_read_text(source)) for source in sources)
-
-    if parts and parts[0] == "composables":
-        direct_call = re.compile(rf"\b{re.escape(stem)}\s*\(")
-        module_import = re.compile(rf"from\s+['\"][^'\"]*{re.escape(stem)}['\"]")
-        return any(
-            direct_call.search(_read_text(source)) or module_import.search(_read_text(source))
-            for source in sources
-        )
-
-    if parts and parts[0] == "lib":
-        module_key = helper.parent.name if stem == "index" else stem
-        marker = re.compile(rf"(?:/|\b){re.escape(module_key)}(?:['\"/]|\b)")
-        return any(marker.search(_read_text(source)) for source in sources)
-
-    return True
+    pending = [helper]
+    visited = {helper}
+    while pending:
+        target = pending.pop()
+        for source in sources:
+            if source in visited or not _web_source_references(source, target, app_root):
+                continue
+            if _web_production_root(source, app_root):
+                return True
+            visited.add(source)
+            pending.append(source)
+    return False
 
 
 def _api_helper_reachable(root: Path, helper_text: str) -> bool:
