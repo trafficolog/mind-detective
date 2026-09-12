@@ -9,7 +9,6 @@ from .plugin_reducer import (
     refresh_next_action as reduce_refresh_next_action,
     replace_candidates as reduce_replace_candidates,
     set_constraints as reduce_set_constraints,
-    set_timeline as reduce_set_timeline,
 )
 from .portable_intrinsics import PortableKernelError
 from .portable_kernel import (
@@ -25,6 +24,7 @@ from .portable_kernel import (
     refine_search_check_json,
     resume_json,
     set_mode_json,
+    set_timeline_json,
 )
 from .safety import SafetyRoute, classify_request
 from .search_log import SearchCheck, SearchLogError, SearchMethod, find_duplicate_checks
@@ -127,7 +127,28 @@ class CaseController:
             raise self._case_error(exc) from exc
 
     def set_timeline(self, case: Case, timeline: Timeline, now: str) -> Case:
-        return reduce_set_timeline(case, timeline, now)
+        event_payloads = [
+            {
+                "id": event.id,
+                "label": event.label,
+                "statement_ids": list(event.statement_ids),
+                "event_time": event.event_time,
+                "time_precision": event.time_precision,
+            }
+            for event in timeline.events
+        ]
+        try:
+            return self._from_portable(
+                set_timeline_json(
+                    case_to_dict(case),
+                    event_payloads,
+                    timeline.last_supported_interaction_id,
+                    timeline.first_noticed_missing_id,
+                    now,
+                )
+            )
+        except PortableKernelError as exc:
+            raise self._case_error(exc) from exc
 
     def record_search_check(self, case: Case, check: SearchCheck, now: str) -> Case:
         check_payload: dict[str, object] = {
