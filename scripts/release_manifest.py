@@ -191,7 +191,7 @@ def validate_release_manifest(root: Path, manifest_path: Path | None = None) -> 
         _require_marker(plugin_root / "CHANGELOG.en.md", f"## [{version}]", errors)
 
     if len(plugins) != 1 or not isinstance(plugins[0], dict) or plugins[0].get("plugin") != "mind-detective":
-        errors.append("0.1.0 release manifest must declare exactly the mind-detective plugin")
+        errors.append("release manifest must declare exactly the mind-detective plugin")
     return errors
 
 
