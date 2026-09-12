@@ -8,6 +8,7 @@ SUPPORTED_COMMAND_TYPES: tuple[str, ...] = (
     "set_mode",
     "record_free_account",
     "add_statement",
+    "rebuild_timeline",
     "record_search_check",
     "refine_search_check",
     "reject_next_action",
@@ -28,5 +29,7 @@ STABLE_LOCAL_ERRORS: frozenset[str] = frozenset(
         "MD_RECON_MODE_REQUIRED",
         "MD_RECON_FREE_ACCOUNT_REQUIRED",
         "MD_RECON_FREE_ACCOUNT_EXISTS",
+        "MD_RECON_TIMELINE_EVENT_DUPLICATE",
+        "MD_RECON_STATEMENT_NOT_FOUND",
     }
 )

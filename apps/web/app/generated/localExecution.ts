@@ -4,7 +4,7 @@
 
 export const LOCAL_EXECUTION_CONTRACT = "mind-detective-local-execution/v1"
 export const GENERATOR_VERSION = "local-execution-generator/v1"
-const SUPPORTED_COMMAND_TYPES = ["set_mode","record_free_account","add_statement","record_search_check","refine_search_check","reject_next_action","pause","resume","close_found","close_unresolved"]
+const SUPPORTED_COMMAND_TYPES = ["set_mode","record_free_account","add_statement","rebuild_timeline","record_search_check","refine_search_check","reject_next_action","pause","resume","close_found","close_unresolved"]
 const PY_CASEFOLD: Record<string, string> = {"1000":"ϩ","1002":"ϫ","1004":"ϭ","1006":"ϯ","1008":"κ","1009":"ρ","1012":"θ","1013":"ε","1015":"ϸ","1017":"ϲ","1018":"ϻ","1021":"ͻ","1022":"ͼ","1023":"ͽ","1024":"ѐ","1025":"ё","1026":"ђ","1027":"ѓ","1028":"є","1029":"ѕ","1030":"і","1031":"ї","1032":"ј","1033":"љ","1034":"њ","1035":"ћ","1036":"ќ","1037":"ѝ","1038":"ў","1039":"џ","1040":"а","1041":"б","1042":"в","1043":"г","1044":"д","1045":"е","1046":"ж","1047":"з","1048":"и","1049":"й","1050":"к","1051":"л","1052":"м","1053":"н","1054":"о","1055":"п","1056":"р","1057":"с","1058":"т","1059":"у","1060":"ф","1061":"х","1062":"ц","1063":"ч","1064":"ш","1065":"щ","1066":"ъ","1067":"ы","1068":"ь","1069":"э","1070":"ю","1071":"я","1120":"ѡ","1122":"ѣ","1124":"ѥ","1126":"ѧ","11264":"ⰰ","11265":"ⰱ","11266":"ⰲ","11267":"ⰳ","11268":"ⰴ","11269":"ⰵ","11270":"ⰶ","11271":"ⰷ","11272":"ⰸ","11273":"ⰹ","11274":"ⰺ","11275":"ⰻ","11276":"ⰼ","11277":"ⰽ","11278":"ⰾ","11279":"ⰿ","1128":"ѩ","11280":"ⱀ","11281":"ⱁ","11282":"ⱂ","11283":"ⱃ","11284":"ⱄ","11285":"ⱅ","11286":"ⱆ","11287":"ⱇ","11288":"ⱈ","11289":"ⱉ","11290":"ⱊ","11291":"ⱋ","11292":"ⱌ","11293":"ⱍ","11294":"ⱎ","11295":"ⱏ","11296":"ⱐ","11297":"ⱑ","11298":"ⱒ","11299":"ⱓ","1130":"ѫ","11300":"ⱔ","11301":"ⱕ","11302":"ⱖ","11303":"ⱗ","11304":"ⱘ","11305":"ⱙ","11306":"ⱚ","11307":"ⱛ","11308":"ⱜ","11309":"ⱝ","11310":"ⱞ","11311":"ⱟ","1132":"ѭ","1134":"ѯ","1136":"ѱ","11360":"ⱡ","11362":"ɫ","11363":"ᵽ","11364":"ɽ","11367":"ⱨ","11369":"ⱪ","11371":"ⱬ","11373":"ɑ","11374":"ɱ","11375":"ɐ","11376":"ɒ","11378":"ⱳ","1138":"ѳ","11381":"ⱶ","11390":"ȿ","11391":"ɀ","11392":"ⲁ","11394":"ⲃ","11396":"ⲅ","11398":"ⲇ","1140":"ѵ","11400":"ⲉ","11402":"ⲋ","11404":"ⲍ","11406":"ⲏ","11408":"ⲑ","11410":"ⲓ","11412":"ⲕ","11414":"ⲗ","11416":"ⲙ","11418":"ⲛ","1142":"ѷ","11420":"ⲝ","11422":"ⲟ","11424":"ⲡ","11426":"ⲣ","11428":"ⲥ","11430":"ⲧ","11432":"ⲩ","11434":"ⲫ","11436":"ⲭ","11438":"ⲯ","1144":"ѹ","11440":"ⲱ","11442":"ⲳ","11444":"ⲵ","11446":"ⲷ","11448":"ⲹ","11450":"ⲻ","11452":"ⲽ","11454":"ⲿ","11456":"ⳁ","11458":"ⳃ","1146":"ѻ","11460":"ⳅ","11462":"ⳇ","11464":"ⳉ","11466":"ⳋ","11468":"ⳍ","11470":"ⳏ","11472":"ⳑ","11474":"ⳓ","11476":"ⳕ","11478":"ⳗ","1148":"ѽ","11480":"ⳙ","11482":"ⳛ","11484":"ⳝ","11486":"ⳟ","11488":"ⳡ","11490":"ⳣ","11499":"ⳬ","1150":"ѿ","11501":"ⳮ","11506":"ⳳ","1152":"ҁ","1162":"ҋ","1164":"ҍ","1166":"ҏ","1168":"ґ","1170":"ғ","1172":"ҕ","1174":"җ","1176":"ҙ","1178":"қ","1180":"ҝ","1182":"ҟ","1184":"ҡ","1186":"ң","1188":"ҥ","1190":"ҧ","1192":"ҩ","1194":"ҫ","1196":"ҭ","1198":"ү","1200":"ұ","1202":"ҳ","1204":"ҵ","1206":"ҷ","1208":"ҹ","1210":"һ","1212":"ҽ","1214":"ҿ","1216":"ӏ","1217":"ӂ","1219":"ӄ","1221":"ӆ","1223":"ӈ","1225":"ӊ","1227":"ӌ","1229":"ӎ","1232":"ӑ","1234":"ӓ","1236":"ӕ","1238":"ӗ","1240":"ә","1242":"ӛ","1244":"ӝ","1246":"ӟ","1248":"ӡ","1250":"ӣ","125184":"𞤢","125185":"𞤣","125186":"𞤤","125187":"𞤥","125188":"𞤦","125189":"𞤧","125190":"𞤨","125191":"𞤩","125192":"𞤪","125193":"𞤫","125194":"𞤬","125195":"𞤭","125196":"𞤮","125197":"𞤯","125198":"𞤰","125199":"𞤱","1252":"ӥ","125200":"𞤲","125201":"𞤳","125202":"𞤴","125203":"𞤵","125204":"𞤶","125205":"𞤷","125206":"𞤸","125207":"𞤹","125208":"𞤺","125209":"𞤻","125210":"𞤼","125211":"𞤽","125212":"𞤾","125213":"𞤿","125214":"𞥀","125215":"𞥁","125216":"𞥂","125217":"𞥃","1254":"ӧ","1256":"ө","1258":"ӫ","1260":"ӭ","1262":"ӯ","1264":"ӱ","1266":"ӳ","1268":"ӵ","1270":"ӷ","1272":"ӹ","1274":"ӻ","1276":"ӽ","1278":"ӿ","1280":"ԁ","1282":"ԃ","1284":"ԅ","1286":"ԇ","1288":"ԉ","1290":"ԋ","1292":"ԍ","1294":"ԏ","1296":"ԑ","1298":"ԓ","1300":"ԕ","1302":"ԗ","1304":"ԙ","1306":"ԛ","1308":"ԝ","1310":"ԟ","1312":"ԡ","1314":"ԣ","1316":"ԥ","1318":"ԧ","1320":"ԩ","1322":"ԫ","1324":"ԭ","1326":"ԯ","1329":"ա","1330":"բ","1331":"գ","1332":"դ","1333":"ե","1334":"զ","1335":"է","1336":"ը","1337":"թ","1338":"ժ","1339":"ի","1340":"լ","1341":"խ","1342":"ծ","1343":"կ","1344":"հ","1345":"ձ","1346":"ղ","1347":"ճ","1348":"մ","1349":"յ","1350":"ն","1351":"շ","1352":"ո","1353":"չ","1354":"պ","1355":"ջ","1356":"ռ","1357":"ս","1358":"վ","1359":"տ","1360":"ր","1361":"ց","1362":"ւ","1363":"փ","1364":"ք","1365":"օ","1366":"ֆ","1415":"եւ","181":"μ","192":"à","193":"á","194":"â","195":"ã","196":"ä","197":"å","198":"æ","199":"ç","200":"è","201":"é","202":"ê","203":"ë","204":"ì","205":"í","206":"î","207":"ï","208":"ð","209":"ñ","210":"ò","211":"ó","212":"ô","213":"õ","214":"ö","216":"ø","217":"ù","218":"ú","219":"û","220":"ü","221":"ý","222":"þ","223":"ss","256":"ā","258":"ă","260":"ą","262":"ć","264":"ĉ","266":"ċ","268":"č","270":"ď","272":"đ","274":"ē","276":"ĕ","278":"ė","280":"ę","282":"ě","284":"ĝ","286":"ğ","288":"ġ","290":"ģ","292":"ĥ","294":"ħ","296":"ĩ","298":"ī","300":"ĭ","302":"į","304":"i̇","306":"ĳ","308":"ĵ","310":"ķ","313":"ĺ","315":"ļ","317":"ľ","319":"ŀ","321":"ł","323":"ń","325":"ņ","327":"ň","329":"ʼn","330":"ŋ","332":"ō","334":"ŏ","336":"ő","338":"œ","340":"ŕ","342":"ŗ","344":"ř","346":"ś","348":"ŝ","350":"ş","352":"š","354":"ţ","356":"ť","358":"ŧ","360":"ũ","362":"ū","364":"ŭ","366":"ů","368":"ű","370":"ų","372":"ŵ","374":"ŷ","376":"ÿ","377":"ź","379":"ż","381":"ž","383":"s","385":"ɓ","386":"ƃ","388":"ƅ","390":"ɔ","391":"ƈ","393":"ɖ","394":"ɗ","395":"ƌ","398":"ǝ","399":"ə","400":"ɛ","401":"ƒ","403":"ɠ","404":"ɣ","406":"ɩ","407":"ɨ","408":"ƙ","412":"ɯ","413":"ɲ","415":"ɵ","416":"ơ","418":"ƣ","420":"ƥ","422":"ʀ","423":"ƨ","425":"ʃ","4256":"ⴀ","42560":"ꙁ","42562":"ꙃ","42564":"ꙅ","42566":"ꙇ","42568":"ꙉ","4257":"ⴁ","42570":"ꙋ","42572":"ꙍ","42574":"ꙏ","42576":"ꙑ","42578":"ꙓ","4258":"ⴂ","42580":"ꙕ","42582":"ꙗ","42584":"ꙙ","42586":"ꙛ","42588":"ꙝ","4259":"ⴃ","42590":"ꙟ","42592":"ꙡ","42594":"ꙣ","42596":"ꙥ","42598":"ꙧ","4260":"ⴄ","42600":"ꙩ","42602":"ꙫ","42604":"ꙭ","4261":"ⴅ","4262":"ⴆ","42624":"ꚁ","42626":"ꚃ","42628":"ꚅ","4263":"ⴇ","42630":"ꚇ","42632":"ꚉ","42634":"ꚋ","42636":"ꚍ","42638":"ꚏ","4264":"ⴈ","42640":"ꚑ","42642":"ꚓ","42644":"ꚕ","42646":"ꚗ","42648":"ꚙ","4265":"ⴉ","42650":"ꚛ","4266":"ⴊ","4267":"ⴋ","4268":"ⴌ","4269":"ⴍ","4270":"ⴎ","4271":"ⴏ","4272":"ⴐ","4273":"ⴑ","4274":"ⴒ","4275":"ⴓ","4276":"ⴔ","4277":"ⴕ","4278":"ⴖ","42786":"ꜣ","42788":"ꜥ","4279":"ⴗ","42790":"ꜧ","42792":"ꜩ","42794":"ꜫ","42796":"ꜭ","42798":"ꜯ","428":"ƭ","4280":"ⴘ","42802":"ꜳ","42804":"ꜵ","42806":"ꜷ","42808":"ꜹ","4281":"ⴙ","42810":"ꜻ","42812":"ꜽ","42814":"ꜿ","42816":"ꝁ","42818":"ꝃ","4282":"ⴚ","42820":"ꝅ","42822":"ꝇ","42824":"ꝉ","42826":"ꝋ","42828":"ꝍ","4283":"ⴛ","42830":"ꝏ","42832":"ꝑ","42834":"ꝓ","42836":"ꝕ","42838":"ꝗ","4284":"ⴜ","42840":"ꝙ","42842":"ꝛ","42844":"ꝝ","42846":"ꝟ","42848":"ꝡ","4285":"ⴝ","42850":"ꝣ","42852":"ꝥ","42854":"ꝧ","42856":"ꝩ","42858":"ꝫ","4286":"ⴞ","42860":"ꝭ","42862":"ꝯ","4287":"ⴟ","42873":"ꝺ","42875":"ꝼ","42877":"ᵹ","42878":"ꝿ","4288":"ⴠ","42880":"ꞁ","42882":"ꞃ","42884":"ꞅ","42886":"ꞇ","4289":"ⴡ","42891":"ꞌ","42893":"ɥ","42896":"ꞑ","42898":"ꞓ","4290":"ⴢ","42902":"ꞗ","42904":"ꞙ","42906":"ꞛ","42908":"ꞝ","4291":"ⴣ","42910":"ꞟ","42912":"ꞡ","42914":"ꞣ","42916":"ꞥ","42918":"ꞧ","4292":"ⴤ","42920":"ꞩ","42922":"ɦ","42923":"ɜ","42924":"ɡ","42925":"ɬ","42926":"ɪ","42928":"ʞ","42929":"ʇ","4293":"ⴥ","42930":"ʝ","42931":"ꭓ","42932":"ꞵ","42934":"ꞷ","42936":"ꞹ","42938":"ꞻ","42940":"ꞽ","42942":"ꞿ","42944":"ꟁ","42946":"ꟃ","42948":"ꞔ","42949":"ʂ","4295":"ⴧ","42950":"ᶎ","42951":"ꟈ","42953":"ꟊ","42960":"ꟑ","42966":"ꟗ","42968":"ꟙ","42997":"ꟶ","430":"ʈ","4301":"ⴭ","431":"ư","433":"ʊ","434":"ʋ","435":"ƴ","437":"ƶ","43888":"Ꭰ","43889":"Ꭱ","43890":"Ꭲ","43891":"Ꭳ","43892":"Ꭴ","43893":"Ꭵ","43894":"Ꭶ","43895":"Ꭷ","43896":"Ꭸ","43897":"Ꭹ","43898":"Ꭺ","43899":"Ꭻ","439":"ʒ","43900":"Ꭼ","43901":"Ꭽ","43902":"Ꭾ","43903":"Ꭿ","43904":"Ꮀ","43905":"Ꮁ","43906":"Ꮂ","43907":"Ꮃ","43908":"Ꮄ","43909":"Ꮅ","43910":"Ꮆ","43911":"Ꮇ","43912":"Ꮈ","43913":"Ꮉ","43914":"Ꮊ","43915":"Ꮋ","43916":"Ꮌ","43917":"Ꮍ","43918":"Ꮎ","43919":"Ꮏ","43920":"Ꮐ","43921":"Ꮑ","43922":"Ꮒ","43923":"Ꮓ","43924":"Ꮔ","43925":"Ꮕ","43926":"Ꮖ","43927":"Ꮗ","43928":"Ꮘ","43929":"Ꮙ","43930":"Ꮚ","43931":"Ꮛ","43932":"Ꮜ","43933":"Ꮝ","43934":"Ꮞ","43935":"Ꮟ","43936":"Ꮠ","43937":"Ꮡ","43938":"Ꮢ","43939":"Ꮣ","43940":"Ꮤ","43941":"Ꮥ","43942":"Ꮦ","43943":"Ꮧ","43944":"Ꮨ","43945":"Ꮩ","43946":"Ꮪ","43947":"Ꮫ","43948":"Ꮬ","43949":"Ꮭ","43950":"Ꮮ","43951":"Ꮯ","43952":"Ꮰ","43953":"Ꮱ","43954":"Ꮲ","43955":"Ꮳ","43956":"Ꮴ","43957":"Ꮵ","43958":"Ꮶ","43959":"Ꮷ","43960":"Ꮸ","43961":"Ꮹ","43962":"Ꮺ","43963":"Ꮻ","43964":"Ꮼ","43965":"Ꮽ","43966":"Ꮾ","43967":"Ꮿ","440":"ƹ","444":"ƽ","452":"ǆ","453":"ǆ","455":"ǉ","456":"ǉ","458":"ǌ","459":"ǌ","461":"ǎ","463":"ǐ","465":"ǒ","467":"ǔ","469":"ǖ","471":"ǘ","473":"ǚ","475":"ǜ","478":"ǟ","480":"ǡ","482":"ǣ","484":"ǥ","486":"ǧ","488":"ǩ","490":"ǫ","492":"ǭ","494":"ǯ","496":"ǰ","497":"ǳ","498":"ǳ","500":"ǵ","502":"ƕ","503":"ƿ","504":"ǹ","506":"ǻ","508":"ǽ","510":"ǿ","5112":"Ᏸ","5113":"Ᏹ","5114":"Ᏺ","5115":"Ᏻ","5116":"Ᏼ","5117":"Ᏽ","512":"ȁ","514":"ȃ","516":"ȅ","518":"ȇ","520":"ȉ","522":"ȋ","524":"ȍ","526":"ȏ","528":"ȑ","530":"ȓ","532":"ȕ","534":"ȗ","536":"ș","538":"ț","540":"ȝ","542":"ȟ","544":"ƞ","546":"ȣ","548":"ȥ","550":"ȧ","552":"ȩ","554":"ȫ","556":"ȭ","558":"ȯ","560":"ȱ","562":"ȳ","570":"ⱥ","571":"ȼ","573":"ƚ","574":"ⱦ","577":"ɂ","579":"ƀ","580":"ʉ","581":"ʌ","582":"ɇ","584":"ɉ","586":"ɋ","588":"ɍ","590":"ɏ","64256":"ff","64257":"fi","64258":"fl","64259":"ffi","64260":"ffl","64261":"st","64262":"st","64275":"մն","64276":"մե","64277":"մի","64278":"վն","64279":"մխ","65":"a","65313":"ａ","65314":"ｂ","65315":"ｃ","65316":"ｄ","65317":"ｅ","65318":"ｆ","65319":"ｇ","65320":"ｈ","65321":"ｉ","65322":"ｊ","65323":"ｋ","65324":"ｌ","65325":"ｍ","65326":"ｎ","65327":"ｏ","65328":"ｐ","65329":"ｑ","65330":"ｒ","65331":"ｓ","65332":"ｔ","65333":"ｕ","65334":"ｖ","65335":"ｗ","65336":"ｘ","65337":"ｙ","65338":"ｚ","66":"b","66560":"𐐨","66561":"𐐩","66562":"𐐪","66563":"𐐫","66564":"𐐬","66565":"𐐭","66566":"𐐮","66567":"𐐯","66568":"𐐰","66569":"𐐱","66570":"𐐲","66571":"𐐳","66572":"𐐴","66573":"𐐵","66574":"𐐶","66575":"𐐷","66576":"𐐸","66577":"𐐹","66578":"𐐺","66579":"𐐻","66580":"𐐼","66581":"𐐽","66582":"𐐾","66583":"𐐿","66584":"𐑀","66585":"𐑁","66586":"𐑂","66587":"𐑃","66588":"𐑄","66589":"𐑅","66590":"𐑆","66591":"𐑇","66592":"𐑈","66593":"𐑉","66594":"𐑊","66595":"𐑋","66596":"𐑌","66597":"𐑍","66598":"𐑎","66599":"𐑏","66736":"𐓘","66737":"𐓙","66738":"𐓚","66739":"𐓛","66740":"𐓜","66741":"𐓝","66742":"𐓞","66743":"𐓟","66744":"𐓠","66745":"𐓡","66746":"𐓢","66747":"𐓣","66748":"𐓤","66749":"𐓥","66750":"𐓦","66751":"𐓧","66752":"𐓨","66753":"𐓩","66754":"𐓪","66755":"𐓫","66756":"𐓬","66757":"𐓭","66758":"𐓮","66759":"𐓯","66760":"𐓰","66761":"𐓱","66762":"𐓲","66763":"𐓳","66764":"𐓴","66765":"𐓵","66766":"𐓶","66767":"𐓷","66768":"𐓸","66769":"𐓹","66770":"𐓺","66771":"𐓻","66928":"𐖗","66929":"𐖘","66930":"𐖙","66931":"𐖚","66932":"𐖛","66933":"𐖜","66934":"𐖝","66935":"𐖞","66936":"𐖟","66937":"𐖠","66938":"𐖡","66940":"𐖣","66941":"𐖤","66942":"𐖥","66943":"𐖦","66944":"𐖧","66945":"𐖨","66946":"𐖩","66947":"𐖪","66948":"𐖫","66949":"𐖬","66950":"𐖭","66951":"𐖮","66952":"𐖯","66953":"𐖰","66954":"𐖱","66956":"𐖳","66957":"𐖴","66958":"𐖵","66959":"𐖶","66960":"𐖷","66961":"𐖸","66962":"𐖹","66964":"𐖻","66965":"𐖼","67":"c","68":"d","68736":"𐳀","68737":"𐳁","68738":"𐳂","68739":"𐳃","68740":"𐳄","68741":"𐳅","68742":"𐳆","68743":"𐳇","68744":"𐳈","68745":"𐳉","68746":"𐳊","68747":"𐳋","68748":"𐳌","68749":"𐳍","68750":"𐳎","68751":"𐳏","68752":"𐳐","68753":"𐳑","68754":"𐳒","68755":"𐳓","68756":"𐳔","68757":"𐳕","68758":"𐳖","68759":"𐳗","68760":"𐳘","68761":"𐳙","68762":"𐳚","68763":"𐳛","68764":"𐳜","68765":"𐳝","68766":"𐳞","68767":"𐳟","68768":"𐳠","68769":"𐳡","68770":"𐳢","68771":"𐳣","68772":"𐳤","68773":"𐳥","68774":"𐳦","68775":"𐳧","68776":"𐳨","68777":"𐳩","68778":"𐳪","68779":"𐳫","68780":"𐳬","68781":"𐳭","68782":"𐳮","68783":"𐳯","68784":"𐳰","68785":"𐳱","68786":"𐳲","69":"e","70":"f","71":"g","71840":"𑣀","71841":"𑣁","71842":"𑣂","71843":"𑣃","71844":"𑣄","71845":"𑣅","71846":"𑣆","71847":"𑣇","71848":"𑣈","71849":"𑣉","71850":"𑣊","71851":"𑣋","71852":"𑣌","71853":"𑣍","71854":"𑣎","71855":"𑣏","71856":"𑣐","71857":"𑣑","71858":"𑣒","71859":"𑣓","71860":"𑣔","71861":"𑣕","71862":"𑣖","71863":"𑣗","71864":"𑣘","71865":"𑣙","71866":"𑣚","71867":"𑣛","71868":"𑣜","71869":"𑣝","71870":"𑣞","71871":"𑣟","72":"h","7296":"в","7297":"д","7298":"о","7299":"с","73":"i","7300":"т","7301":"т","7302":"ъ","7303":"ѣ","7304":"ꙋ","7312":"ა","7313":"ბ","7314":"გ","7315":"დ","7316":"ე","7317":"ვ","7318":"ზ","7319":"თ","7320":"ი","7321":"კ","7322":"ლ","7323":"მ","7324":"ნ","7325":"ო","7326":"პ","7327":"ჟ","7328":"რ","7329":"ს","7330":"ტ","7331":"უ","7332":"ფ","7333":"ქ","7334":"ღ","7335":"ყ","7336":"შ","7337":"ჩ","7338":"ც","7339":"ძ","7340":"წ","7341":"ჭ","7342":"ხ","7343":"ჯ","7344":"ჰ","7345":"ჱ","7346":"ჲ","7347":"ჳ","7348":"ჴ","7349":"ჵ","7350":"ჶ","7351":"ჷ","7352":"ჸ","7353":"ჹ","7354":"ჺ","7357":"ჽ","7358":"ჾ","7359":"ჿ","74":"j","75":"k","76":"l","7680":"ḁ","7682":"ḃ","7684":"ḅ","7686":"ḇ","7688":"ḉ","7690":"ḋ","7692":"ḍ","7694":"ḏ","7696":"ḑ","7698":"ḓ","77":"m","7700":"ḕ","7702":"ḗ","7704":"ḙ","7706":"ḛ","7708":"ḝ","7710":"ḟ","7712":"ḡ","7714":"ḣ","7716":"ḥ","7718":"ḧ","7720":"ḩ","7722":"ḫ","7724":"ḭ","7726":"ḯ","7728":"ḱ","7730":"ḳ","7732":"ḵ","7734":"ḷ","7736":"ḹ","7738":"ḻ","7740":"ḽ","7742":"ḿ","7744":"ṁ","7746":"ṃ","7748":"ṅ","7750":"ṇ","7752":"ṉ","7754":"ṋ","7756":"ṍ","7758":"ṏ","7760":"ṑ","7762":"ṓ","7764":"ṕ","7766":"ṗ","7768":"ṙ","7770":"ṛ","7772":"ṝ","7774":"ṟ","7776":"ṡ","7778":"ṣ","7780":"ṥ","7782":"ṧ","7784":"ṩ","7786":"ṫ","7788":"ṭ","7790":"ṯ","7792":"ṱ","7794":"ṳ","7796":"ṵ","7798":"ṷ","78":"n","7800":"ṹ","7802":"ṻ","7804":"ṽ","7806":"ṿ","7808":"ẁ","7810":"ẃ","7812":"ẅ","7814":"ẇ","7816":"ẉ","7818":"ẋ","7820":"ẍ","7822":"ẏ","7824":"ẑ","7826":"ẓ","7828":"ẕ","7830":"ẖ","7831":"ẗ","7832":"ẘ","7833":"ẙ","7834":"aʾ","7835":"ṡ","7838":"ss","7840":"ạ","7842":"ả","7844":"ấ","7846":"ầ","7848":"ẩ","7850":"ẫ","7852":"ậ","7854":"ắ","7856":"ằ","7858":"ẳ","7860":"ẵ","7862":"ặ","7864":"ẹ","7866":"ẻ","7868":"ẽ","7870":"ế","7872":"ề","7874":"ể","7876":"ễ","7878":"ệ","7880":"ỉ","7882":"ị","7884":"ọ","7886":"ỏ","7888":"ố","7890":"ồ","7892":"ổ","7894":"ỗ","7896":"ộ","7898":"ớ","79":"o","7900":"ờ","7902":"ở","7904":"ỡ","7906":"ợ","7908":"ụ","7910":"ủ","7912":"ứ","7914":"ừ","7916":"ử","7918":"ữ","7920":"ự","7922":"ỳ","7924":"ỵ","7926":"ỷ","7928":"ỹ","7930":"ỻ","7932":"ỽ","7934":"ỿ","7944":"ἀ","7945":"ἁ","7946":"ἂ","7947":"ἃ","7948":"ἄ","7949":"ἅ","7950":"ἆ","7951":"ἇ","7960":"ἐ","7961":"ἑ","7962":"ἒ","7963":"ἓ","7964":"ἔ","7965":"ἕ","7976":"ἠ","7977":"ἡ","7978":"ἢ","7979":"ἣ","7980":"ἤ","7981":"ἥ","7982":"ἦ","7983":"ἧ","7992":"ἰ","7993":"ἱ","7994":"ἲ","7995":"ἳ","7996":"ἴ","7997":"ἵ","7998":"ἶ","7999":"ἷ","80":"p","8008":"ὀ","8009":"ὁ","8010":"ὂ","8011":"ὃ","8012":"ὄ","8013":"ὅ","8016":"ὐ","8018":"ὒ","8020":"ὔ","8022":"ὖ","8025":"ὑ","8027":"ὓ","8029":"ὕ","8031":"ὗ","8040":"ὠ","8041":"ὡ","8042":"ὢ","8043":"ὣ","8044":"ὤ","8045":"ὥ","8046":"ὦ","8047":"ὧ","8064":"ἀι","8065":"ἁι","8066":"ἂι","8067":"ἃι","8068":"ἄι","8069":"ἅι","8070":"ἆι","8071":"ἇι","8072":"ἀι","8073":"ἁι","8074":"ἂι","8075":"ἃι","8076":"ἄι","8077":"ἅι","8078":"ἆι","8079":"ἇι","8080":"ἠι","8081":"ἡι","8082":"ἢι","8083":"ἣι","8084":"ἤι","8085":"ἥι","8086":"ἦι","8087":"ἧι","8088":"ἠι","8089":"ἡι","8090":"ἢι","8091":"ἣι","8092":"ἤι","8093":"ἥι","8094":"ἦι","8095":"ἧι","8096":"ὠι","8097":"ὡι","8098":"ὢι","8099":"ὣι","81":"q","8100":"ὤι","8101":"ὥι","8102":"ὦι","8103":"ὧι","8104":"ὠι","8105":"ὡι","8106":"ὢι","8107":"ὣι","8108":"ὤι","8109":"ὥι","8110":"ὦι","8111":"ὧι","8114":"ὰι","8115":"αι","8116":"άι","8118":"ᾶ","8119":"ᾶι","8120":"ᾰ","8121":"ᾱ","8122":"ὰ","8123":"ά","8124":"αι","8126":"ι","8130":"ὴι","8131":"ηι","8132":"ήι","8134":"ῆ","8135":"ῆι","8136":"ὲ","8137":"έ","8138":"ὴ","8139":"ή","8140":"ηι","8146":"ῒ","8147":"ΐ","8150":"ῖ","8151":"ῗ","8152":"ῐ","8153":"ῑ","8154":"ὶ","8155":"ί","8162":"ῢ","8163":"ΰ","8164":"ῤ","8166":"ῦ","8167":"ῧ","8168":"ῠ","8169":"ῡ","8170":"ὺ","8171":"ύ","8172":"ῥ","8178":"ὼι","8179":"ωι","8180":"ώι","8182":"ῶ","8183":"ῶι","8184":"ὸ","8185":"ό","8186":"ὼ","8187":"ώ","8188":"ωι","82":"r","83":"s","837":"ι","84":"t","8486":"ω","8490":"k","8491":"å","8498":"ⅎ","85":"u","8544":"ⅰ","8545":"ⅱ","8546":"ⅲ","8547":"ⅳ","8548":"ⅴ","8549":"ⅵ","8550":"ⅶ","8551":"ⅷ","8552":"ⅸ","8553":"ⅹ","8554":"ⅺ","8555":"ⅻ","8556":"ⅼ","8557":"ⅽ","8558":"ⅾ","8559":"ⅿ","8579":"ↄ","86":"v","87":"w","88":"x","880":"ͱ","882":"ͳ","886":"ͷ","89":"y","895":"ϳ","90":"z","902":"ά","904":"έ","905":"ή","906":"ί","908":"ό","910":"ύ","911":"ώ","912":"ΐ","913":"α","914":"β","915":"γ","916":"δ","917":"ε","918":"ζ","919":"η","920":"θ","921":"ι","922":"κ","923":"λ","924":"μ","925":"ν","926":"ξ","927":"ο","928":"π","929":"ρ","931":"σ","932":"τ","933":"υ","934":"φ","935":"χ","936":"ψ","937":"ω","93760":"𖹠","93761":"𖹡","93762":"𖹢","93763":"𖹣","93764":"𖹤","93765":"𖹥","93766":"𖹦","93767":"𖹧","93768":"𖹨","93769":"𖹩","93770":"𖹪","93771":"𖹫","93772":"𖹬","93773":"𖹭","93774":"𖹮","93775":"𖹯","93776":"𖹰","93777":"𖹱","93778":"𖹲","93779":"𖹳","93780":"𖹴","93781":"𖹵","93782":"𖹶","93783":"𖹷","93784":"𖹸","93785":"𖹹","93786":"𖹺","93787":"𖹻","93788":"𖹼","93789":"𖹽","93790":"𖹾","93791":"𖹿","938":"ϊ","939":"ϋ","9398":"ⓐ","9399":"ⓑ","9400":"ⓒ","9401":"ⓓ","9402":"ⓔ","9403":"ⓕ","9404":"ⓖ","9405":"ⓗ","9406":"ⓘ","9407":"ⓙ","9408":"ⓚ","9409":"ⓛ","9410":"ⓜ","9411":"ⓝ","9412":"ⓞ","9413":"ⓟ","9414":"ⓠ","9415":"ⓡ","9416":"ⓢ","9417":"ⓣ","9418":"ⓤ","9419":"ⓥ","9420":"ⓦ","9421":"ⓧ","9422":"ⓨ","9423":"ⓩ","944":"ΰ","962":"σ","975":"ϗ","976":"β","977":"θ","981":"φ","982":"π","984":"ϙ","986":"ϛ","988":"ϝ","990":"ϟ","992":"ϡ","994":"ϣ","996":"ϥ","998":"ϧ"}
 const PY_WHITESPACE = new Set<number>([9,10,11,12,13,28,29,30,31,32,133,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288])
 
@@ -178,7 +178,8 @@ let _SEARCH_METHODS = new Set(new Set(["reported_check", "glance", "visual_syste
 let _SEARCH_RESULTS = new Set(new Set(["found", "not_found", "partial", "inaccessible"]))
 let _FEEDBACK_REASONS = new Set(new Set(["already_checked", "impossible_now", "irrelevant", "unsafe_or_uncomfortable", "other"]))
 let _FORBIDDEN_KEYS = new Set(new Set(["probability", "pod", "belief_weight", "posterior", "prior_probability"]))
-let _ALLOWED_PAYLOAD_KEYS = {["set_mode"]: new Set(new Set(["mode"])), ["record_free_account"]: new Set(new Set(["entry_id", "text"])), ["add_statement"]: new Set(new Set(["statement_id", "source", "statement_type", "original_text", "event_time", "user_confirmation", "supporting_evidence_ids", "limitations"])), ["record_search_check"]: new Set(new Set(["check_id", "target", "method", "started_at", "completed_at", "result", "inaccessible_parts", "based_on", "notes"])), ["refine_search_check"]: new Set(new Set(["check_id", "method", "inaccessible_parts"])), ["reject_next_action"]: new Set(new Set(["feedback_id", "candidate_id", "reason"])), ["pause"]: new Set([]), ["resume"]: new Set([]), ["close_found"]: new Set(new Set(["outcome"])), ["close_unresolved"]: new Set(new Set(["outcome"]))}
+let _LEAP_SUFFIXES = new Set(new Set(["00", "04", "08", "12", "16", "20", "24", "28", "32", "36", "40", "44", "48", "52", "56", "60", "64", "68", "72", "76", "80", "84", "88", "92", "96"]))
+let _ALLOWED_PAYLOAD_KEYS = {["set_mode"]: new Set(new Set(["mode"])), ["record_free_account"]: new Set(new Set(["entry_id", "text"])), ["add_statement"]: new Set(new Set(["statement_id", "source", "statement_type", "original_text", "event_time", "user_confirmation", "supporting_evidence_ids", "limitations"])), ["rebuild_timeline"]: new Set(new Set(["events", "last_supported_interaction_id", "first_noticed_missing_id"])), ["record_search_check"]: new Set(new Set(["check_id", "target", "method", "started_at", "completed_at", "result", "inaccessible_parts", "based_on", "notes"])), ["refine_search_check"]: new Set(new Set(["check_id", "method", "inaccessible_parts"])), ["reject_next_action"]: new Set(new Set(["feedback_id", "candidate_id", "reason"])), ["pause"]: new Set([]), ["resume"]: new Set([]), ["close_found"]: new Set(new Set(["outcome"])), ["close_unresolved"]: new Set(new Set(["outcome"]))}
 export function create_case(case_id: any, item_label: any, now: any): any {
   if (pyTruth(!pyTruth(case_id))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", "case_id must be a non-empty string")
@@ -209,6 +210,18 @@ function _optional_str(data: any, key: any): any {
   }
   if (pyTruth(!pyTruth((typeof value === 'string')))) {
     portable_error("MD_WEB_COMMAND_PAYLOAD", `${pyStr(key)} must be a string or null`)
+  }
+  return value
+}
+
+function _optional_nonempty_str(data: any, key: any): any {
+  let value: any
+  value = pyGet(data, key, null)
+  if (pyTruth(((value === null)))) {
+    return null
+  }
+  if (pyTruth(pyOr(!pyTruth((typeof value === 'string')), () => !pyTruth(value)))) {
+    portable_error("MD_WEB_COMMAND_PAYLOAD", `${pyStr(key)} must be a non-empty string or null`)
   }
   return value
 }
@@ -395,6 +408,289 @@ function add_statement_json(case$: any, statement: any, now: any): any {
   return result
 }
 
+function _times_ten(value: any): any {
+  return (((((((((value + value) + value) + value) + value) + value) + value) + value) + value) + value)
+}
+
+function _times_sixty(value: any): any {
+  let ten: any
+  ten = _times_ten(value)
+  return (((((ten + ten) + ten) + ten) + ten) + ten)
+}
+
+function _digit_value(value: any): any {
+  if (pyTruth((pyEqual(value, "0")))) {
+    return 0
+  }
+  if (pyTruth((pyEqual(value, "1")))) {
+    return 1
+  }
+  if (pyTruth((pyEqual(value, "2")))) {
+    return 2
+  }
+  if (pyTruth((pyEqual(value, "3")))) {
+    return 3
+  }
+  if (pyTruth((pyEqual(value, "4")))) {
+    return 4
+  }
+  if (pyTruth((pyEqual(value, "5")))) {
+    return 5
+  }
+  if (pyTruth((pyEqual(value, "6")))) {
+    return 6
+  }
+  if (pyTruth((pyEqual(value, "7")))) {
+    return 7
+  }
+  if (pyTruth((pyEqual(value, "8")))) {
+    return 8
+  }
+  if (pyTruth((pyEqual(value, "9")))) {
+    return 9
+  }
+  return null
+}
+
+function _decimal_two(value: any): any {
+  let first, second: any
+  first = _digit_value(value.slice(0, 1))
+  second = _digit_value(value.slice(1, 2))
+  if (pyTruth(pyOr(((first === null)), () => pyOr(((second === null)), () => (!pyEqual(value.slice(2), "")))))) {
+    return null
+  }
+  return (_times_ten(first) + second)
+}
+
+function _decimal_four(value: any): any {
+  let first, fourth, result, second, third: any
+  first = _digit_value(value.slice(0, 1))
+  second = _digit_value(value.slice(1, 2))
+  third = _digit_value(value.slice(2, 3))
+  fourth = _digit_value(value.slice(3, 4))
+  if (pyTruth(pyOr(((first === null)), () => pyOr(((second === null)), () => pyOr(((third === null)), () => pyOr(((fourth === null)), () => (!pyEqual(value.slice(4), "")))))))) {
+    return null
+  }
+  result = (_times_ten(first) + second)
+  result = (_times_ten(result) + third)
+  return (_times_ten(result) + fourth)
+}
+
+function _is_leap_year(year_text: any): any {
+  let suffix: any
+  suffix = year_text.slice(2, 4)
+  if (pyTruth((!pyContains(_LEAP_SUFFIXES, suffix)))) {
+    return false
+  }
+  if (pyTruth((!pyEqual(suffix, "00")))) {
+    return true
+  }
+  return (pyContains(_LEAP_SUFFIXES, year_text.slice(0, 2)))
+}
+
+function _days_in_month(month: any, leap_year: any): any {
+  if (pyTruth((pyContains(new Set([1, 3, 5, 7, 8, 10, 12]), month)))) {
+    return 31
+  }
+  if (pyTruth((pyContains(new Set([4, 6, 9, 11]), month)))) {
+    return 30
+  }
+  if (pyTruth(pyAnd((pyEqual(month, 2)), () => leap_year))) {
+    return 29
+  }
+  if (pyTruth((pyEqual(month, 2)))) {
+    return 28
+  }
+  return 0
+}
+
+function _timestamp_parts(value: any): any {
+  let day, day_shift, days_in_month, hour, leap_year, minute, month, offset_hour, offset_minute, offset_minutes, offset_sign, second, suffix, utc_minutes, year, year_text: any
+  if (pyTruth(pyOr((!pyEqual(value.slice(4, 5), "-")), () => pyOr((!pyEqual(value.slice(7, 8), "-")), () => pyOr((!pyContains(new Set(["T", " "]), value.slice(10, 11))), () => pyOr((!pyEqual(value.slice(13, 14), ":")), () => (!pyEqual(value.slice(16, 17), ":")))))))) {
+    return null
+  }
+  year_text = value.slice(0, 4)
+  year = _decimal_four(year_text)
+  month = _decimal_two(value.slice(5, 7))
+  day = _decimal_two(value.slice(8, 10))
+  hour = _decimal_two(value.slice(11, 13))
+  minute = _decimal_two(value.slice(14, 16))
+  second = _decimal_two(value.slice(17, 19))
+  if (pyTruth(pyOr(((year === null)), () => pyOr(((month === null)), () => pyOr(((day === null)), () => pyOr(((hour === null)), () => pyOr(((minute === null)), () => ((second === null))))))))) {
+    return null
+  }
+  leap_year = _is_leap_year(year_text)
+  days_in_month = _days_in_month(month, leap_year)
+  if (pyTruth(pyOr(((month < 1)), () => pyOr(((month > 12)), () => pyOr(((day < 1)), () => pyOr(((day > days_in_month)), () => pyOr(((hour < 0)), () => pyOr(((hour > 23)), () => pyOr(((minute < 0)), () => pyOr(((minute > 59)), () => pyOr(((second < 0)), () => ((second > 59))))))))))))) {
+    return null
+  }
+  suffix = value.slice(19)
+  offset_minutes = 0
+  offset_sign = "+"
+  if (pyTruth((!pyContains(new Set(["", "Z"]), suffix)))) {
+    offset_sign = suffix.slice(0, 1)
+    offset_hour = _decimal_two(suffix.slice(1, 3))
+    offset_minute = _decimal_two(suffix.slice(4, 6))
+    if (pyTruth(pyOr((!pyContains(new Set(["+", "-"]), offset_sign)), () => pyOr((!pyEqual(suffix.slice(3, 4), ":")), () => pyOr((!pyEqual(suffix.slice(6), "")), () => pyOr(((offset_hour === null)), () => pyOr(((offset_minute === null)), () => pyOr(((offset_hour > 23)), () => ((offset_minute > 59)))))))))) {
+      return null
+    }
+    offset_minutes = (_times_sixty(offset_hour) + offset_minute)
+  }
+  utc_minutes = (_times_sixty(hour) + minute)
+  if (pyTruth((!pyContains(new Set(["", "Z"]), suffix)))) {
+    if (pyTruth((pyEqual(offset_sign, "+")))) {
+      utc_minutes = pySetDifference(utc_minutes, offset_minutes)
+    } else {
+      utc_minutes = (utc_minutes + offset_minutes)
+    }
+  }
+  day_shift = 0
+  if (pyTruth(((utc_minutes < 0)))) {
+    utc_minutes = (utc_minutes + 1440)
+    day_shift = -(1)
+  }
+  if (pyTruth(((utc_minutes >= 1440)))) {
+    utc_minutes = pySetDifference(utc_minutes, 1440)
+    day_shift = 1
+  }
+  if (pyTruth(((day_shift > 0)))) {
+    if (pyTruth(((day < days_in_month)))) {
+      day = (day + 1)
+    } else if (pyTruth(((month < 12)))) {
+      month = (month + 1)
+      day = 1
+    } else {
+      year = (year + 1)
+      month = 1
+      day = 1
+    }
+  }
+  if (pyTruth(((day_shift < 0)))) {
+    if (pyTruth(((day > 1)))) {
+      day = pySetDifference(day, 1)
+    } else if (pyTruth(((month > 1)))) {
+      month = pySetDifference(month, 1)
+      day = _days_in_month(month, leap_year)
+    } else {
+      year = pySetDifference(year, 1)
+      month = 12
+      day = 31
+    }
+  }
+  return [year, month, day, utc_minutes, second]
+}
+
+function _compare_timestamps(left: any, right: any): any {
+  let index, left_parts, right_parts: any
+  left_parts = _timestamp_parts(left)
+  right_parts = _timestamp_parts(right)
+  if (pyTruth(pyOr(((left_parts === null)), () => ((right_parts === null))))) {
+    return null
+  }
+  for (index of [0, 1, 2, 3, 4]) {
+    if (pyTruth(((left_parts[index] < right_parts[index])))) {
+      return -(1)
+    }
+    if (pyTruth(((left_parts[index] > right_parts[index])))) {
+      return 1
+    }
+  }
+  return 0
+}
+
+function _append_unique(items: any, value: any): any {
+  if (pyTruth((!pyContains(items, value)))) {
+    items.push(value)
+  }
+}
+
+function derive_timeline_json(statements: any, events: any, last_supported_interaction_id: any, first_noticed_missing_id: any): any {
+  let by_id, contradictions, event, event_id, event_ids, last, last_time, limitation, missing, missing_time, normalized_events, normalized_statements, ordering, raw, raw_event, statement, statement_id, statement_ids, unknown_intervals: any
+  by_id = {}
+  normalized_statements = []
+  for (raw of statements) {
+    statement = _as_dict(raw, "statement")
+    statement_id = _required_str(statement, "id")
+    by_id[statement_id] = statement
+    normalized_statements.push(statement)
+  }
+  normalized_events = []
+  event_ids = pySet([])
+  for (raw_event of events) {
+    event = _as_dict(raw_event, "timeline_event")
+    event_id = _required_str(event, "id")
+    if (pyTruth((pyContains(event_ids, event_id)))) {
+      portable_error("MD_RECON_TIMELINE_EVENT_DUPLICATE", `duplicate timeline event id: ${pyStr(event_id)}`)
+    }
+    event_ids.add(event_id)
+    statement_ids = _string_list(event, "statement_ids")
+    for (statement_id of statement_ids) {
+      if (pyTruth((!pyContains(by_id, statement_id)))) {
+        portable_error("MD_RECON_STATEMENT_NOT_FOUND", `timeline statement not found: ${pyStr(statement_id)}`)
+      }
+    }
+    normalized_events.push({["id"]: event_id, ["label"]: _required_str(event, "label"), ["statement_ids"]: statement_ids, ["event_time"]: _optional_str(event, "event_time"), ["time_precision"]: _required_str(event, "time_precision")})
+  }
+  unknown_intervals = []
+  for (statement of normalized_statements) {
+    if (pyTruth(((pyGet(statement, "event_time", null) === null)))) {
+      for (limitation of _string_list(statement, "limitations")) {
+        unknown_intervals.push(`statement:${pyStr(_required_str(statement, "id"))}:${pyStr(limitation)}`)
+      }
+    }
+  }
+  contradictions = []
+  if (pyTruth(pyAnd(((last_supported_interaction_id !== null)), () => (!pyContains(by_id, last_supported_interaction_id))))) {
+    _append_unique(contradictions, "MD_TIME_REFERENCE_MISSING")
+  }
+  if (pyTruth(pyAnd(((first_noticed_missing_id !== null)), () => (!pyContains(by_id, first_noticed_missing_id))))) {
+    _append_unique(contradictions, "MD_TIME_REFERENCE_MISSING")
+  }
+  if (pyTruth(pyAnd(((last_supported_interaction_id !== null)), () => pyAnd(((first_noticed_missing_id !== null)), () => pyAnd((pyContains(by_id, last_supported_interaction_id)), () => (pyContains(by_id, first_noticed_missing_id))))))) {
+    last = by_id[last_supported_interaction_id]
+    missing = by_id[first_noticed_missing_id]
+    last_time = pyGet(last, "event_time", null)
+    missing_time = pyGet(missing, "event_time", null)
+    if (pyTruth(pyAnd(((last_time !== null)), () => ((missing_time !== null))))) {
+      if (pyTruth(pyOr(!pyTruth((typeof last_time === 'string')), () => !pyTruth((typeof missing_time === 'string'))))) {
+        _append_unique(contradictions, "MD_TIME_INVALID_TIMESTAMP")
+      } else {
+        ordering = _compare_timestamps(last_time, missing_time)
+        if (pyTruth(((ordering === null)))) {
+          _append_unique(contradictions, "MD_TIME_INVALID_TIMESTAMP")
+        } else if (pyTruth(((ordering > 0)))) {
+          _append_unique(contradictions, "MD_TIME_ORDER_CONTRADICTION")
+        }
+      }
+    }
+  }
+  return {["last_supported_interaction_id"]: last_supported_interaction_id, ["first_noticed_missing_id"]: first_noticed_missing_id, ["events"]: normalized_events, ["unknown_intervals"]: unknown_intervals, ["contradictions"]: contradictions}
+}
+
+function set_timeline_json(case$: any, events: any, last_supported_interaction_id: any, first_noticed_missing_id: any, now: any): any {
+  let result, timeline: any
+  _ensure_case_shape(case$)
+  timeline = derive_timeline_json(_as_list(case$["statements"], "statements"), events, last_supported_interaction_id, first_noticed_missing_id)
+  result = _primitive_copy(case$, now)
+  result["timeline"] = timeline
+  return result
+}
+
+function rebuild_timeline_json(case$: any, events: any, last_supported_interaction_id: any, first_noticed_missing_id: any, now: any): any {
+  _ensure_case_shape(case$)
+  _ensure_mutable(case$)
+  if (pyTruth((!pyEqual(_required_str(case$, "lifecycle"), "active")))) {
+    portable_error("MD_CASE_STATE", "timeline rebuild requires an active case")
+  }
+  if (pyTruth((!pyEqual(_required_str(case$, "current_mode"), "reconstruction")))) {
+    portable_error("MD_RECON_MODE_REQUIRED", "timeline rebuild requires reconstruction mode")
+  }
+  if (pyTruth(!pyTruth(has_free_account_json(case$)))) {
+    portable_error("MD_RECON_FREE_ACCOUNT_REQUIRED", "record a free account before rebuilding the reconstruction timeline")
+  }
+  return set_timeline_json(case$, events, last_supported_interaction_id, first_noticed_missing_id, now)
+}
+
 function _candidate_state_for_check(check: any): any {
   let inaccessible_parts, result: any
   result = _required_str(check, "result")
@@ -569,7 +865,7 @@ function _check_from_payload(payload: any, now: any): any {
 }
 
 export function apply_command(case$: any, command: any): any {
-  let check, command_id, command_type, expected_updated_at, feedback, mode, now, payload, reason, result, statement: any
+  let check, command_id, command_type, events, expected_updated_at, feedback, mode, now, payload, raw_event, reason, result, statement: any
   _ensure_case_shape(case$)
   command_type = _required_str(command, "command_type")
   if (pyTruth((!pyContains(SUPPORTED_COMMAND_TYPES, command_type)))) {
@@ -600,6 +896,13 @@ export function apply_command(case$: any, command: any): any {
       result = _append_search_candidate(result, _required_str(statement, "id"), _required_str(statement, "original_text"))
     }
     return append_journal_entry_json(result, _web_journal_entry(command_id, mode, "statement", _required_str(statement, "original_text"), now, [_required_str(statement, "id")]), now)
+  }
+  if (pyTruth((pyEqual(command_type, "rebuild_timeline")))) {
+    events = []
+    for (raw_event of _as_list(pyGet(payload, "events", []), "events")) {
+      events.push(_as_dict(raw_event, "timeline_event"))
+    }
+    return rebuild_timeline_json(case$, events, _optional_nonempty_str(payload, "last_supported_interaction_id"), _optional_nonempty_str(payload, "first_noticed_missing_id"), now)
   }
   if (pyTruth((pyEqual(command_type, "record_search_check")))) {
     mode = _journal_mode(case$)
@@ -758,4 +1061,4 @@ export function build_checklist_proposal_json(case$: any, mode: any): any {
   return _proposal("need_more_information", "empty.add_supported_place_or_reconstruct")
 }
 
-let __all__ = ["PortableKernelError", "add_statement_json", "append_journal_entry_json", "apply_command", "build_checklist_proposal_json", "close_found_json", "close_unresolved_json", "create_case", "has_free_account_json", "pause_json", "record_action_feedback_json", "record_free_account_json", "record_search_check_json", "refine_search_check_json", "resume_json", "select_next_action_json", "set_mode_json"]
+let __all__ = ["PortableKernelError", "add_statement_json", "append_journal_entry_json", "apply_command", "build_checklist_proposal_json", "close_found_json", "close_unresolved_json", "create_case", "derive_timeline_json", "has_free_account_json", "pause_json", "rebuild_timeline_json", "record_action_feedback_json", "record_free_account_json", "record_search_check_json", "refine_search_check_json", "resume_json", "select_next_action_json", "set_mode_json", "set_timeline_json"]
