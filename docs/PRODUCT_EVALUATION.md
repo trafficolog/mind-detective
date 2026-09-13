@@ -6,9 +6,15 @@
 
 - **A — обычный поиск:** внешний contextual baseline без MIND Detective UI/скрытой structured assistance.
 - **B — структурированный чек-лист** + журнал поиска без диалогового AI: Web/PWA, canonical Case и deterministic local executor.
-- **C — чек-лист + журнал поиска + диалоговый AI:** тот же product shell и execution semantics; отличие ограничено live assistant proposal generation. Transport fallback не меняет assignment: session остаётся C.
+- **C — чек-лист + журнал поиска + диалоговый AI:** тот же product shell и execution semantics; отличие ограничено live assistant proposal generation в Search. Transport fallback не меняет assignment: session остаётся C.
 
 Обычное использование продукта не рандомизируется. B/C assignment существует только в explicit evaluation mode и хранится отдельно от `Case v2`.
+
+## Что именно измеряет текущий B↔C protocol
+
+Staged B↔C остаётся экспериментом **Search assistant proposal**, а не экспериментом Reconstruction. Оба arm используют один deterministic Case/local-execution contour; C отличается только live assistant proposal generation после Search boundary.
+
+Deterministic Web Reconstruction, его browser tests и результаты Search B↔C описывают разные вопросы. **Это не является доказательством** того, что **live-model reconstruction** добавляет ценность. Текущий protocol не рандомизирует free-account collection, user-confirmed reconstruction evidence, timeline clarification или `rebuild_timeline` между model/no-model arms. Любой будущий claim о live-model reconstruction потребует отдельного заранее определённого protocol, outcome contract и privacy review.
 
 ## Canonical protocol documents
 
@@ -53,6 +59,6 @@ Evaluation storage/export is local-only by default, explicit-export only, and al
 
 ## Falsifiable rule
 
-Если C не даёт practically meaningful lift относительно B при сопоставимом safety/readiness profile, default core следует упростить до deterministic checklist/controller. Если результат inconclusive, следующий номер версии сам по себе не является основанием объявлять победителя.
+Если C не даёт practically meaningful lift относительно B при сопоставимом safety/readiness profile, default Search assistant path следует упростить до deterministic checklist/controller. Этот результат сам по себе ничего не устанавливает о потенциальной ценности отдельного live-model Reconstruction arm. Если результат inconclusive, следующий номер версии сам по себе не является основанием объявлять победителя.
 
 Green deterministic/browser/analysis fixtures подтверждают machinery, conformance и reproducibility, но не являются доказательством causal product lift или научной валидности исследования.
