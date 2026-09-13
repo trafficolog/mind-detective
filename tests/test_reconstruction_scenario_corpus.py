@@ -9,6 +9,68 @@ CORPUS_PATH = ROOT / "docs/evaluation/RECONSTRUCTION_SCENARIO_CORPUS_V1.json"
 REVIEW_PATH = ROOT / "docs/evaluation/RECONSTRUCTION_SCENARIO_CORPUS_V1.md"
 
 
+def _collect_strings(value):
+    if isinstance(value, str):
+        return {value}
+    if isinstance(value, list):
+        found = set()
+        for item in value:
+            found.update(_collect_strings(item))
+        return found
+    if isinstance(value, dict):
+        found = set()
+        for item in value.values():
+            found.update(_collect_strings(item))
+        return found
+    return set()
+
+
+def _normalized_experimental_signature(scenario):
+    model = scenario["model_visible_context"]
+    return {
+        "scenario_version": scenario["scenario_version"],
+        "model_visible_context": {
+            "supported_entity_count": len(model["supported_entities"]),
+            "supported_location_count": len(model["supported_locations"]),
+            "supported_action_count": len(model["supported_actions"]),
+            "timeline_refs": model["timeline_refs"],
+            "statement_refs": model["statement_refs"],
+            "unknown_markers": model["unknown_markers"],
+            "contradiction_refs": model["contradiction_refs"],
+        },
+        "participant_latent": {
+            "facts": [
+                {"fact_id": fact["fact_id"], "reconstructable": fact["reconstructable"]}
+                for fact in scenario["participant_latent"]["facts"]
+            ],
+            "script_rule": scenario["participant_latent"]["script_rule"],
+        },
+        "genuinely_unknown_facts": [
+            {"unknown_id": item["unknown_id"], "has_hidden_text": bool(item.get("hidden_text"))}
+            for item in scenario["genuinely_unknown_facts"]
+        ],
+        "contradictions": scenario["contradictions"],
+        "allowed_clarification_targets": [
+            {
+                "target_id": target["target_id"],
+                "reason_code": target["reason_code"],
+                "target_ids": target["target_ids"],
+                "participant_answer_fact_ids": target["participant_answer_fact_ids"],
+            }
+            for target in scenario["allowed_clarification_targets"]
+        ],
+        "forbidden_introductions": {
+            key: len(values) for key, values in scenario["forbidden_introductions"].items()
+        },
+        "adversarial_examples": [
+            {"example_id": item["example_id"], "guard_code": item["guard_code"]}
+            for item in scenario["adversarial_examples"]
+        ],
+        "critical_violation_triggers": scenario["critical_violation_triggers"],
+        "expected_outcome": scenario["expected_outcome"],
+    }
+
+
 class ReconstructionScenarioCorpusV1Tests(unittest.TestCase):
     def setUp(self):
         self.protocol = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
@@ -76,6 +138,41 @@ class ReconstructionScenarioCorpusV1Tests(unittest.TestCase):
                 if unknown.get("hidden_text"):
                     self.assertNotIn(unknown["hidden_text"], model_serialized, scenario["scenario_id"])
 
+    def test_latent_answer_references_are_structurally_separate_from_model_context(self):
+        for scenario in self.scenarios:
+            model = scenario["model_visible_context"]
+            model_strings = _collect_strings(model)
+            latent_fact_ids = {fact["fact_id"] for fact in scenario["participant_latent"]["facts"]}
+            answer_fact_ids = {
+                fact_id
+                for target in scenario["allowed_clarification_targets"]
+                for fact_id in target["participant_answer_fact_ids"]
+            }
+            self.assertTrue(answer_fact_ids.issubset(latent_fact_ids), scenario["scenario_id"])
+            self.assertTrue(latent_fact_ids.isdisjoint(model_strings), scenario["scenario_id"])
+            self.assertTrue(answer_fact_ids.isdisjoint(model_strings), scenario["scenario_id"])
+            for key in model:
+                lowered = key.lower()
+                self.assertNotIn("latent", lowered, scenario["scenario_id"])
+                self.assertNotIn("participant", lowered, scenario["scenario_id"])
+                self.assertNotIn("answer", lowered, scenario["scenario_id"])
+
+    def test_stopping_and_readiness_gold_expectations_are_protocol_valid(self):
+        stop_reasons = set(self.protocol["stop_reasons"])
+        required_outcome_fields = {
+            "preserve_unknown",
+            "expected_stop_reason",
+            "readiness_after_valid_clarification",
+            "prompt_injection_must_not_change_policy",
+        }
+        for scenario in self.scenarios:
+            outcome = scenario["expected_outcome"]
+            self.assertEqual(set(outcome), required_outcome_fields, scenario["scenario_id"])
+            self.assertIn(outcome["expected_stop_reason"], stop_reasons, scenario["scenario_id"])
+            self.assertIsInstance(outcome["preserve_unknown"], bool)
+            self.assertIsInstance(outcome["readiness_after_valid_clarification"], bool)
+            self.assertIsInstance(outcome["prompt_injection_must_not_change_policy"], bool)
+
     def test_reason_code_positive_coverage_is_at_least_two_examples_each(self):
         counts = Counter()
         for scenario in self.scenarios:
@@ -118,7 +215,7 @@ class ReconstructionScenarioCorpusV1Tests(unittest.TestCase):
             self.assertTrue(scenario["expected_outcome"]["prompt_injection_must_not_change_policy"])
             self.assertTrue(scenario["user_visible_initial_account"])
 
-    def test_ru_en_pairs_are_structurally_isomorphic(self):
+    def test_ru_en_pairs_are_structurally_isomorphic_across_all_experimental_fields(self):
         by_key = defaultdict(list)
         for scenario in self.scenarios:
             by_key[scenario["isomorphism_key"]].append(scenario)
@@ -126,22 +223,7 @@ class ReconstructionScenarioCorpusV1Tests(unittest.TestCase):
             self.assertEqual(len(pair), 2, key)
             ru = next(s for s in pair if s["language_code"] == "ru")
             en = next(s for s in pair if s["language_code"] == "en")
-            self.assertEqual(
-                {f["fact_id"] for f in ru["participant_latent"]["facts"]},
-                {f["fact_id"] for f in en["participant_latent"]["facts"]},
-                key,
-            )
-            self.assertEqual(
-                {(t["target_id"], t["reason_code"]) for t in ru["allowed_clarification_targets"]},
-                {(t["target_id"], t["reason_code"]) for t in en["allowed_clarification_targets"]},
-                key,
-            )
-            self.assertEqual(
-                Counter(e["guard_code"] for e in ru["adversarial_examples"]),
-                Counter(e["guard_code"] for e in en["adversarial_examples"]),
-                key,
-            )
-            self.assertEqual(ru["expected_outcome"], en["expected_outcome"], key)
+            self.assertEqual(_normalized_experimental_signature(ru), _normalized_experimental_signature(en), key)
 
     def test_review_matrix_documents_privacy_and_model_context_boundary(self):
         self.assertIn("24", self.review)
