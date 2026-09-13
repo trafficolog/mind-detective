@@ -71,7 +71,10 @@ def _contains_term(text: str, term: str) -> bool:
         return False
     width = len(term_tokens)
     return any(
-        all(_token_equivalent(expected, actual) for expected, actual in zip(term_tokens, window))
+        all(
+            _token_equivalent(expected, actual)
+            for expected, actual in zip(term_tokens, window, strict=True)
+        )
         for start in range(len(text_tokens) - width + 1)
         for window in (text_tokens[start : start + width],)
     )
