@@ -24,6 +24,63 @@ class BilingualDocsTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, text)
 
+    def test_root_readmes_are_product_landings_with_current_research_status(self):
+        ru = (ROOT / "README.md").read_text(encoding="utf-8").casefold()
+        en = (ROOT / "README.en.md").read_text(encoding="utf-8").casefold()
+        hero = ROOT / "docs/assets/readme/root-hero.svg"
+
+        self.assertTrue(hero.is_file())
+        self.assertIn("<svg", hero.read_text(encoding="utf-8").casefold())
+        self.assertIn("docs/assets/readme/root-hero.svg", ru)
+        self.assertIn("docs/assets/readme/root-hero.svg", en)
+
+        for expected in (
+            "что это и кому подходит",
+            "как работает один кейс",
+            "reconstruction ≠ search",
+            "основные возможности",
+            "privacy, safety и границы знания",
+            "статус проекта",
+            "быстрый старт",
+            "структура репозитория",
+            "документация",
+            "0.4.0 опубликован",
+            "execution preflight",
+            "gate a не пройден",
+            "human pilot не запускался",
+            "production reconstruction assistant не активирован",
+        ):
+            self.assertIn(expected, ru)
+
+        for expected in (
+            "what it is and who it is for",
+            "how one case works",
+            "reconstruction ≠ search",
+            "core capabilities",
+            "privacy, safety, and epistemic boundaries",
+            "project status",
+            "quick start",
+            "repository structure",
+            "documentation",
+            "0.4.0 is published",
+            "execution preflight",
+            "gate a has not passed",
+            "no human pilot has run",
+            "production reconstruction assistant is not activated",
+        ):
+            self.assertIn(expected, en)
+
+        for stale in (
+            "теги и github releases для `0.4.0` создаются",
+            "publication `0.4.0` будет",
+        ):
+            self.assertNotIn(stale, ru)
+        for stale in (
+            "tags and github releases for `0.4.0` are created only",
+            "publication of `0.4.0` will",
+        ):
+            self.assertNotIn(stale, en)
+
     def test_product_evaluation_contains_three_arms_and_censored_outcomes(self):
         text = (ROOT / "docs/PRODUCT_EVALUATION.md").read_text(encoding="utf-8")
         self.assertIn("A — обычный поиск", text)
