@@ -123,13 +123,12 @@ def _validate_domains(value: object) -> dict[str, ReviewDomain]:
         if not isinstance(raw_domain, Mapping) or set(raw_domain) != _DOMAIN_KEYS:
             raise ProviderReviewValidationError(f"{domain} has an unexpected field set")
         decision = raw_domain.get("decision")
-        if decision not in _DOMAIN_DECISIONS:
+        if not isinstance(decision, str) or decision not in _DOMAIN_DECISIONS:
             raise ProviderReviewValidationError(f"{domain} has an unknown decision")
-        decision_value = cast(str, decision)
         validated[domain] = {
-            "decision": decision_value,
+            "decision": decision,
             "evidence_refs": _evidence_refs(
-                raw_domain.get("evidence_refs"), decision=decision_value
+                raw_domain.get("evidence_refs"), decision=decision
             ),
         }
     return validated
@@ -153,7 +152,7 @@ def validate_provider_review(review: Mapping[str, object]) -> ProviderReview:
     domains = _validate_domains(review.get("domains"))
 
     status = review.get("review_status")
-    if status not in _REVIEW_STATUSES:
+    if not isinstance(status, str) or status not in _REVIEW_STATUSES:
         raise ProviderReviewValidationError("provider review has an unknown review_status")
     status_value = status
 
