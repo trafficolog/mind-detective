@@ -20,6 +20,7 @@ from scripts.reconstruction_r2_screening import (
 EXECUTION_PREFLIGHT_SCHEMA = (
     "mind-detective-reconstruction-r2-execution-preflight/v1"
 )
+FIXED_CORPUS_ID = "mind-detective-reconstruction-r2-fixed-corpus/v1"
 PREFLIGHT_CHECKS = (
     "profile_entitlement_verified",
     "model_endpoint_supported",
@@ -186,7 +187,10 @@ def validate_execution_preflight(
     prompt_version = _nonempty_string(
         preflight.get("prompt_version"), field="prompt_version"
     )
-    corpus_id = _nonempty_string(preflight.get("corpus_id"), field="corpus_id")
+    if preflight.get("corpus_id") != FIXED_CORPUS_ID:
+        raise ExecutionPreflightValidationError(
+            "corpus_id does not match the frozen R2 fixed corpus"
+        )
 
     if provider_research_id != validated_review["provider_research_id"]:
         raise ExecutionPreflightValidationError(
@@ -238,7 +242,7 @@ def validate_execution_preflight(
         "proposal_schema_version": PROPOSAL_SCHEMA_VERSION,
         "context_schema_version": CONTEXT_SCHEMA,
         "guard_schema_version": GUARD_SCHEMA,
-        "corpus_id": corpus_id,
+        "corpus_id": FIXED_CORPUS_ID,
         "checks": checks,
         "preflight_status": status,
     }
