@@ -8,7 +8,7 @@
 
 Plugin persistence остаётся явным и case-local: сохранение идёт в `.mind-detective/cases/<case-id>/case.json` по explicit persistence action. Web/PWA имеет отдельный browser-local persistence contract и записывает новый Case в IndexedDB сразу.
 
-`0.4.0` включает deterministic Web Reconstruction Foundation; создание release tags/GitHub Releases остаётся отдельным human-authorized publisher gate.
+`0.4.0` с deterministic Web Reconstruction Foundation уже опубликован. Любая следующая release publication остаётся отдельным human-authorized publisher gate после exact post-merge `main` CI.
 
 ## Установка зависимостей
 
