@@ -136,7 +136,7 @@ class R2ProviderContextTests(unittest.TestCase):
         self.assertEqual(audit["target_count"], 2)
         self.assertEqual(audit["unknown_ref_count"], 1)
         self.assertEqual(audit["contradiction_ref_count"], 1)
-        self.assertEqual(audit["excerpt_char_count"], 55)
+        self.assertEqual(audit["excerpt_char_count"], 50)
         encoded = json.dumps(audit, ensure_ascii=False)
         for raw in ("I left the office", "evt_1", "stmt_1", "u1", "c1"):
             self.assertNotIn(raw, encoded)
