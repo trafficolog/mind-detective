@@ -29,7 +29,7 @@ The configuration metadata is limited to:
 
 These are research identifiers, not credentials. Unknown configuration fields fail closed. In particular, secrets, tokens and transport settings are not screening metadata.
 
-The unit-level summary helper assumes its caller is supplying the complete reviewed fixed-corpus run. A summary is not evidence of corpus completeness by itself. Before any real Gate A decision, the research operator must verify the run against the frozen corpus version and retain that verification with the research evidence.
+Gate A additionally requires the explicit `fixed_corpus_complete=true` review input. This flag is not inferred from a convenient subset of records. It may be set only after the research operator verifies the run against the frozen corpus/version and the exact reviewed candidate configuration. A partial or exploratory run must pass `false` and is mechanically ineligible for human exposure.
 
 ## Input boundary
 
@@ -113,6 +113,7 @@ A real configuration is not eligible for Phase 6 evidence or later human exposur
 The summary exposes a conservative **Gate A** status for the supplied reviewed run. Mechanical eligibility requires all of the following:
 
 - at least one screening record;
+- explicit confirmation that the frozen fixed corpus run is complete;
 - approved provider privacy review;
 - structured-output validity after the approved retry policy of at least 99%;
 - 100% minimized-context compliance for emitted calls;
