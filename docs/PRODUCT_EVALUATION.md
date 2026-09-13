@@ -24,6 +24,7 @@ Deterministic Web Reconstruction, его browser tests и результаты S
 - [External arm A protocol](evaluation/EXTERNAL_A_PROTOCOL.md)
 - [Analysis runbook](evaluation/ANALYSIS.md)
 - [Plugin semantic scenario review](evaluation/SEMANTIC_SCENARIO_REVIEW.md)
+- [Reconstruction research protocol v1](evaluation/RECONSTRUCTION_PROTOCOL_V1.md) — отдельный research-only `R0/R1/R2` contract; machine-readable source: `evaluation/RECONSTRUCTION_PROTOCOL_V1.json`.
 
 Analysis CLI:
 
@@ -46,6 +47,8 @@ Current `mind-detective-evaluation/v1` instrumentation contains only events that
 `next_action_started` is intentionally absent: the product has no separate “start checking” interaction, and adding one only for instrumentation would distort the UX and primary endpoint. The former `pending_command_*` vocabulary belonged to the retired network-command-queue model; local deterministic execution reports a real persistence/execution failure through `local_execution_failed` instead. `found_context` is metadata on the atomic terminal `found` event and is not duplicated as a separate `found_context_recorded` event.
 
 The offline analyzer may continue to accept older exported event names for backward-compatible reading of historical fixtures/exports. Such compatibility does not make those names part of the current Web emission contract. `tests/test_evaluation_event_paths.py` executablely checks the current metric → production emitter → analyzer path and rejects reintroduction of obsolete current event names.
+
+The frozen Reconstruction research protocol is deliberately not added to the current emitter by Phase 1. Later approved research-runtime work must explicitly implement/version its events and preserve the same privacy boundary; merely documenting the vocabulary does not make those events production-emitted.
 
 ## Plugin semantic scenarios are a separate control
 
