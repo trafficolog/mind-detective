@@ -1,0 +1,15 @@
+{
+  "corpus_schema": "mind-detective-reconstruction-scenario-corpus/v1",
+  "protocol_schema": "mind-detective-reconstruction-research/v1",
+  "status": "research_only",
+  "base_release": "0.4.0",
+  "case_schema": "mind-detective-case/v2",
+  "scenario_count": 24,
+  "family_count": 12,
+  "variants_per_family": 2,
+  "languages": [
+    "ru",
+    "en"
+  ],
+  "generator_context_excludes_participant_script": true
+}
