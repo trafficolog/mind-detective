@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -44,9 +45,40 @@ def _normalized(text: str) -> str:
     return " ".join(text.casefold().replace("ё", "е").split())
 
 
+def _tokens(text: str) -> list[str]:
+    return re.findall(r"[\w-]+", _normalized(text), flags=re.UNICODE)
+
+
+def _token_equivalent(left: str, right: str) -> bool:
+    if left == right:
+        return True
+    if min(len(left), len(right)) < 4:
+        return False
+    return left.startswith(right) or right.startswith(left)
+
+
+def _contains_term(text: str, term: str) -> bool:
+    normalized_text = _normalized(text)
+    normalized_term = _normalized(term)
+    if not normalized_term:
+        return False
+    if normalized_term in normalized_text:
+        return True
+
+    text_tokens = _tokens(normalized_text)
+    term_tokens = _tokens(normalized_term)
+    if not term_tokens or len(term_tokens) > len(text_tokens):
+        return False
+    width = len(term_tokens)
+    return any(
+        all(_token_equivalent(expected, actual) for expected, actual in zip(term_tokens, window))
+        for start in range(len(text_tokens) - width + 1)
+        for window in (text_tokens[start : start + width],)
+    )
+
+
 def _contains_any(text: str, values: Sequence[str]) -> bool:
-    normalized = _normalized(text)
-    return any(_normalized(value) in normalized for value in values if value.strip())
+    return any(_contains_term(text, value) for value in values if value.strip())
 
 
 def _abstain() -> dict[str, str]:
