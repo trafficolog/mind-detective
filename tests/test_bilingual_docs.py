@@ -81,6 +81,36 @@ class BilingualDocsTests(unittest.TestCase):
         ):
             self.assertNotIn(stale, en)
 
+    def test_root_readmes_distinguish_browser_api_and_provider_data_boundaries(self):
+        ru = (ROOT / "README.md").read_text(encoding="utf-8").casefold()
+        en = (ROOT / "README.en.md").read_text(encoding="utf-8").casefold()
+
+        for expected in (
+            "browser → api",
+            "полный case v2",
+            "удалённый fastapi",
+            "api → provider",
+            "provider context",
+        ):
+            self.assertIn(expected, ru)
+        for expected in (
+            "browser → api",
+            "full case v2",
+            "remote fastapi",
+            "api → provider",
+            "provider context",
+        ):
+            self.assertIn(expected, en)
+
+        self.assertNotIn(
+            "наружу может передаваться только разрешённый минимизированный transient context",
+            ru,
+        )
+        self.assertNotIn(
+            "only the allowed minimized transient context may be exported",
+            en,
+        )
+
     def test_product_evaluation_contains_three_arms_and_censored_outcomes(self):
         text = (ROOT / "docs/PRODUCT_EVALUATION.md").read_text(encoding="utf-8")
         self.assertIn("A — обычный поиск", text)
