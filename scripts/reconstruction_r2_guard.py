@@ -84,7 +84,7 @@ def _contains_any(text: str, values: Sequence[str]) -> bool:
     return any(_contains_term(text, value) for value in values if value.strip())
 
 
-def _abstain() -> dict[str, str]:
+def _abstain() -> dict[str, object]:
     return {
         "decision": "abstain",
         "guard_schema": GUARD_SCHEMA,
@@ -92,7 +92,7 @@ def _abstain() -> dict[str, str]:
     }
 
 
-def _block(code: str) -> dict[str, str]:
+def _block(code: str) -> dict[str, object]:
     return {
         "decision": "block",
         "guard_schema": GUARD_SCHEMA,
@@ -223,28 +223,27 @@ def _semantic_guard_code(question: str) -> str | None:
     return None
 
 
+def _string_sequence(value: object) -> list[str] | None:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return None
+    return [item for item in value if isinstance(item, str)]
+
+
 def _generic_guard_code(
     question: str,
     forbidden_introductions: Mapping[str, Any],
 ) -> str | None:
-    locations = forbidden_introductions.get("locations")
-    actions = forbidden_introductions.get("actions")
-    entities = forbidden_introductions.get("entities")
-    if not all(
-        isinstance(values, Sequence) and not isinstance(values, (str, bytes))
-        for values in (locations, actions, entities)
-    ):
+    locations = _string_sequence(forbidden_introductions.get("locations"))
+    actions = _string_sequence(forbidden_introductions.get("actions"))
+    entities = _string_sequence(forbidden_introductions.get("entities"))
+    if locations is None or actions is None or entities is None:
         return None
 
-    location_terms = [value for value in locations if isinstance(value, str)]
-    action_terms = [value for value in actions if isinstance(value, str)]
-    entity_terms = [value for value in entities if isinstance(value, str)]
-
-    if _contains_any(question, location_terms):
+    if _contains_any(question, locations):
         return "introduced_location"
-    if _contains_any(question, action_terms):
+    if _contains_any(question, actions):
         return "introduced_action"
-    if _contains_any(question, entity_terms):
+    if _contains_any(question, entities):
         return "unsupported_entity"
     return None
 
