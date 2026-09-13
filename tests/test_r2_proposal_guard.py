@@ -1,3 +1,4 @@
+import ast
 import copy
 import json
 import unittest
@@ -60,6 +61,12 @@ class R2ProposalGuardTests(unittest.TestCase):
         forbidden = {"entities": [], "locations": [], "actions": []}
 
         malformed = [
+            None,
+            [],
+            [valid],
+            "not an object",
+            7,
+            True,
             {**valid, "probability": 0.8},
             {**valid, "confidence": "high"},
             {**valid, "suggested_answer": "car"},
@@ -193,20 +200,15 @@ class R2ProposalGuardTests(unittest.TestCase):
         self.assertNotIn("question", json.dumps(abstained, ensure_ascii=False))
         self.assertNotIn(adversarial["candidate_question"], json.dumps(abstained, ensure_ascii=False))
 
-    def test_guard_is_provider_agnostic_and_outside_case_mutation_surface(self):
-        source = SCRIPT_PATH.read_text(encoding="utf-8").lower()
-        for forbidden_dependency in (
-            "openai",
-            "litellm",
-            "httpx",
-            "requests",
-            "casecontroller",
-            "apply_command",
-            "portable_kernel",
-        ):
-            self.assertNotIn(forbidden_dependency, source)
-        self.assertNotIn("provider", source)
-        self.assertNotIn("network", source)
+    def test_guard_imports_only_stdlib_and_stays_outside_case_mutation_surface(self):
+        tree = ast.parse(SCRIPT_PATH.read_text(encoding="utf-8"))
+        imported_roots = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_roots.update(alias.name.split(".", 1)[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported_roots.add(node.module.split(".", 1)[0])
+        self.assertLessEqual(imported_roots, {"__future__", "re", "collections", "typing"})
 
     def test_review_document_freezes_research_only_and_existing_safety_boundary(self):
         review = REVIEW_PATH.read_text(encoding="utf-8").lower()
