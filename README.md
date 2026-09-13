@@ -101,8 +101,11 @@ flowchart TB
     W --> I[(IndexedDB\nCase + execution receipt)]
 
     K --> A[FastAPI boundary]
-    P[Optional provider / research boundary] --> Q[Minimized context + deterministic guard]
-    Q --> X[Proposal only]
+    W -->|optional assistant request: full Case v2| A
+    A --> Q[Server-derived provider context]
+    Q --> P[LiteLLM / provider]
+    P --> H[Deterministic proposal guard]
+    H --> X[Guarded proposal / checklist fallback]
     X -. user confirmation required .-> W
 
     P -. cannot mutate .-> I
@@ -114,7 +117,7 @@ flowchart TB
 
 **Локальный canonical storage.** Web хранит Case в IndexedDB. Plugin surface сохраняет `.mind-detective/cases/<case-id>/case.json` только по явному persistence action. Explicit JSON export/import остаётся переносимым форматом.
 
-**Что может покинуть устройство.** Deterministic Reconstruction provider не вызывает. Для online/research boundary наружу может передаваться только разрешённый минимизированный transient context; raw full account, весь Case и unrelated Search state не становятся provider payload «по умолчанию».
+**Что может покинуть устройство.** Локальный deterministic Reconstruction path не требует удалённого API или provider. У optional online assistant есть две отдельные границы данных. На **browser → API** Web отправляет **полный Case v2** в `/api/v1/proposal/next`; если `NUXT_PUBLIC_MIND_DETECTIVE_API_BASE` указывает на **удалённый FastAPI** service, этот Case — включая verbatim free account, timeline, journal и Search state — покидает устройство и передаётся этому API service. На **API → provider** сервер перед model call формирует более узкий **provider context**; полный Case по умолчанию не пересылается provider как payload. Отдельная R2 research-линия использует собственный frozen minimized-context contract и остаётся research-only.
 
 **Эпистемическая граница.** MIND не выдаёт confidence score за вероятность фактической локации, не диагностирует механизм забывания и не превращает assistant proposal в память пользователя.
 
