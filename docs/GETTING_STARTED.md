@@ -4,11 +4,11 @@
 
 ## Plugin surface
 
-Канонический plugin id — `mind-detective`, текущая опубликованная версия — `0.3.1`. Пять production skills сохраняются: router, reconstruct, plan, resume и close. Plugin runtime использует Python standard library и не требует сетевых credentials.
+Канонический plugin id — `mind-detective`; текущая release line — `0.4.0`. Пять production skills сохраняются: router, reconstruct, plan, resume и close. Plugin runtime использует Python standard library и не требует сетевых credentials.
 
 Plugin persistence остаётся явным и case-local: сохранение идёт в `.mind-detective/cases/<case-id>/case.json` по explicit persistence action. Web/PWA имеет отдельный browser-local persistence contract и записывает новый Case в IndexedDB сразу.
 
-В `main` уже реализован deterministic Web Reconstruction foundation для следующего release gate; это не меняет опубликованную версию до отдельной release authorization.
+`0.4.0` включает deterministic Web Reconstruction Foundation; создание release tags/GitHub Releases остаётся отдельным human-authorized publisher gate.
 
 ## Установка зависимостей
 
@@ -84,4 +84,4 @@ pnpm --dir apps/web build
 pnpm --dir apps/web exec playwright test
 ```
 
-Generated files должны оставаться byte-clean после повторной генерации. Production merge выполняется только после exact-head CI; release — после explicit human authorization и exact post-merge `main` CI через hardened publisher.
+Generated files должны оставаться byte-clean после повторной генерации. Production merge выполняется только после exact-head CI; release publication — после explicit human authorization и exact post-merge `main` CI через hardened publisher.

@@ -1,16 +1,16 @@
 # MIND Detective / Детектив памяти
 
-<!-- release-0.3.1 -->
+<!-- release-0.4.0 -->
 
 [English](README.en.md)
 
 **MIND Detective — помощник систематического поиска потерянных вещей.** Он разгружает рабочую память во время поиска: отделяет рассказ пользователя от гипотез, сохраняет проверяемые сведения, ведёт журнал физических проверок и позволяет продолжить кейс позже.
 
-> Текущий опубликованный релиз — `0.3.1`. В `main` уже реализован, но ещё не опубликован как отдельный релиз, deterministic Web Reconstruction foundation для следующего release gate. Версионные surfaces, теги и release manifest остаются `0.3.1` до отдельного human authorization.
+> Текущая release line и declarative intent — `0.4.0` (Web Reconstruction Foundation). Опубликованный predecessor `0.3.1` остаётся immutable history; создание тегов и GitHub Releases для `0.4.0` выполняется только через отдельный human-authorized publisher gate после зелёного exact-main CI.
 
-## Web Reconstruction в текущем `main`
+## Web Reconstruction в `0.4.0`
 
-Reconstruction теперь является частью Web/PWA и остаётся отдельным режимом от физического Search:
+Reconstruction является частью Web/PWA и остаётся отдельным режимом от физического Search:
 
 - сначала пользователь вводит **свободный рассказ**, который сохраняется **дословно** как `free_account` и не превращается автоматически в recollection/habit/observation;
 - структурированные сведения добавляются только как явно **подтверждённые пользователем** evidence;
@@ -58,9 +58,9 @@ Plugin surface отдельно сохраняет case-local файл `.mind-de
 
 Продукт не диагностирует причину забывания, не утверждает фактическую локацию предмета, не гарантирует результат поиска и не присваивает локациям калиброванные вероятности. Reconstruction структурирует только рассказ пользователя и подтверждённые им сведения; Search отвечает за физические проверки и предложения следующих действий. High-risk uncertainty маршрутизируется отдельно от ordinary physical-search reasoning.
 
-## Опубликованный `0.3.1`
+## Release `0.4.0`
 
-`0.3.1` остаётся текущим опубликованным patch release и сохраняет hardening local-first контура: safety ingress, structured Search target, production-reachability contracts, local Case import, typed proposal copy, installable PWA assets и portable API path discovery. Исторические release/tag surfaces не изменяются этой документационной синхронизацией.
+`0.4.0` фиксирует Web Reconstruction Foundation как minor release: state-first free account, user-confirmed evidence, uncertainty-preserving timeline, explicit Search transition, offline local execution и Case v2 portability. Publication не меняет исторические release/tag surfaces и выполняется только hardened repository-native publisher после отдельной авторизации.
 
 ## Разработка и проверка
 

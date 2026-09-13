@@ -2,6 +2,27 @@
 
 [Русский](CHANGELOG.md)
 
+## [0.4.0] — 2026-09-13
+
+### Added
+- a complete state-first Web Reconstruction workflow: free account → user-confirmed structure → timeline → explicit Search transition;
+- canonical portable `record_free_account` and `rebuild_timeline` commands with a free-account-first gate;
+- explicit unknown intervals and contradictions without resolving uncertainty by plausibility;
+- local offline Reconstruction after PWA preload through the generated executor and IndexedDB;
+- Reconstruction persistence across reload plus Case v2 export/import preservation;
+- 10 active `MD-WEB-REQ-RECONSTRUCT-*` contracts with exact production reachability and test selectors;
+- ADR 015 and RU/EN documentation for the deterministic Web Reconstruction boundary.
+
+### Changed
+- Web/PWA is no longer limited to Search/checklist: Reconstruction is a distinct mode, visually and semantically separate from Search;
+- portable Python semantics remain the single authoritative source for deterministic Reconstruction/Search mutations;
+- release intent is now repository `0.4.0` and plugin `mind-detective-v0.4.0`.
+
+### Unchanged
+- the Case schema remains `mind-detective-case/v2`;
+- a live model is not required for core Reconstruction and cannot write canonical memory evidence;
+- no Bayesian/POD state, calibrated probabilities, hidden belief state, cloud Case DB, background sync, or cross-case learning is introduced.
+
 ## [0.3.1] — 2026-09-12
 
 ### Fixed

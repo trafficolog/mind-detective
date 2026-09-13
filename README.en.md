@@ -1,16 +1,16 @@
 # MIND Detective
 
-<!-- release-0.3.1 -->
+<!-- release-0.4.0 -->
 
 [Русский](README.md)
 
 **MIND Detective is a systematic lost-item search assistant.** It reduces working-memory load by separating the user's account from hypotheses, preserving checkable evidence, logging physical checks, and keeping a Case resumable.
 
-> The current published release is `0.3.1`. `main` already contains the deterministic Web Reconstruction foundation intended for the next release gate, but it has not been published as a new release. Version surfaces, tags, and the release manifest remain `0.3.1` until separate human authorization.
+> The current release line and declarative intent is `0.4.0` (Web Reconstruction Foundation). Published predecessor `0.3.1` remains immutable history; tags and GitHub Releases for `0.4.0` are created only through a separate human-authorized publisher gate after green exact-main CI.
 
-## Web Reconstruction on current `main`
+## Web Reconstruction in `0.4.0`
 
-Reconstruction is now part of the Web/PWA and remains a distinct mode from physical Search:
+Reconstruction is part of the Web/PWA and remains a distinct mode from physical Search:
 
 - the user starts with a **free account**, preserved **verbatim** as `free_account` rather than being automatically classified as recollection/habit/observation;
 - structured evidence is recorded only as explicit **user-confirmed** evidence;
@@ -58,9 +58,9 @@ The plugin surface separately writes `.mind-detective/cases/<case-id>/case.json`
 
 The product does not diagnose why forgetting occurred, assert the real location of an item, guarantee search success, or assign calibrated probabilities to locations. Reconstruction structures only the user's account and facts they explicitly confirm; Search owns physical checks and next-action proposals. High-risk uncertainty is routed outside ordinary physical-search reasoning.
 
-## Published `0.3.1`
+## Release `0.4.0`
 
-`0.3.1` remains the current published hardening release for the local-first contour: safety ingress, structured Search targets, production-reachability contracts, local Case import, typed proposal copy, installable PWA assets, and portable API path discovery. Historical release/tag surfaces are unchanged by this documentation reconciliation.
+`0.4.0` establishes the Web Reconstruction Foundation as a minor release: state-first free account, user-confirmed evidence, uncertainty-preserving timeline, explicit Search transition, offline local execution, and Case v2 portability. Publication does not retarget historical release/tag surfaces and runs only through the hardened repository-native publisher after separate authorization.
 
 ## Development and verification
 

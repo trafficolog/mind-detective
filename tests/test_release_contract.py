@@ -12,7 +12,7 @@ from scripts.release_manifest import (
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github/workflows/publish-current-release.yml"
-EXPECTED_VERSION = "0.3.1"
+EXPECTED_VERSION = "0.4.0"
 
 
 def project_version(path: Path) -> str:
@@ -46,6 +46,7 @@ class ReleaseContractTests(unittest.TestCase):
         self.assertTrue((ROOT / ".github/releases/0.1.0.md").is_file())
         self.assertTrue((ROOT / ".github/releases/0.2.0.md").is_file())
         self.assertTrue((ROOT / ".github/releases/0.3.0.md").is_file())
+        self.assertTrue((ROOT / ".github/releases/0.3.1.md").is_file())
 
     def test_all_release_version_surfaces_match_current_release(self):
         self.assertEqual(project_version(ROOT / "pyproject.toml"), EXPECTED_VERSION)
