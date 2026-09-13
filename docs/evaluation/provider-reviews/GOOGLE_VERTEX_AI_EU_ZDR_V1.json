@@ -1,0 +1,51 @@
+{
+  "review_schema": "mind-detective-reconstruction-r2-provider-privacy-review/v1",
+  "provider_research_id": "google-vertex-ai-eu-zdr",
+  "provider_review_version": "google-vertex-ai-eu-zdr-2026-09-13-v1",
+  "reviewed_scope": {
+    "purpose": "offline_reconstruction_r2_screening",
+    "context_schema_version": "mind-detective-reconstruction-r2-context/v1",
+    "credential_boundary": "server_side_only",
+    "raw_content_export": false
+  },
+  "domains": {
+    "request_retention": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention"
+      ]
+    },
+    "training_secondary_use": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention"
+      ]
+    },
+    "deletion_control": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention"
+      ]
+    },
+    "geographic_processing": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://cloud.google.com/terms/data-residency",
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/security-controls"
+      ]
+    },
+    "credential_transport": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://github.com/trafficolog/mind-detective/blob/c2976d91cdfa6136dd5a26f789ddfceb6d40c3ac/docs/evaluation/R2_PROVIDER_PRIVACY_REVIEW_V1.md"
+      ]
+    },
+    "logging_observability": {
+      "decision": "acceptable",
+      "evidence_refs": [
+        "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/vertex-ai-zero-data-retention"
+      ]
+    }
+  },
+  "review_status": "approved"
+}
