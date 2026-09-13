@@ -234,7 +234,7 @@ class R2ProviderPrivacyReviewTests(unittest.TestCase):
     def test_blocked_review_derives_ineligible_screening_config(self) -> None:
         review = _review(status="blocked")
         domains = dict(review["domains"])
-        domains["request_retention"] = _domain("unknown")
+        domains["request_retention"] = _domain("blocked")
         review["domains"] = domains
         config = screening_config_from_review(
             review,
