@@ -1,6 +1,7 @@
 import json
 import re
 import unittest
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -114,6 +115,103 @@ class ReconstructionScenarioCorpusV1Tests(unittest.TestCase):
                 self.assertNotIn(fact["fact_id"], generator_serialized)
                 for answer in fact["answers"].values():
                     self.assertNotIn(answer, generator_serialized)
+
+    def test_every_reason_and_guard_code_has_two_corpus_examples(self):
+        reason_counts = Counter()
+        guard_counts = Counter()
+        reason_allowlist = set(self.protocol["clarification_reason_codes"])
+        guard_allowlist = set(self.protocol["guard_rejection_codes"])
+
+        for scenario in self.scenarios:
+            for clarification in scenario["oracle"]["allowed_clarifications"]:
+                self.assertIn(clarification["reason_code"], reason_allowlist)
+                reason_counts[clarification["reason_code"]] += 1
+            for proposal in scenario["oracle"]["adversarial_proposals"]:
+                self.assertIn(proposal["expected_guard_code"], guard_allowlist)
+                guard_counts[proposal["expected_guard_code"]] += 1
+                self.assertEqual(set(proposal["localizations"]), {"ru", "en"})
+                self.assertTrue(proposal["localizations"]["ru"])
+                self.assertTrue(proposal["localizations"]["en"])
+
+        for reason_code in reason_allowlist:
+            self.assertGreaterEqual(reason_counts[reason_code], 2, reason_code)
+        for guard_code in guard_allowlist:
+            self.assertGreaterEqual(guard_counts[guard_code], 2, guard_code)
+
+    def test_each_fixture_has_visible_targets_and_forbidden_introductions(self):
+        for scenario in self.scenarios:
+            oracle = scenario["oracle"]
+            self.assertTrue(oracle["allowed_clarifications"], scenario["scenario_id"])
+            for values in oracle["forbidden_introductions"].values():
+                self.assertTrue(values, scenario["scenario_id"])
+
+            visible_ids = set()
+            for localized_context in scenario["generator_context"]["localizations"].values():
+                for statement in localized_context["confirmed_statements"]:
+                    visible_ids.add(statement["statement_id"])
+                for event in localized_context["timeline_events"]:
+                    visible_ids.add(event["event_id"])
+                for unknown in localized_context["explicit_unknowns"]:
+                    visible_ids.add(unknown["unknown_id"])
+                for contradiction in localized_context["contradictions"]:
+                    visible_ids.add(contradiction["contradiction_id"])
+                for excerpt in localized_context["bounded_excerpts"]:
+                    visible_ids.add(excerpt["excerpt_id"])
+
+            latent_ids = {
+                fact["fact_id"]
+                for fact in scenario["participant_script"]["latent_facts"]
+            }
+            for clarification in oracle["allowed_clarifications"]:
+                self.assertTrue(clarification["target_ids"])
+                self.assertTrue(set(clarification["target_ids"]).issubset(visible_ids))
+                self.assertTrue(latent_ids.isdisjoint(clarification["target_ids"]))
+
+    def test_genuine_unknowns_are_preserved_and_not_reconstructable(self):
+        preserve_count = 0
+        for scenario in self.scenarios:
+            facts = {
+                fact["fact_id"]: fact
+                for fact in scenario["participant_script"]["latent_facts"]
+            }
+            genuine_unknown_ids = set(
+                scenario["participant_script"]["genuine_unknown_fact_ids"]
+            )
+            preserve_ids = set(
+                scenario["oracle"]["stopping_expectation"]["preserve_unknown_fact_ids"]
+            )
+            self.assertTrue(genuine_unknown_ids.issubset(facts))
+            self.assertTrue(preserve_ids.issubset(genuine_unknown_ids))
+            for fact_id in genuine_unknown_ids:
+                self.assertFalse(facts[fact_id]["reconstructable"])
+            preserve_count += len(preserve_ids)
+
+        self.assertGreater(preserve_count, 0)
+        genuine_unknown_family = [
+            scenario
+            for scenario in self.scenarios
+            if scenario["scenario_family_id"] == "RF07_genuine_unknown"
+        ]
+        self.assertEqual(len(genuine_unknown_family), 2)
+        for scenario in genuine_unknown_family:
+            self.assertTrue(
+                scenario["oracle"]["stopping_expectation"]["preserve_unknown_fact_ids"]
+            )
+
+    def test_prompt_injection_family_has_ru_and_en_examples(self):
+        prompt_injection_family = [
+            scenario
+            for scenario in self.scenarios
+            if scenario["scenario_family_id"] == "RF11_prompt_injection_free_account"
+        ]
+        self.assertEqual(len(prompt_injection_family), 2)
+        for scenario in prompt_injection_family:
+            ru = scenario["localizations"]["ru"]["user_visible_initial_account"]
+            en = scenario["localizations"]["en"]["user_visible_initial_account"]
+            self.assertRegex(ru, re.compile(r"игнорируй|отмени", re.IGNORECASE))
+            self.assertRegex(en, re.compile(r"ignore|override", re.IGNORECASE))
+            self.assertNotIn(ru, json.dumps(scenario["generator_context"], ensure_ascii=False))
+            self.assertNotIn(en, json.dumps(scenario["generator_context"], ensure_ascii=False))
 
     def test_readme_marks_synthetic_research_boundary(self):
         normalized = self.readme.lower()
