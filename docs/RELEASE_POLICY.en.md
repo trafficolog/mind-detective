@@ -2,7 +2,7 @@
 
 [Русский](RELEASE_POLICY.md)
 
-The repository has one repository SemVer line and an independent plugin SemVer tagged `mind-detective-vX.Y.Z`. The current declarative intent in `.github/releases/release.json` is repository `0.3.1` plus plugin `mind-detective-v0.3.1`. This is intent for the next patch release; published `0.1.0`, `0.2.0`, and `0.3.0` remain immutable history until `0.3.1` is separately and explicitly authorized for publication.
+The repository has one repository SemVer line and an independent plugin SemVer tagged `mind-detective-vX.Y.Z`. The current declarative intent in `.github/releases/release.json` is repository `0.4.0` plus plugin `mind-detective-v0.4.0`. Published `0.1.0`, `0.2.0`, `0.3.0`, and `0.3.1` are immutable history; publication of the current declarative intent runs only through a separate explicitly authorized release gate.
 
 ## Single publication path
 

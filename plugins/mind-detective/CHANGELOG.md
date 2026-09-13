@@ -2,6 +2,10 @@
 
 [English](CHANGELOG.en.md)
 
+## [0.4.0] — 2026-09-13
+
+Плагин `0.4.0` расширяет canonical portable semantics для Web Reconstruction: добавлены `record_free_account` и `rebuild_timeline`, free-account-first gate, user-only provenance для structured evidence и uncertainty-preserving timeline с unknowns/contradictions. Эти semantics остаются Python source of truth и сертифицированно генерируются в Web local executor. Пять production skills, `mind-detective-case/v2`, safety/provenance/search invariants и запрет calibrated location probabilities остаются неизменными.
+
 ## [0.3.1] — 2026-09-12
 
 Patch-hardening после внешнего review: safety routing применяется на interaction ingress, plugin reconstruction mutations проходят через явную reducer boundary, production helper reachability проверяется механически, semantic scenario corpus честно обозначен как manual review, а plugin/API portability больше не зависит от фиксированной глубины монорепо. Сохранены пять production skills, `mind-detective-case/v2`, provenance/search invariants и отсутствие calibrated location probabilities.

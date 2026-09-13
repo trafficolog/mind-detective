@@ -4,11 +4,11 @@
 
 ## Plugin surface
 
-The canonical plugin id is `mind-detective`; the current published version is `0.3.1`. The five production skills remain router, reconstruct, plan, resume, and close. The plugin runtime uses the Python standard library and needs no network credentials.
+The canonical plugin id is `mind-detective`; the current release line is `0.4.0`. The five production skills remain router, reconstruct, plan, resume, and close. The plugin runtime uses the Python standard library and needs no network credentials.
 
 Plugin persistence remains explicit and case-local at `.mind-detective/cases/<case-id>/case.json`. The Web/PWA has a separate browser-local persistence contract and writes a newly created Case to IndexedDB immediately.
 
-`main` already contains the deterministic Web Reconstruction foundation intended for the next release gate; this does not change the published version until separate release authorization.
+`0.4.0` includes the deterministic Web Reconstruction Foundation; creating release tags/GitHub Releases remains a separate human-authorized publisher gate.
 
 ## Install dependencies
 
@@ -84,4 +84,4 @@ pnpm --dir apps/web build
 pnpm --dir apps/web exec playwright test
 ```
 
-Regenerating committed artifacts must leave a byte-clean diff. Production merge requires exact-head CI; release requires explicit human authorization and exact post-merge `main` CI through the hardened publisher.
+Regenerating committed artifacts must leave a byte-clean diff. Production merge requires exact-head CI; release publication requires explicit human authorization and exact post-merge `main` CI through the hardened publisher.

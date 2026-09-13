@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "0.3.1"
+EXPECTED_VERSION = "0.4.0"
 EXPECTED_DOIS = {
     "10.1037/0021-9010.74.5.722",
     "10.1101/lm.94705",
@@ -21,7 +21,7 @@ def project_version(path: Path) -> str:
 
 
 class Task9HardeningTests(unittest.TestCase):
-    def test_patch_release_surfaces_are_0_3_1(self):
+    def test_release_surfaces_match_current_declared_version(self):
         self.assertEqual(project_version(ROOT / "pyproject.toml"), EXPECTED_VERSION)
         self.assertEqual(project_version(ROOT / "apps/api/pyproject.toml"), EXPECTED_VERSION)
         web = json.loads((ROOT / "apps/web/package.json").read_text(encoding="utf-8"))
@@ -37,17 +37,21 @@ class Task9HardeningTests(unittest.TestCase):
 
         release = json.loads((ROOT / ".github/releases/release.json").read_text(encoding="utf-8"))
         self.assertEqual(release["repository"]["tag"], EXPECTED_VERSION)
-        self.assertEqual(release["repository"]["notes_file"], ".github/releases/0.3.1.md")
-        self.assertEqual(release["plugins"][0]["tag"], "mind-detective-v0.3.1")
+        self.assertEqual(
+            release["repository"]["notes_file"],
+            f".github/releases/{EXPECTED_VERSION}.md",
+        )
+        self.assertEqual(release["plugins"][0]["tag"], f"mind-detective-v{EXPECTED_VERSION}")
+        self.assertTrue((ROOT / f".github/releases/{EXPECTED_VERSION}.md").is_file())
         self.assertTrue((ROOT / ".github/releases/0.3.1.md").is_file())
 
     def test_docs_are_current_and_getting_started_documents_portable_api(self):
         for path in (ROOT / "README.md", ROOT / "README.en.md"):
             text = path.read_text(encoding="utf-8")
-            self.assertIn("0.3.1", text)
+            self.assertIn(EXPECTED_VERSION, text)
         for path in (ROOT / "docs/GETTING_STARTED.md", ROOT / "docs/GETTING_STARTED.en.md"):
             text = path.read_text(encoding="utf-8")
-            self.assertIn("0.3.1", text)
+            self.assertIn(EXPECTED_VERSION, text)
             self.assertIn("MIND_DETECTIVE_PLUGIN_ROOT", text)
             self.assertIn("MIND_DETECTIVE_EXECUTION_METADATA", text)
             self.assertIn("pnpm install --frozen-lockfile", text)
