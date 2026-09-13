@@ -123,6 +123,32 @@ class ReconstructionResearchProtocolV1Tests(unittest.TestCase):
             self.assertIn(metric["metric_id"], self.table)
         self.assertEqual(len(metric_ids), len(metrics))
 
+    def test_reporting_metrics_cover_the_full_research_spec(self):
+        metrics = self.protocol["reporting_metrics"]
+        expected = {
+            "reconstructable_gap_resolution_rate",
+            "contradiction_surface_rate",
+            "readiness_time_ms",
+            "answered_questions_per_session",
+            "skipped_questions_per_session",
+            "max_consecutive_skips",
+            "guard_rejection_rate",
+            "provider_latency_ms",
+            "provider_error_rate_by_reason",
+            "cost_per_eligible_r2_session",
+            "clarification_category_coverage",
+        }
+        self.assertEqual({metric["metric_id"] for metric in metrics}, expected)
+        event_names = set(self.protocol["research_events"])
+        forbidden_fields = set(self.protocol["privacy"]["forbidden_export_fields"])
+        for metric in metrics:
+            self.assertTrue(metric["formula"])
+            self.assertTrue(metric["denominator"])
+            self.assertIn(metric["source_event"], event_names)
+            self.assertTrue(metric["source_fields"])
+            self.assertTrue(forbidden_fields.isdisjoint(metric["source_fields"]))
+            self.assertIn(metric["metric_id"], self.table)
+
     def test_research_event_fields_are_categorical_or_bounded_and_export_has_no_raw_text(self):
         forbidden = set(self.protocol["privacy"]["forbidden_export_fields"])
         allowed_field_names = set()
