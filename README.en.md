@@ -101,8 +101,11 @@ flowchart TB
     W --> I[(IndexedDB\nCase + execution receipt)]
 
     K --> A[FastAPI boundary]
-    P[Optional provider / research boundary] --> Q[Minimized context + deterministic guard]
-    Q --> X[Proposal only]
+    W -->|optional assistant request: full Case v2| A
+    A --> Q[Server-derived provider context]
+    Q --> P[LiteLLM / provider]
+    P --> H[Deterministic proposal guard]
+    H --> X[Guarded proposal / checklist fallback]
     X -. user confirmation required .-> W
 
     P -. cannot mutate .-> I
@@ -114,7 +117,7 @@ The online Search assistant uses a separate server-side proposal boundary. The R
 
 **Local canonical storage.** Web stores the Case in IndexedDB. The plugin surface writes `.mind-detective/cases/<case-id>/case.json` only after an explicit persistence action. Explicit JSON export/import remains the portability mechanism.
 
-**What can leave the device.** Deterministic Reconstruction does not call a provider. For an online/research boundary, only the allowed minimized transient context may be exported; the raw full account, entire Case, and unrelated Search state are not provider payload by default.
+**What can leave the device.** The local deterministic Reconstruction path does not require a remote API or provider. The optional online assistant has two distinct data boundaries. On **browser → API**, Web sends the **full Case v2** in `/api/v1/proposal/next`; if `NUXT_PUBLIC_MIND_DETECTIVE_API_BASE` points to a **remote FastAPI** service, that Case — including the verbatim free account, timeline, journal, and Search state — leaves the device for that API service. On **API → provider**, the server derives a narrower **provider context** before the model call; the full Case is not forwarded as the provider payload by default. The separate R2 research path uses its own frozen minimized-context contract and remains research-only.
 
 **Epistemic boundary.** MIND does not present confidence scores as probabilities of the item’s actual location, diagnose the mechanism of forgetting, or turn assistant proposals into user memories.
 
