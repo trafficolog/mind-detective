@@ -119,6 +119,8 @@ class ReconstructionResearchProtocolV1Tests(unittest.TestCase):
             self.assertTrue(metric["source_event"])
             self.assertIn(metric["source_event"], event_names)
             self.assertTrue(metric["source_fields"])
+            event_fields = set(self.protocol["research_events"][metric["source_event"]]["fields"])
+            self.assertTrue(set(metric["source_fields"]).issubset(event_fields))
             self.assertTrue(forbidden_fields.isdisjoint(metric["source_fields"]))
             self.assertIn(metric["metric_id"], self.table)
         self.assertEqual(len(metric_ids), len(metrics))
@@ -146,18 +148,37 @@ class ReconstructionResearchProtocolV1Tests(unittest.TestCase):
             self.assertTrue(metric["denominator"])
             self.assertIn(metric["source_event"], event_names)
             self.assertTrue(metric["source_fields"])
+            event_fields = set(self.protocol["research_events"][metric["source_event"]]["fields"])
+            self.assertTrue(set(metric["source_fields"]).issubset(event_fields))
             self.assertTrue(forbidden_fields.isdisjoint(metric["source_fields"]))
             self.assertIn(metric["metric_id"], self.table)
 
     def test_research_event_fields_are_categorical_or_bounded_and_export_has_no_raw_text(self):
         forbidden = set(self.protocol["privacy"]["forbidden_export_fields"])
+        required_forbidden = {
+            "case",
+            "case_payload",
+            "item_label",
+            "location",
+            "free_account",
+            "journal",
+            "journal_text",
+            "statement",
+            "statement_text",
+            "user_text",
+            "model_text",
+            "raw_model_output",
+            "evaluator_note",
+            "evaluator_notes",
+        }
+        self.assertTrue(required_forbidden.issubset(forbidden))
         allowed_field_names = set()
         for event in self.protocol["research_events"].values():
             fields = event["fields"]
             self.assertIsInstance(fields, list)
             allowed_field_names.update(fields)
         self.assertTrue(forbidden.isdisjoint(allowed_field_names))
-        self.assertFalse({"user_text", "model_text", "raw_model_output", "free_account", "statement_text", "journal_text"} & allowed_field_names)
+        self.assertTrue(required_forbidden.isdisjoint(allowed_field_names))
         self.assertEqual(self.protocol["privacy"]["storage_default"], "local_only")
         self.assertEqual(self.protocol["privacy"]["export_mode"], "explicit_only")
         self.assertFalse(self.protocol["privacy"]["store_proposal_text"])
