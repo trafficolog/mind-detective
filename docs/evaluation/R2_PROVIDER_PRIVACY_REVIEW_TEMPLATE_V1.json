@@ -1,0 +1,38 @@
+{
+  "review_schema": "mind-detective-reconstruction-r2-provider-privacy-review/v1",
+  "provider_research_id": "provider_to_review",
+  "provider_review_version": "provider-review-v1",
+  "reviewed_scope": {
+    "purpose": "offline_reconstruction_r2_screening",
+    "context_schema_version": "mind-detective-reconstruction-r2-context/v1",
+    "credential_boundary": "server_side_only",
+    "raw_content_export": false
+  },
+  "domains": {
+    "request_retention": {
+      "decision": "unknown",
+      "evidence_refs": []
+    },
+    "training_secondary_use": {
+      "decision": "unknown",
+      "evidence_refs": []
+    },
+    "deletion_control": {
+      "decision": "unknown",
+      "evidence_refs": []
+    },
+    "geographic_processing": {
+      "decision": "unknown",
+      "evidence_refs": []
+    },
+    "credential_transport": {
+      "decision": "unknown",
+      "evidence_refs": []
+    },
+    "logging_observability": {
+      "decision": "unknown",
+      "evidence_refs": []
+    }
+  },
+  "review_status": "incomplete"
+}
