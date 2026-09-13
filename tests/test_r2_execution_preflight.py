@@ -32,6 +32,7 @@ else:
     PREFLIGHT_IMPORT_ERROR = None
 
 
+EXPECTED_CORPUS_ID = "mind-detective-reconstruction-r2-fixed-corpus/v1"
 EXPECTED_CHECKS = (
     "profile_entitlement_verified",
     "model_endpoint_supported",
@@ -89,19 +90,20 @@ def _preflight(*, status: str = "ready") -> dict[str, object]:
         "proposal_schema_version": config["proposal_schema_version"],
         "context_schema_version": config["context_schema_version"],
         "guard_schema_version": config["guard_schema_version"],
-        "corpus_id": "r2-fixed-corpus-v1",
+        "corpus_id": EXPECTED_CORPUS_ID,
         "checks": checks,
         "preflight_status": status,
     }
 
 
 class R2ExecutionPreflightTests(unittest.TestCase):
-    def test_schema_and_check_set_are_frozen(self) -> None:
+    def test_schema_check_set_and_corpus_id_are_frozen(self) -> None:
         module = _module()
         self.assertEqual(
             module.EXECUTION_PREFLIGHT_SCHEMA,
             "mind-detective-reconstruction-r2-execution-preflight/v1",
         )
+        self.assertEqual(module.FIXED_CORPUS_ID, EXPECTED_CORPUS_ID)
         self.assertEqual(module.PREFLIGHT_CHECKS, EXPECTED_CHECKS)
 
     def test_ready_preflight_validates_against_approved_provider_review(self) -> None:
@@ -109,7 +111,7 @@ class R2ExecutionPreflightTests(unittest.TestCase):
         validated = module.validate_execution_preflight(_review(), _preflight())
         self.assertEqual(validated["preflight_status"], "ready")
         self.assertEqual(validated["provider_research_id"], "openai-api-eu-zdr")
-        self.assertEqual(validated["corpus_id"], "r2-fixed-corpus-v1")
+        self.assertEqual(validated["corpus_id"], EXPECTED_CORPUS_ID)
         self.assertEqual(set(validated["checks"]), set(EXPECTED_CHECKS))
 
     def test_preflight_is_bound_to_review_and_frozen_screening_config(self) -> None:
@@ -128,9 +130,18 @@ class R2ExecutionPreflightTests(unittest.TestCase):
                 with self.assertRaises(module.ExecutionPreflightValidationError):
                     module.validate_execution_preflight(_review(), payload)
 
+    def test_preflight_rejects_any_nonfrozen_corpus_id(self) -> None:
+        module = _module()
+        for value in ("r2-fixed-corpus-v2", "exploratory-subset", "", [], {}):
+            with self.subTest(value=value):
+                payload = _preflight()
+                payload["corpus_id"] = value
+                with self.assertRaises(module.ExecutionPreflightValidationError):
+                    module.validate_execution_preflight(_review(), payload)
+
     def test_model_and_prompt_ids_are_required_nonempty_strings(self) -> None:
         module = _module()
-        for field in ("model_research_id", "prompt_version", "corpus_id"):
+        for field in ("model_research_id", "prompt_version"):
             for value in ("", [], {}):
                 with self.subTest(field=field, value=value):
                     payload = _preflight()
