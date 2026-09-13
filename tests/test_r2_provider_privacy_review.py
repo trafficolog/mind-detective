@@ -150,6 +150,25 @@ class R2ProviderPrivacyReviewTests(unittest.TestCase):
                 with self.assertRaises(ProviderReviewValidationError):
                     validate_provider_review(review)
 
+    def test_enum_values_must_be_strings_and_fail_closed(self) -> None:
+        for invalid_decision in ([], {}):
+            with self.subTest(field="decision", value=invalid_decision):
+                review = _review()
+                domains = dict(review["domains"])
+                retention = dict(domains["request_retention"])
+                retention["decision"] = invalid_decision
+                domains["request_retention"] = retention
+                review["domains"] = domains
+                with self.assertRaises(ProviderReviewValidationError):
+                    validate_provider_review(review)
+
+        for invalid_status in ([], {}):
+            with self.subTest(field="review_status", value=invalid_status):
+                review = _review()
+                review["review_status"] = invalid_status
+                with self.assertRaises(ProviderReviewValidationError):
+                    validate_provider_review(review)
+
     def test_nonapproved_review_cannot_produce_positive_attestation(self) -> None:
         review = _review(status="blocked")
         domains = dict(review["domains"])
