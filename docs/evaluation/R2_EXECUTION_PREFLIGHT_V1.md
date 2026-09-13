@@ -2,7 +2,8 @@
 
 **Status:** research-governance prerequisite for any separately authorized real provider/model screening run.  
 **Schema:** `mind-detective-reconstruction-r2-execution-preflight/v1`  
-**Parent privacy gate:** `mind-detective-reconstruction-r2-provider-privacy-review/v1`
+**Parent privacy gate:** `mind-detective-reconstruction-r2-provider-privacy-review/v1`  
+**Frozen corpus id:** `mind-detective-reconstruction-r2-fixed-corpus/v1`
 
 ## Purpose
 
@@ -30,7 +31,7 @@ The preflight contains exactly:
 
 Unknown top-level fields fail closed. The artifact must not contain API keys, tokens, account identifiers, credential material, raw provider payloads, free-account text, Case payloads, prompts, model response text, or other user content.
 
-The provider identity and review version must exactly match one already-approved provider privacy review. The proposal/context/guard versions must exactly match the frozen Phase 4/5/6 contracts.
+The provider identity and review version must exactly match one already-approved provider privacy review. The proposal/context/guard versions must exactly match the frozen Phase 4/5/6 contracts. `corpus_id` is also frozen and must equal `mind-detective-reconstruction-r2-fixed-corpus/v1`; exploratory subsets, alternate corpus versions or caller-defined identifiers cannot be relabeled as this preflight.
 
 ## Required checks
 
@@ -79,7 +80,7 @@ After validation, the allowed attestation is limited to:
   "provider_review_version": "...",
   "model_research_id": "...",
   "prompt_version": "...",
-  "corpus_id": "...",
+  "corpus_id": "mind-detective-reconstruction-r2-fixed-corpus/v1",
   "preflight_status": "ready | blocked | incomplete",
   "preflight_ready": true
 }
@@ -111,7 +112,7 @@ Failure to establish any required profile control makes the preflight blocked or
 
 ## Corpus and context boundary
 
-This phase is limited to the synthetic fixed-corpus Phase 6 screening path.
+This phase is limited to the synthetic fixed-corpus Phase 6 screening path identified exactly by `mind-detective-reconstruction-r2-fixed-corpus/v1`.
 
 It does not authorize participant data. It does not authorize production Case content. It does not widen the provider-visible payload beyond the **Phase 5 minimized context**. The raw free account, full Case, unrelated statements/events, Search state and any other excluded context remain out of scope.
 
