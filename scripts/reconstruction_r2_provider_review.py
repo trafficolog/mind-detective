@@ -155,7 +155,7 @@ def validate_provider_review(review: Mapping[str, object]) -> ProviderReview:
     status = review.get("review_status")
     if status not in _REVIEW_STATUSES:
         raise ProviderReviewValidationError("provider review has an unknown review_status")
-    status_value = cast(str, status)
+    status_value = status
 
     decisions = {entry["decision"] for entry in domains.values()}
     if status_value == "approved" and decisions != {"acceptable"}:
