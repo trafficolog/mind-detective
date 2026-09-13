@@ -150,14 +150,22 @@
         "arm",
         "reconstructable_fact_count",
         "supported_reconstructable_fact_count",
+        "reconstructable_gap_count",
+        "reconstructable_gap_resolved_count",
+        "contradiction_count",
+        "contradiction_surfaced_count",
         "answered_question_count",
         "useful_answered_question_count",
         "shown_question_count",
         "skipped_question_count",
+        "max_consecutive_skip_count",
+        "proposal_attempt_count",
+        "guard_rejection_count",
         "newly_supported_fact_count",
         "genuine_unknown_count",
         "genuine_unknown_preserved_count",
         "forced_resolution_count",
+        "readiness_elapsed_ms",
         "provider_failure_before_first_useful",
         "protocol_complete"
       ]
@@ -338,16 +346,106 @@
       "population": "all R2 provider calls"
     }
   ],
+  "reporting_metrics": [
+    {
+      "metric_id": "reconstructable_gap_resolution_rate",
+      "formula": "reconstructable_gap_resolved_count / reconstructable_gap_count",
+      "denominator": "all scripted reconstructable gaps in included staged sessions",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["reconstructable_gap_resolved_count", "reconstructable_gap_count"],
+      "population": "staged R1/R2 sessions containing reconstructable gaps"
+    },
+    {
+      "metric_id": "contradiction_surface_rate",
+      "formula": "contradiction_surfaced_count / contradiction_count",
+      "denominator": "all scripted contradictions in included staged sessions",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["contradiction_surfaced_count", "contradiction_count"],
+      "population": "staged R1/R2 sessions containing contradictions"
+    },
+    {
+      "metric_id": "readiness_time_ms",
+      "formula": "distribution of readiness_elapsed_ms from first clarification opportunity to deterministic Reconstruction readiness",
+      "denominator": "protocol-complete sessions reaching deterministic readiness; non-readiness reported separately and never silently dropped",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["readiness_elapsed_ms", "protocol_complete"],
+      "population": "staged R1/R2 sessions"
+    },
+    {
+      "metric_id": "answered_questions_per_session",
+      "formula": "sum answered_question_count / included staged session count",
+      "denominator": "all included staged R1/R2 sessions, including zero-answer sessions",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["answered_question_count", "protocol_complete"],
+      "population": "staged R1/R2 sessions"
+    },
+    {
+      "metric_id": "skipped_questions_per_session",
+      "formula": "sum skipped_question_count / included staged session count",
+      "denominator": "all included staged R1/R2 sessions, including zero-skip sessions",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["skipped_question_count", "protocol_complete"],
+      "population": "staged R1/R2 sessions"
+    },
+    {
+      "metric_id": "max_consecutive_skips",
+      "formula": "distribution of max_consecutive_skip_count by arm",
+      "denominator": "all included staged R1/R2 sessions",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["max_consecutive_skip_count", "arm"],
+      "population": "staged R1/R2 sessions"
+    },
+    {
+      "metric_id": "guard_rejection_rate",
+      "formula": "guard_rejection_count / proposal_attempt_count",
+      "denominator": "all R2 proposal attempts entering deterministic validation/guard",
+      "source_event": "reconstruction_research_summary",
+      "source_fields": ["guard_rejection_count", "proposal_attempt_count", "arm"],
+      "population": "R2 offline or staged sessions with proposal attempts"
+    },
+    {
+      "metric_id": "provider_latency_ms",
+      "formula": "p50 and p95 latency_ms by provider/model research configuration",
+      "denominator": "all R2 provider calls with an observed latency; calls without latency are counted separately as technical failures",
+      "source_event": "provider_call_recorded",
+      "source_fields": ["latency_ms", "provider_research_id", "model_research_id", "technical_failure_reason"],
+      "population": "all R2 provider calls"
+    },
+    {
+      "metric_id": "provider_error_rate_by_reason",
+      "formula": "provider calls with selected technical_failure_reason / all provider calls",
+      "denominator": "all R2 provider calls for the evaluated provider/model configuration",
+      "source_event": "provider_call_recorded",
+      "source_fields": ["technical_failure_reason", "provider_research_id", "model_research_id"],
+      "population": "all R2 provider calls"
+    },
+    {
+      "metric_id": "cost_per_eligible_r2_session",
+      "formula": "sum cost_microunits / eligible R2 session count",
+      "denominator": "all eligible R2 sessions under configurations with cost instrumentation; missing cost coverage reported separately",
+      "source_event": "provider_call_recorded",
+      "source_fields": ["cost_microunits", "evaluation_session_id", "provider_research_id", "model_research_id"],
+      "population": "eligible R2 research sessions"
+    },
+    {
+      "metric_id": "clarification_category_coverage",
+      "formula": "distinct approved reason_code values represented by shown questions / 10 frozen clarification categories",
+      "denominator": "10 approved clarification_reason_codes in protocol v1",
+      "source_event": "clarification_question_shown",
+      "source_fields": ["reason_code", "generator_kind"],
+      "population": "offline corpus or staged R1/R2 questions for the evaluated generator configuration"
+    }
+  ],
   "go_no_go_thresholds": {
     "efficacy": {
       "coverage_lift_percentage_points": 10,
       "coverage_noninferiority_margin_percentage_points": 5,
       "question_efficiency_improvement_percent": 20,
-      "decision_rule": "coverage lift >= 10pp OR coverage no worse than R1 by >5pp while median questions_per_supported_fact improves >=20%"
+      "decision_rule": "coverage lift >= 10pp OR coverage degradation versus R1 <= 5pp while median questions_per_supported_fact improves >=20%"
     },
     "ux": {
       "max_mean_rating_degradation_points": 0.25,
-      "decision_rule": "convenience and source clarity no worse than R1 by >0.25; task load not worse by >0.25"
+      "decision_rule": "convenience and source clarity degradation versus R1 <= 0.25 points; task-load increase versus R1 <= 0.25 points"
     },
     "safety": {
       "critical_violations": 0,

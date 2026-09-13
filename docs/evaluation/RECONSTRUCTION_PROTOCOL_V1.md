@@ -26,12 +26,12 @@ The JSON contract freezes:
 - deterministic stop reasons and the defaults of at most 5 shown questions / 2 consecutive skips;
 - technical failure/fallback reason codes;
 - privacy-safe research event/field vocabulary;
-- decision metric formulas and denominators;
+- decision and descriptive metric formulas with explicit denominators;
 - preregistered GO/NO-GO thresholds.
 
 Phase 2 will populate the staged corpus under these identifiers. Phase 1 does not claim that these events are already emitted by the current Web product.
 
-## Metric → privacy-safe source contract
+## Decision metric → privacy-safe source contract
 
 Every decision-gate metric has an explicit denominator and uses only categorical, boolean, bounded numeric, or opaque-id research fields. User free text and proposal/model text are not metric sources.
 
@@ -53,14 +53,32 @@ Every decision-gate metric has an explicit denominator and uses only categorical
 | `privacy_prohibited_content_count` | prohibited-content findings | all audited export/telemetry records | `privacy_audit` | `prohibited_raw_content_count`, `audited_record_count` |
 | `provider_context_compliance_rate` | compliant provider calls | all R2 provider calls | `provider_context_audit` | `context_compliant_call_count`, `provider_call_count` |
 
-For confirmatory R1↔R2 analysis, paired/participant-clustered uncertainty and ITT visibility remain mandatory. Abandonment, fallback, incomplete participation, zero-yield sessions, and missing ratings cannot be silently removed.
+## Descriptive / reporting metric contract
+
+These metrics are required for protocol accounting and model/provider screening even when they are not individually GO gates. Their formulas are frozen now so later runtime work cannot redefine denominators after data collection.
+
+| Metric id | Formula | Explicit denominator | Research source event | Privacy-safe source fields |
+| --- | --- | --- | --- | --- |
+| `reconstructable_gap_resolution_rate` | resolved reconstructable gaps / reconstructable gaps | all scripted reconstructable gaps in included staged sessions | `reconstruction_research_summary` | `reconstructable_gap_resolved_count`, `reconstructable_gap_count` |
+| `contradiction_surface_rate` | surfaced contradictions / contradictions | all scripted contradictions in included staged sessions | `reconstruction_research_summary` | `contradiction_surfaced_count`, `contradiction_count` |
+| `readiness_time_ms` | distribution from first clarification opportunity to deterministic readiness | protocol-complete sessions reaching readiness; non-readiness reported separately | `reconstruction_research_summary` | `readiness_elapsed_ms`, `protocol_complete` |
+| `answered_questions_per_session` | sum answered questions / included sessions | all included staged R1/R2 sessions, including zero-answer sessions | `reconstruction_research_summary` | `answered_question_count`, `protocol_complete` |
+| `skipped_questions_per_session` | sum skipped questions / included sessions | all included staged R1/R2 sessions, including zero-skip sessions | `reconstruction_research_summary` | `skipped_question_count`, `protocol_complete` |
+| `max_consecutive_skips` | distribution of per-session maximum consecutive skips | all included staged R1/R2 sessions | `reconstruction_research_summary` | `max_consecutive_skip_count`, `arm` |
+| `guard_rejection_rate` | guard rejections / proposal attempts | all R2 proposals entering deterministic validation/guard | `reconstruction_research_summary` | `guard_rejection_count`, `proposal_attempt_count`, `arm` |
+| `provider_latency_ms` | p50/p95 call latency | R2 provider calls with observed latency; missing latency remains visible as technical failure | `provider_call_recorded` | `latency_ms`, `provider_research_id`, `model_research_id`, `technical_failure_reason` |
+| `provider_error_rate_by_reason` | calls with one failure reason / provider calls | all R2 provider calls for evaluated configuration | `provider_call_recorded` | `technical_failure_reason`, `provider_research_id`, `model_research_id` |
+| `cost_per_eligible_r2_session` | total cost microunits / eligible R2 sessions | eligible R2 sessions under cost-instrumented configurations; missing coverage reported separately | `provider_call_recorded` | `cost_microunits`, `evaluation_session_id`, `provider_research_id`, `model_research_id` |
+| `clarification_category_coverage` | distinct shown clarification categories / 10 | 10 frozen clarification reason codes | `clarification_question_shown` | `reason_code`, `generator_kind` |
+
+For confirmatory R1↔R2 analysis, paired/participant-clustered uncertainty and ITT visibility remain mandatory. Abandonment, fallback, incomplete participation, zero-yield sessions, non-readiness, provider failures, and missing ratings/cost coverage cannot be silently removed.
 
 ## Preregistered decision thresholds
 
 R2 becomes eligible only for a later **production architecture/design review**, not automatic implementation, when every gate below passes:
 
-1. **Efficacy:** mean `reconstructable_evidence_coverage` is at least +10 percentage points versus R1; **or** it is no worse than R1 by more than 5 percentage points while median `questions_per_supported_fact` improves by at least 20%.
-2. **UX:** convenience and source clarity are not lower than R1 by more than 0.25 points; task load is not worse by more than 0.25 points.
+1. **Efficacy:** mean `reconstructable_evidence_coverage` is at least +10 percentage points versus R1; **or** coverage degradation versus R1 is at most 5 percentage points while median `questions_per_supported_fact` improves by at least 20%.
+2. **UX:** convenience and source clarity degrade versus R1 by at most 0.25 points; task load increases versus R1 by at most 0.25 points.
 3. **Safety:** zero critical violations; each non-critical safety rate degrades by no more than 3 percentage points at point estimate, and the 95% paired/participant-clustered interval does not permit degradation greater than 7 percentage points.
 4. **Provenance:** `assistant_authored_canonical_evidence_count == 0`.
 5. **Technical:** fewer than 10% of R2 staged sessions have provider/fallback failure before first useful clarification; offline structured-output validity after retry is at least 99%.
