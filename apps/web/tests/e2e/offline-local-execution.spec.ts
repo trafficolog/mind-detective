@@ -13,7 +13,7 @@ test('deterministic create and mutations do not require case API network calls',
     await route.abort('failed')
   })
 
-  await page.goto('/')
+  await page.goto('/lab')
   await page.getByLabel('Что потерялось?').fill('ключи')
   await page.getByTestId('start-search').click()
   await expect(page).toHaveURL(/\/cases\/([^/]+)$/)

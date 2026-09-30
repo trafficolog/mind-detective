@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { caseFixture, seedCase, storedCase } from './helpers'
 
 test('production creation is one field and preserves a paused case for resume', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/lab')
 
   await expect(page.getByTestId('create-case-form')).toBeVisible()
   await expect(page.getByLabel('Что потерялось?')).toBeVisible()
@@ -19,7 +19,7 @@ test('production creation is one field and preserves a paused case for resume', 
   await page.getByTestId('pause-case').click()
   await expect(page.getByTestId('paused-banner')).toBeVisible()
 
-  await page.goto('/')
+  await page.goto('/lab')
   await expect(page.getByRole('link', { name: /ключи/ })).toBeVisible()
   await page.getByRole('link', { name: /ключи/ }).click()
   await expect(page.getByTestId('paused-banner')).toBeVisible()
@@ -36,7 +36,7 @@ test('legacy reconstruction case opens the state-first panel and preserves expli
     candidates: [],
   })
   await seedCase(page, legacy)
-  await page.goto(`/cases/${legacy.case_id}`)
+  await page.goto(`/lab/cases/${legacy.case_id}`)
 
   await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   await expect(page.getByTestId('interaction-dock').getByRole('button', { name: 'Написать' })).toHaveCount(0)

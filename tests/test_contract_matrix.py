@@ -60,7 +60,7 @@ RECONSTRUCTION_REQUIREMENTS = {
 
 RECONSTRUCTION_TRACES = {
     "MD-WEB-REQ-RECONSTRUCT-01": (
-        "apps/web/app/pages/cases/[id].vue",
+        "apps/web/app/pages/lab/cases/[id].vue",
         "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
     ),
     "MD-WEB-REQ-RECONSTRUCT-02": (
@@ -84,7 +84,7 @@ RECONSTRUCTION_TRACES = {
         "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
     ),
     "MD-WEB-REQ-RECONSTRUCT-07": (
-        "apps/web/app/pages/cases/[id].vue",
+        "apps/web/app/pages/lab/cases/[id].vue",
         "apps/web/tests/e2e/reconstruction-flow.spec.ts::state-first reconstruction preserves evidence and transitions explicitly to Search",
     ),
     "MD-WEB-REQ-RECONSTRUCT-08": (

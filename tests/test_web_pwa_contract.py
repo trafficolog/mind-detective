@@ -40,7 +40,7 @@ class WebPwaContractTests(unittest.TestCase):
             self.assertIn(f"'{key}'", en)
 
     def test_reconstruction_surface_wires_state_components_to_local_command_boundary(self):
-        page = (ROOT / "apps/web/app/pages/cases/[id].vue").read_text(encoding="utf-8")
+        page = (ROOT / "apps/web/app/pages/lab/cases/[id].vue").read_text(encoding="utf-8")
         panel = (ROOT / "apps/web/app/components/reconstruction/ReconstructionPanel.vue").read_text(encoding="utf-8")
         composable = (ROOT / "apps/web/app/composables/useReconstruction.ts").read_text(encoding="utf-8")
 

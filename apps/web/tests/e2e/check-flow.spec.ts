@@ -10,7 +10,7 @@ test('one-tap check commits canonical progress locally without command network',
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
   await expect(page.getByTestId('progress-checked')).toContainText('0')
   await expect(page.getByTestId('progress-remaining')).toContainText('1')
@@ -36,7 +36,7 @@ test('quality clarification appears only when a reported check is decision-relev
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
   await expect(page.getByTestId('check-quality-dialog')).toBeVisible()

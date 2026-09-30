@@ -34,7 +34,7 @@ test('failed IndexedDB commit leaves canonical case unchanged and retry reuses t
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await page.evaluate(async ({ version, caseId }) => {
     await new Promise<void>((resolvePromise, reject) => {

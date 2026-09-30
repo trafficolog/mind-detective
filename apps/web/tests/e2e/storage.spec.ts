@@ -24,7 +24,7 @@ test('valid v1 import migrates locally with case validation network unavailable 
     await route.abort('failed')
   })
 
-  await page.goto('/')
+  await page.goto('/lab')
   await expect(page.getByTestId('offline-route-ready')).toBeVisible()
   await page.getByTestId('case-import').setInputFiles({
     name: 'legacy.json',
@@ -40,7 +40,7 @@ test('valid v1 import migrates locally with case validation network unavailable 
   expect(migrated?.action_feedback).toEqual([])
   expect(validationRequests).toBe(0)
 
-  await page.goto('/')
+  await page.goto('/lab')
   await expect(page.getByTestId('case-import')).toBeVisible()
   await page.getByTestId('case-import').setInputFiles({
     name: 'future.json',
@@ -65,7 +65,7 @@ test('engaged case exposes durability warning install education and explicit JSO
     interaction_journal: [journalEntry('search-1', 'search', 'Проверил куртку.')],
   })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('storage-notice')).toBeVisible()
   await expect(page.getByTestId('storage-notice')).toContainText('не гарантирует')
@@ -126,7 +126,7 @@ test('reconstruction Case v2 survives IndexedDB reload without dropping canonica
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
   await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   await expect(page.getByTestId('free-account-saved')).toContainText(freeAccount)
   await expect(page.getByTestId('timeline-summary')).toBeVisible()

@@ -104,7 +104,7 @@ async function ensureCaseDatabase(page: Page): Promise<void> {
 }
 
 export async function seedCase(page: Page, caseValue: CaseV2): Promise<void> {
-  await page.goto('/')
+  await page.goto('/lab')
   await ensureCaseDatabase(page)
   await page.evaluate(async ({ payload, version }) => {
     await new Promise<void>((resolve, reject) => {

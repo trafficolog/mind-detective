@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { storedCase } from './helpers'
 
 test('state-first reconstruction preserves evidence and transitions explicitly to Search', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/lab')
   await page.getByLabel('Что потерялось?').fill('ключи')
   await page.getByTestId('start-search').click()
   await expect(page).toHaveURL(/\/cases\//)
@@ -80,7 +80,7 @@ test('state-first reconstruction preserves evidence and transitions explicitly t
 })
 
 test('raw free account passes safety ingress before reconstruction mutation', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/lab')
   await page.getByLabel('Что потерялось?').fill('ключи')
   await page.getByTestId('start-search').click()
   await expect(page).toHaveURL(/\/cases\//)
