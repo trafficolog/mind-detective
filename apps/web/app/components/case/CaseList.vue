@@ -18,7 +18,7 @@ const resumableCases = computed(() => props.cases.filter(caseValue => ['active',
       v-for="caseValue in resumableCases"
       :key="caseValue.case_id"
       class="case-row"
-      :to="`/cases/${caseValue.case_id}`"
+      :to="`/lab/cases/${caseValue.case_id}`"
       :data-testid="`case-row-${caseValue.case_id}`"
     >
       <span class="case-row__label">{{ caseValue.item_label }}</span>

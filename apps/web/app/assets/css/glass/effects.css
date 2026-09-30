@@ -1,0 +1,14 @@
+:root{
+--bg-ambient:radial-gradient(circle at 75% 8%,rgba(141,194,255,.38),transparent 34%),radial-gradient(circle at 15% 80%,rgba(198,223,255,.32),transparent 38%),linear-gradient(180deg,#F7FBFF 0%,#EAF5FF 100%);
+--glass-primary-bg:rgba(255,255,255,.52);--glass-primary-blur:blur(22px) saturate(135%)/* @kind other */;--glass-primary-border:1px solid rgba(255,255,255,.75)/* @kind other */;
+--glass-secondary-bg:rgba(247,251,255,.40);--glass-secondary-blur:blur(16px)/* @kind other */;--glass-secondary-border:1px solid rgba(164,201,236,.32)/* @kind other */;
+--shadow-glass:0 12px 36px rgba(69,118,171,.10),inset 0 1px 0 rgba(255,255,255,.70);
+--shadow-glass-raised:0 18px 44px rgba(69,118,171,.16),inset 0 1px 0 rgba(255,255,255,.80);
+--shadow-action:0 10px 24px rgba(11,134,234,.28);
+--shadow-sheet:0 -16px 48px rgba(40,86,140,.18);
+--shadow-nav:0 8px 30px rgba(69,118,171,.14),inset 0 1px 0 rgba(255,255,255,.8);
+--dur-fast:140ms/* @kind other */;--dur-normal:200ms/* @kind other */;--dur-slow:320ms/* @kind other */;
+--ease-standard:cubic-bezier(.2,.8,.2,1)/* @kind other */;--ease-exit:cubic-bezier(.4,0,1,1)/* @kind other */;
+}
+@media (prefers-reduced-motion:reduce){:root{--dur-fast:1ms/* @kind other */;--dur-normal:1ms/* @kind other */;--dur-slow:1ms/* @kind other */}}
+@media (prefers-contrast:more){:root{--glass-primary-bg:rgba(255,255,255,.94);--glass-secondary-bg:rgba(255,255,255,.9);--line-soft:rgba(11,23,51,.4);--text-secondary:#3F5677}}

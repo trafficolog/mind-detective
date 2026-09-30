@@ -8,7 +8,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return
   }
 
-  if (to.path.startsWith('/cases/')) {
+  if (to.path.startsWith('/lab/cases/')) {
     const caseId = String(to.params.id || '')
     if (caseId) {
       await evaluation.loadForCase(caseId)

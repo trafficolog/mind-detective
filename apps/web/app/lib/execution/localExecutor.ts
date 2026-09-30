@@ -4,6 +4,7 @@ import {
   apply_command,
   build_checklist_proposal_json,
   create_case,
+  create_case_with_kind,
 } from '../../generated/localExecution'
 import { canonicalSha256 } from './canonicalJson'
 import type { ExecutionReceipt } from '../storage/indexeddb'
@@ -44,6 +45,29 @@ export async function createLocalSearchCase(
     },
   ) as CaseV2
   return await repository.createOnly(searchCase)
+}
+
+/** 0.5.0 mobile creation: item kind (ADR 016) plus the explicitly chosen starting mode. */
+export async function createLocalCaseWithKind(
+  repository: LocalExecutionRepository,
+  caseId: string,
+  itemLabel: string,
+  now: string,
+  itemKind: 'physical' | 'digital',
+  mode: 'reconstruction' | 'search',
+): Promise<CaseV2> {
+  const created = create_case_with_kind(caseId, itemLabel, now, itemKind) as CaseV2
+  const withMode = apply_command(
+    structuredClone(created) as unknown as Record<string, unknown>,
+    {
+      command_id: `initial-mode:${caseId}`,
+      expected_updated_at: created.updated_at,
+      command_type: 'set_mode',
+      now,
+      payload: { mode },
+    },
+  ) as CaseV2
+  return await repository.createOnly(withMode)
 }
 
 export async function applyLocalCommand(

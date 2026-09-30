@@ -1,0 +1,32 @@
+export const TONES: Record<string, [string, string, string]> = {
+  confirmed: ['var(--confirmed-bg)', 'var(--confirmed-ink)', 'var(--confirmed-fg)'],
+  unknown: ['var(--unknown-bg)', 'var(--unknown-ink)', 'var(--unknown-fg)'],
+  contradiction: ['var(--contradiction-bg)', 'var(--contradiction-ink)', 'var(--contradiction-fg)'],
+  hypothesis: ['var(--hypothesis-bg)', 'var(--hypothesis-ink)', 'var(--hypothesis-fg)'],
+  research: ['var(--research-bg)', 'var(--research-ink)', 'var(--research-fg)'],
+  neutral: ['var(--neutral-bg)', 'var(--neutral-ink)', 'var(--neutral-fg)'],
+  recon: ['var(--mode-reconstruction-bg)', 'var(--mode-reconstruction-fg)', 'var(--mode-reconstruction-fg)'],
+  search: ['var(--mode-search-bg)', 'var(--mode-search-fg)', 'var(--mode-search-accent)'],
+}
+
+export const STATUS_MAP: Record<string, [string, string, string]> = {
+  'reconstruction': ['recon', 'waypoints', 'Реконструкция'],
+  'active-search': ['search', 'dot', 'Активный поиск'],
+  'search': ['search', 'search', 'Поиск'],
+  'needs-clarification': ['unknown', 'dot', 'Ожидает уточнения'],
+  'confirmed': ['confirmed', 'circle-check', 'Подтверждено'],
+  'unknown': ['unknown', 'circle-help', 'Неизвестно'],
+  'contradiction': ['contradiction', 'triangle-alert', 'Противоречие'],
+  'hypothesis': ['hypothesis', 'lightbulb', 'Гипотеза'],
+  'question': ['hypothesis', 'message-circle-question', 'Уточняющий вопрос'],
+  'found': ['confirmed', 'circle-check', 'Найдено'],
+  'not-found': ['neutral', 'circle-minus', 'Не найдено'],
+  'repeat': ['unknown', 'rotate-ccw', 'Проверить повторно'],
+  'incomplete': ['neutral', 'circle-dashed', 'Не завершено'],
+  'not-checked': ['neutral', 'circle', 'Не проверено'],
+  'closed': ['neutral', 'dot', 'Закрыто'],
+  'paused': ['neutral', 'circle-pause', 'Приостановлено'],
+  'research': ['research', 'flask-conical', 'Только исследование'],
+  'offline': ['neutral', 'wifi-off', 'Офлайн'],
+  'local': ['neutral', 'hard-drive', 'Сохранено локально'],
+}

@@ -1,5 +1,4 @@
 :root {
-  color-scheme: light dark;
   --md-space-1: 4px;
   --md-space-2: 8px;
   --md-space-3: 12px;
@@ -44,3 +43,5 @@
     --md-surface: var(--md-surface-solid);
   }
 }
+
+.md-legacy { color-scheme: light dark; }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'lab' })
 import type { CaseV2 } from '~/lib/api/contracts'
 import type { EvaluationSessionV1 } from '~/lib/eval/contracts'
 
@@ -11,7 +12,7 @@ function handleStarted(session: EvaluationSessionV1): void {
 }
 
 async function handleCreated(caseValue: CaseV2): Promise<void> {
-  await navigateTo(`/cases/${caseValue.case_id}`)
+  await navigateTo(`/lab/cases/${caseValue.case_id}`)
 }
 </script>
 

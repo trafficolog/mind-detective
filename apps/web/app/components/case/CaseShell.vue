@@ -21,7 +21,7 @@ const emit = defineEmits<{
   <article class="case-shell" data-testid="case-shell">
     <header class="case-shell__header">
       <div class="section-heading">
-        <NuxtLink to="/" class="muted">← Все дела</NuxtLink>
+        <NuxtLink to="/lab" class="muted">← Все дела</NuxtLink>
         <button
           v-if="props.caseValue.lifecycle === 'active'"
           class="secondary-action"

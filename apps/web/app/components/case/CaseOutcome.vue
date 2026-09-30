@@ -11,6 +11,6 @@ const { t } = useCopy()
     <h1 v-if="caseValue.lifecycle === 'closed_found'">{{ t('outcome.found', { item: caseValue.item_label }) }}</h1>
     <h1 v-else>{{ t('outcome.unresolved') }}</h1>
     <p class="lede">{{ t('outcome.retained') }}</p>
-    <NuxtLink class="primary-action" to="/">{{ t('case.to_list') }}</NuxtLink>
+    <NuxtLink class="primary-action" to="/lab">{{ t('case.to_list') }}</NuxtLink>
   </section>
 </template>

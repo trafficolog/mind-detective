@@ -3,6 +3,7 @@ import type { CaseV2, CommandEnvelope } from '../../app/lib/api/contracts'
 import {
   applyLocalCommand,
   createLocalCase,
+  createLocalCaseWithKind,
   createLocalSearchCase,
   type LocalExecutionRepository,
 } from '../../app/lib/execution/localExecutor'
@@ -160,5 +161,16 @@ describe('local executor wrapper', () => {
     expect(withTimeline.timeline?.events).toEqual([])
     expect(repository.writes).toBe(3)
     expect(repository.receipts.size).toBe(3)
+  })
+
+  it('creates a 0.5.0 mobile case with item kind and the explicitly chosen mode', async () => {
+    const repository = new MemoryRepository()
+    const digital = await createLocalCaseWithKind(repository, 'case-photo', 'Фото', '2026-09-30T10:00:00Z', 'digital', 'reconstruction')
+    expect(digital.constraints).toEqual(['item_kind:digital'])
+    expect(digital.current_mode).toBe('reconstruction')
+    const physical = await createLocalCaseWithKind(repository, 'case-keys', 'Ключи', '2026-09-30T10:00:00Z', 'physical', 'search')
+    expect(physical.constraints).toEqual([])
+    expect(physical.current_mode).toBe('search')
+    expect(repository.createWrites).toBe(2)
   })
 })

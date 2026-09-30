@@ -8,11 +8,25 @@ export default defineNuxtConfig({
       pathPrefix: false,
     },
   ],
-  css: ['~/assets/css/tokens.css', '~/assets/css/app.css'],
+  css: [
+    '~/assets/css/glass/fonts.css',
+    '~/assets/css/glass/colors.css',
+    '~/assets/css/glass/typography.css',
+    '~/assets/css/glass/spacing.css',
+    '~/assets/css/glass/effects.css',
+    '~/assets/css/glass/base.css',
+    '~/assets/css/glass/components.css',
+    '~/assets/css/mobile.css',
+    '~/assets/css/tokens.css',
+    '~/assets/css/app.css',
+  ],
   app: {
     head: {
+      htmlAttrs: { lang: 'ru' },
+      title: 'Mind Detective',
       meta: [
-        { name: 'theme-color', content: '#f4f6f8' },
+        { name: 'theme-color', content: '#EEF7FF' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       ],
       link: [
@@ -35,9 +49,9 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: false,
-    includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
+    includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png', 'brand/*', 'fonts/*.woff2'],
     workbox: {
-      globPatterns: ['**/*.{js,css,html,svg,png}'],
+      globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
       globIgnores: ['200.html', '404.html'],
       runtimeCaching: [],
       navigateFallback: '/',
