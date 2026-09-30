@@ -9,6 +9,8 @@ from .portable_kernel import (
     apply_command,
     build_checklist_proposal_json,
     create_case,
+    create_case_with_kind,
+    item_kind_json,
     select_next_action_json,
 )
 
@@ -79,6 +81,20 @@ def _vector(vector_id: str, operation: str, input_value: dict[str, object]) -> d
                 str(input_value["now"]),
             )
         )
+    elif operation == "create_case_with_kind":
+        expected = _capture(
+            lambda: create_case_with_kind(
+                str(input_value["case_id"]),
+                str(input_value["item_label"]),
+                str(input_value["now"]),
+                str(input_value["item_kind"]),
+            )
+        )
+    elif operation == "item_kind":
+        kind_case = input_value["case"]
+        if not isinstance(kind_case, dict):
+            raise AssertionError("item_kind vector shape")
+        expected = _capture(lambda: item_kind_json(kind_case))
     elif operation == "command":
         raw_case = input_value["case"]
         raw_command = input_value["command"]
@@ -109,6 +125,173 @@ def _vector(vector_id: str, operation: str, input_value: dict[str, object]) -> d
     else:
         raise AssertionError(f"unsupported fixture operation: {operation}")
     return {"id": vector_id, "operation": operation, "input": input_value, "expected": expected}
+
+
+def _mobile_vectors(reconstruction_with_free_account: dict[str, object]) -> list[dict[str, object]]:
+    """0.5.0 Glass Modern mobile slice (ADR 016)."""
+    vectors: list[dict[str, object]] = []
+    vectors.append(
+        _vector(
+            "mobile_create_digital_case",
+            "create_case_with_kind",
+            {"case_id": "case-photo", "item_label": "Фото с дня рождения", "now": "2026-09-30T10:00:00Z", "item_kind": "digital"},
+        )
+    )
+    vectors.append(
+        _vector(
+            "mobile_create_invalid_kind",
+            "create_case_with_kind",
+            {"case_id": "case-x", "item_label": "A", "now": "2026-09-30T10:00:00Z", "item_kind": "x"},
+        )
+    )
+    digital = create_case_with_kind("case-photo", "Фото с дня рождения", "2026-09-30T10:00:00Z", "digital")
+    vectors.append(_vector("mobile_item_kind_digital", "item_kind", {"case": digital}))
+
+    set_search = _command(digital, "set_mode", command_id="cmd-m-search", now="2026-09-30T10:00:01Z", payload={"mode": "search"})
+    digital_search = apply_command(digital, set_search)
+    add_target = _command(
+        digital_search,
+        "add_search_target",
+        command_id="cmd-m-target",
+        now="2026-09-30T10:00:02Z",
+        payload={"statement_id": "target-trash", "target": "Телефон → Фото → Недавно удалённые"},
+    )
+    vectors.append(_vector("mobile_add_search_target", "command", {"case": digital_search, "command": add_target}))
+    with_target = apply_command(digital_search, add_target)
+    duplicate = _command(
+        with_target,
+        "add_search_target",
+        command_id="cmd-m-target-dup",
+        now="2026-09-30T10:00:03Z",
+        payload={"statement_id": "target-dup", "target": "телефон → фото → недавно  удалённые"},
+    )
+    vectors.append(_vector("mobile_add_search_target_duplicate", "command", {"case": with_target, "command": duplicate}))
+    vectors.append(
+        _vector(
+            "mobile_add_search_target_requires_search",
+            "command",
+            {
+                "case": reconstruction_with_free_account,
+                "command": _command(
+                    reconstruction_with_free_account,
+                    "add_search_target",
+                    command_id="cmd-m-target-recon",
+                    now="2026-09-30T10:00:04Z",
+                    payload={"statement_id": "target-recon", "target": "Рюкзак"},
+                ),
+            },
+        )
+    )
+    vectors.append(
+        _vector(
+            "mobile_check_requires_search",
+            "command",
+            {
+                "case": reconstruction_with_free_account,
+                "command": _command(
+                    reconstruction_with_free_account,
+                    "record_search_check",
+                    command_id="cmd-m-check-recon",
+                    now="2026-09-30T10:00:05Z",
+                    payload={"check_id": "check-recon", "target": "Рюкзак", "method": "hand", "result": "not_found"},
+                ),
+            },
+        )
+    )
+    digital_check = _command(
+        with_target,
+        "record_search_check",
+        command_id="cmd-m-check-trash",
+        now="2026-09-30T10:00:06Z",
+        payload={
+            "check_id": "check-trash",
+            "target": "Телефон → Фото → Недавно удалённые",
+            "method": "trash",
+            "result": "not_found",
+            "based_on": ["candidate-target-trash"],
+        },
+    )
+    vectors.append(_vector("mobile_digital_check_method", "command", {"case": with_target, "command": digital_check}))
+    vectors.append(
+        _vector(
+            "mobile_digital_rejects_physical_method",
+            "command",
+            {
+                "case": with_target,
+                "command": _command(
+                    with_target,
+                    "record_search_check",
+                    command_id="cmd-m-check-flash",
+                    now="2026-09-30T10:00:07Z",
+                    payload={"check_id": "check-flash", "target": "Облако", "method": "flashlight", "result": "not_found"},
+                ),
+            },
+        )
+    )
+    vectors.append(
+        _vector(
+            "mobile_revise_free_account",
+            "command",
+            {
+                "case": reconstruction_with_free_account,
+                "command": _command(
+                    reconstruction_with_free_account,
+                    "revise_free_account",
+                    command_id="cmd-m-revise",
+                    now="2026-09-30T10:00:08Z",
+                    payload={"entry_id": "free-2", "text": "Вышел из офиса, зашёл в кафе.\nПотом сел в машину."},
+                ),
+            },
+        )
+    )
+    vectors.append(
+        _vector(
+            "mobile_timeline_unknown_and_same_time_contradiction",
+            "command",
+            {
+                "case": reconstruction_with_free_account,
+                "command": _command(
+                    reconstruction_with_free_account,
+                    "rebuild_timeline",
+                    command_id="cmd-m-timeline",
+                    now="2026-09-30T10:00:09Z",
+                    payload={
+                        "events": [
+                            {"id": "ev-office", "label": "Офис", "statement_ids": [], "event_time": "08:00", "time_precision": "exact"},
+                            {"id": "ev-cafe", "label": "Кафе", "statement_ids": [], "event_time": "08:00", "time_precision": "exact"},
+                            {"id": "ev-cafe2", "label": "Кафе", "statement_ids": [], "event_time": "08:40", "time_precision": "approximate"},
+                            {"id": "ev-road", "label": "Дорога домой", "statement_ids": [], "event_time": None, "time_precision": "unknown"},
+                        ],
+                        "last_supported_interaction_id": None,
+                        "first_noticed_missing_id": None,
+                    },
+                ),
+            },
+        )
+    )
+    vectors.append(
+        _vector(
+            "mobile_timeline_invalid_clock_time",
+            "command",
+            {
+                "case": reconstruction_with_free_account,
+                "command": _command(
+                    reconstruction_with_free_account,
+                    "rebuild_timeline",
+                    command_id="cmd-m-timeline-bad",
+                    now="2026-09-30T10:00:10Z",
+                    payload={
+                        "events": [
+                            {"id": "ev-bad", "label": "A", "statement_ids": [], "event_time": "25:99", "time_precision": "exact"},
+                        ],
+                        "last_supported_interaction_id": None,
+                        "first_noticed_missing_id": None,
+                    },
+                ),
+            },
+        )
+    )
+    return vectors
 
 
 def generate_vectors() -> list[dict[str, object]]:
@@ -529,6 +712,8 @@ def generate_vectors() -> list[dict[str, object]]:
             },
         )
     )
+
+    vectors.extend(_mobile_vectors(reconstruction_with_free_account))
 
     vectors.append(_vector("proposal-reconstruction", "proposal", {"case": reconstruction, "mode": "reconstruction"}))
     vectors.append(_vector("proposal-search-next-action", "proposal", {"case": with_candidate, "mode": "search"}))

@@ -16,6 +16,8 @@ SUPPORTED_COMMAND_TYPES: tuple[str, ...] = (
     "resume",
     "close_found",
     "close_unresolved",
+    "add_search_target",
+    "revise_free_account",
 )
 
 STABLE_LOCAL_ERRORS: frozenset[str] = frozenset(
@@ -31,5 +33,10 @@ STABLE_LOCAL_ERRORS: frozenset[str] = frozenset(
         "MD_RECON_FREE_ACCOUNT_EXISTS",
         "MD_RECON_TIMELINE_EVENT_DUPLICATE",
         "MD_RECON_STATEMENT_NOT_FOUND",
+        "MD_RECON_EVENT_TIME_INVALID",
+        "MD_CASE_ITEM_KIND_INVALID",
+        "MD_SEARCH_MODE_REQUIRED",
+        "MD_SEARCH_METHOD_KIND",
+        "MD_SEARCH_TARGET_EXISTS",
     }
 )

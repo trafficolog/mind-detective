@@ -103,7 +103,7 @@ class PortableKernelTests(unittest.TestCase):
         )
         self.assertEqual(reconstruction["interaction_journal"], [])
 
-    def test_record_free_account_requires_reconstruction_mode(self):
+    def test_record_free_account_requires_selected_mode(self):
         unselected = create_case("case-1", "keys", "2026-09-10T18:00:00Z")
         search = apply_command(
             unselected,
@@ -115,9 +115,11 @@ class PortableKernelTests(unittest.TestCase):
                 payload={"mode": "search"},
             ),
         )
+        # 0.5.0 (ADR 016): a free account may follow an explicit Search transition;
+        # only an unselected mode is still rejected.
+        self.assertEqual(search["current_mode"], "search")
         for name, case, expected in (
             ("unselected", unselected, "2026-09-10T18:00:00Z"),
-            ("search", search, "2026-09-10T18:01:00Z"),
         ):
             with self.subTest(mode=name):
                 with self.assertRaises(PortableKernelError) as ctx:

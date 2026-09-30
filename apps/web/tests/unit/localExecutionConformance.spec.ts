@@ -6,6 +6,8 @@ import {
   apply_command,
   build_checklist_proposal_json,
   create_case,
+  create_case_with_kind,
+  item_kind_json,
   select_next_action_json,
 } from '../../app/generated/localExecution'
 
@@ -13,7 +15,7 @@ type Expected = { result: unknown } | { error_code: string }
 
 type CorpusVector = {
   id: string
-  operation: 'create_case' | 'command' | 'proposal' | 'planner'
+  operation: 'create_case' | 'create_case_with_kind' | 'item_kind' | 'command' | 'proposal' | 'planner'
   input: Record<string, unknown>
   expected: Expected
 }
@@ -29,6 +31,21 @@ const requiredReconstructionVectorIds = [
   'reconstruction_transition_to_search_preserves_evidence',
 ] as const
 
+const requiredMobileVectorIds = [
+  'mobile_create_digital_case',
+  'mobile_create_invalid_kind',
+  'mobile_item_kind_digital',
+  'mobile_add_search_target',
+  'mobile_add_search_target_duplicate',
+  'mobile_add_search_target_requires_search',
+  'mobile_check_requires_search',
+  'mobile_digital_check_method',
+  'mobile_digital_rejects_physical_method',
+  'mobile_revise_free_account',
+  'mobile_timeline_unknown_and_same_time_contradiction',
+  'mobile_timeline_invalid_clock_time',
+] as const
+
 function execute(vector: CorpusVector): Expected {
   try {
     if (vector.operation === 'create_case') {
@@ -39,6 +56,19 @@ function execute(vector: CorpusVector): Expected {
           String(vector.input.now),
         ),
       }
+    }
+    if (vector.operation === 'create_case_with_kind') {
+      return {
+        result: create_case_with_kind(
+          String(vector.input.case_id),
+          String(vector.input.item_label),
+          String(vector.input.now),
+          String(vector.input.item_kind),
+        ),
+      }
+    }
+    if (vector.operation === 'item_kind') {
+      return { result: item_kind_json(vector.input.case as Record<string, unknown>) }
     }
     if (vector.operation === 'command') {
       return {
@@ -75,6 +105,13 @@ describe('generated local execution differential conformance', () => {
   it('contains the required reconstruction vectors', () => {
     const ids = new Set(vectors.map((vector) => vector.id))
     for (const vectorId of requiredReconstructionVectorIds) {
+      expect(ids.has(vectorId)).toBe(true)
+    }
+  })
+
+  it('contains the required 0.5.0 mobile vectors', () => {
+    const ids = new Set(vectors.map((vector) => vector.id))
+    for (const vectorId of requiredMobileVectorIds) {
       expect(ids.has(vectorId)).toBe(true)
     }
   })
