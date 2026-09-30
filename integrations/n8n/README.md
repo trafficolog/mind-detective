@@ -1,14 +1,16 @@
 # n8n — сервер ассистента и распознавания речи
 
+Необязательный транспорт research-only ассистента Mind Detective 0.5.0 (ADR 017). Без n8n приложение полностью работоспособно локально.
+
 Выбранный вариант сервера. Приложение знает только **адрес n8n** и **токен webhook**; ключи моделей живут в n8n Credentials.
 
-## Контракт (реализован в `domain.js`: `serverEndpoints`, `serverComplete`, `serverStt`; тесты T45–T47)
+## Контракт (реализован в `apps/web/app/lib/assistant/server.ts`; тесты `apps/web/tests/unit/assistantServer.spec.ts` T45–T47, E2E `mobile-assistant.spec.ts`)
 | Webhook | Запрос | Ответ 200 | Ошибка |
 |---|---|---|---|
 | `POST {base}/webhook/md-propose` | JSON `{ "prompt": string }`, `Authorization: Bearer <token>` | `{ "text": "<JSON Proposal от модели>" }` | любой не-2xx → приложение показывает fallback |
 | `POST {base}/webhook/md-transcribe` | multipart: `file`, `model`, `language=ru` | `{ "text": "распознанный текст" }` | не-2xx → «Сервис распознавания недоступен» |
 
-Prompt строит приложение (`assistantPrompt`) из минимального контекста — без свободного рассказа и гипотез. Ответ модели всегда проходит `guardProposal` в приложении (единственный источник правил, DRY); n8n — тонкий прокси (KISS).
+Prompt строит приложение (`assistantPrompt` в `apps/web/app/lib/assistant/proposals.ts`) из минимального контекста — без свободного рассказа и гипотез. Ответ модели всегда проходит `guardProposal` в приложении (единственный источник правил, DRY); n8n — тонкий прокси (KISS).
 
 ## Установка
 1. n8n → Workflows → Import from file → `mind-detective-assistant.workflow.json`.
@@ -25,4 +27,12 @@ Prompt строит приложение (`assistantPrompt`) из минимал
 JSON собран вручную под n8n 1.x (Webhook v2, HTTP Request v4.2, Respond to Webhook v1.1) и **не проверялся импортом**. После импорта проверьте привязку credentials и поле binary `file` в узле Whisper.
 
 ## Дальше (группа агентов)
-Схема «05 · n8n, группа агентов» в `Assistant Workflows.dc.html`: добавить Code `route()` + Switch и sub-workflows. Контракт с приложением тот же.
+Схема «05 · n8n, группа агентов» в `docs/design/2026-09-30-glass-modern-mobile/prototype/Assistant Workflows.dc.html`: добавить Code `route()` + Switch и sub-workflows. Контракт с приложением тот же.
+
+## Локальный запуск n8n для проверки
+
+```bash
+docker run -it --rm -p 5678:5678 -e N8N_DEFAULT_BINARY_DATA_MODE=filesystem n8nio/n8n
+```
+
+В приложении укажите `http://localhost:5678` (разрешено только для localhost; для телефона нужен HTTPS-адрес, например через обратный прокси). В узле Webhook → Options → Allowed Origins укажите origin приложения (например, `http://localhost:3000`).

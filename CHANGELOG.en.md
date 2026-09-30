@@ -2,6 +2,24 @@
 
 [Русский](CHANGELOG.md)
 
+## [Unreleased] — 0.5.0 Glass Modern mobile
+
+### Added
+- mobile PWA shell following the Claude Design handoff (Glass Modern): splash, onboarding, voice-first home, new case, cases list, reconstruction, search, journal, bottom sheets and settings;
+- item kind "Thing / Photo or file" (`constraints: item_kind:digital`), sources instead of places and digital check methods (ADR 016);
+- portable `add_search_target` and `revise_free_account` commands, HH:MM event times, unknown-time and same-exact-time contradiction derivation; new conformance vectors;
+- research-only assistant: local checklist without a server and optional n8n (`md-propose`, `md-transcribe`) with guard and fallback (ADR 017); voice input via Web Speech API or n8n;
+- Vue design-system components, offline Lucide icons and Inter, new logo and PWA icons;
+- Playwright scenarios M1–M10 and a visual review against the handoff.
+
+### Changed
+- the 0.4.0 shell and the evaluation stand moved to `/lab`;
+- checks and explicit targets require Search mode; the free account and timeline can still be extended after the Search transition.
+
+### Unchanged
+- Case schema `mind-detective-case/v2`; Case semantics only in the Python portable kernel and generated executor;
+- no probabilities, cloud, accounts or access to user files.
+
 ## [0.4.0] — 2026-09-13
 
 ### Added

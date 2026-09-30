@@ -8,15 +8,15 @@ Branch: `feature/0.5.0-glass-modern-mobile`
 
 | # | Задача | RED (тесты сначала) | GREEN | Статус |
 |---|---|---|---|---|
-| 1 | Спецификация, план, ADR 016/017, импорт handoff в `docs/design/2026-09-30-glass-modern-mobile/` | — | документы | backlog |
-| 2 | Ядро K1–K7 | `plugins/mind-detective/tests/test_portable_mobile_slice.py` | `portable_kernel.py`, `portable_contract.py` | backlog |
-| 3 | Генерация и conformance | `apps/web/tests/unit/localExecutionConformance.spec.ts` (новые векторы) | `scripts.write_local_execution_artifacts`, `scripts.generate_local_execution_corpus` | backlog |
-| 4 | Web-lib: словарь, view-model, команды, маска времени, настройки | `apps/web/tests/unit/mobile*.spec.ts` | `apps/web/app/lib/mobile/*` | backlog |
-| 5 | Ассистент, guard, fallback, n8n, STT | `apps/web/tests/unit/assistant*.spec.ts` | `apps/web/app/lib/assistant/*` | backlog |
-| 6 | Компоненты DS на Vue, токены, иконки, Inter, ассеты | `apps/web/tests/unit/designSystem.spec.ts` (контракты токенов/иконок) | `apps/web/app/components/ds/*`, `assets/css/glass/*` | backlog |
-| 7 | Экраны 1–11 и шторки, legacy → `/lab` | Playwright M1–M10 (`apps/web/tests/e2e/mobile-*.spec.ts`) | `apps/web/app/pages/*`, `components/mobile/*` | backlog |
-| 8 | n8n: workflow, инструкция, документация запуска | — | `integrations/n8n/`, `docs/GETTING_STARTED*.md` | backlog |
-| 9 | VERIFY: полный набор, сборка PWA, визуальная сверка | все | — | backlog |
+| 1 | Спецификация, план, ADR 016/017, импорт handoff в `docs/design/2026-09-30-glass-modern-mobile/` | — | документы | готово |
+| 2 | Ядро K1–K7 | `plugins/mind-detective/tests/test_portable_mobile_slice.py` | `portable_kernel.py`, `portable_contract.py` | готово |
+| 3 | Генерация и conformance | `apps/web/tests/unit/localExecutionConformance.spec.ts` (новые векторы) | `scripts.write_local_execution_artifacts`, `scripts.generate_local_execution_corpus` | готово |
+| 4 | Web-lib: словарь, view-model, команды, маска времени, настройки | `apps/web/tests/unit/mobile*.spec.ts` | `apps/web/app/lib/mobile/*` | готово |
+| 5 | Ассистент, guard, fallback, n8n, STT | `apps/web/tests/unit/assistant*.spec.ts` | `apps/web/app/lib/assistant/*` | готово |
+| 6 | Компоненты DS на Vue, токены, иконки, Inter, ассеты | `apps/web/tests/unit/designSystem.spec.ts` (контракты токенов/иконок) | `apps/web/app/components/ds/*`, `assets/css/glass/*` | готово |
+| 7 | Экраны 1–11 и шторки, legacy → `/lab` | Playwright M1–M10 (`apps/web/tests/e2e/mobile-*.spec.ts`) | `apps/web/app/pages/*`, `components/mobile/*` | готово |
+| 8 | n8n: workflow, инструкция, документация запуска | — | `integrations/n8n/`, `docs/GETTING_STARTED*.md` | готово |
+| 9 | VERIFY: полный набор, сборка PWA, визуальная сверка | все | — | готово |
 
 ## Трассировка тестов прототипа T01–T47
 

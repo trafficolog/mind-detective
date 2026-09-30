@@ -12,8 +12,8 @@ from mind_detective_api.core_bridge import create_case_payload
 
 EXPECTED_IDENTITY = {
     "version": "mind-detective-local-execution/v1",
-    "kernel_sha256": "sha256:9bfdba2448c21bf7d7e40bacf818d1c38ea87a35164f7636a7d39f5ddd79c8a3",
-    "generated_sha256": "sha256:b738c19ccb30cb985c619f0dcb9859c2ecf1c708faa5ce399590443c2318c8af",
+    "kernel_sha256": "sha256:fa535443a1b749600c0684431cbb535fe15cef731aa9e513387c9d61abda59e2",
+    "generated_sha256": "sha256:8b240438afd76b202309324237fe9ade7ec4384ae9e7b6e4a601aa7a96e1b32f",
     "generator_version": "local-execution-generator/v1",
 }
 
