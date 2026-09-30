@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script><style>body{margin:0}a{color:#0B86EA}a:hover{color:#0A6FC4}</style></helmet>
+<div style="min-height:100vh;background:radial-gradient(circle at 75% 8%,rgba(141,194,255,.38),transparent 34%),radial-gradient(circle at 15% 80%,rgba(198,223,255,.32),transparent 38%),linear-gradient(180deg,#F7FBFF 0%,#EAF5FF 100%);font-family:Inter,'SF Pro Text',system-ui,sans-serif;color:#0B1733">
+<div style="max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:20px 16px 0;box-sizing:border-box">
+
+<sc-if value="{{ vSplash }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding-bottom:28px;gap:20px">
+<div style="margin-top:28px;font-size:56px;line-height:60px;font-weight:500;letter-spacing:-0.02em">Mind<br>Detective</div>
+<div style="font-size:18px;line-height:26px;color:#587196;max-width:300px">Превращаем фрагменты в проверяемый контекст.</div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:240px"><img src="./assets/splash-sphere.png" alt="" style="max-width:100%;max-height:300px;object-fit:contain"></div>
+<div style="height:6px;border-radius:99px;background:linear-gradient(90deg,#4AEEFC,#0B86EA)"></div>
+<div style="font-size:15px;color:#587196">Готово к работе офлайн</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" icon-right="arrow-right" on-click="{{ toOnb }}" hint-size="100%,56px">Начать</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ vOnb }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;padding-bottom:28px">
+<div style="margin-top:20px"><img src="./assets/logo-mark.svg" alt="" style="width:48px;height:48px"></div>
+<h1 style="margin:8px 0 0;font-size:36px;line-height:42px;font-weight:700;letter-spacing:-0.02em;text-wrap:pretty">Ищите потерянное по шагам, а не по кругу</h1>
+<div style="font-size:16px;line-height:24px;color:#587196;text-wrap:pretty">Зафиксируем, что уже известно и проверено, затем выберем один полезный следующий шаг.</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i8 }}" hint-size="100%,260px">
+<div style="display:grid">
+<sc-for list="{{ onbItems }}" as="o" hint-placeholder-count="3">
+<div style="display:flex;gap:14px;align-items:flex-start;padding:14px 12px">
+<div style="width:40px;height:40px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;background:#E3F1FF;color:#0B86EA"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="{{ o.icon }}" size="{{ i20 }}" hint-size="20px,20px"></x-import></div>
+<div style="display:grid;gap:3px"><strong style="font-size:16px;line-height:22px;font-weight:650">{{ o.title }}</strong><span style="font-size:14px;line-height:20px;color:#587196">{{ o.body }}</span></div>
+</div>
+</sc-for>
+</div>
+</x-import>
+<div style="flex:1"></div>
+<div style="display:flex;align-items:center;gap:8px;justify-content:center;color:#587196;font-size:13px;line-height:18px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="shield-check" size="{{ i16 }}" hint-size="16px,16px"></x-import>
+<span>Канонические данные дела хранятся на этом устройстве.</span>
+</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" icon-right="arrow-right" on-click="{{ finishOnb }}" hint-size="100%,56px">Понятно, начать</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ vHome }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding-bottom:24px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.AppHeader" logo-src="./assets/logo-mark.svg" subtitle="Системный поиск потерянного" on-settings="{{ toSettings }}" hint-size="100%,56px"></x-import>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 16px;min-height:420px">
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#0B86EA">Новое дело</span>
+<h1 style="margin:8px 0 0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:-0.02em">Что потерялось?</h1>
+<div style="margin:56px 0;width:248px;height:248px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(88,174,255,.16) 0%,rgba(88,174,255,.10) 55%,rgba(88,174,255,0) 72%)">
+<div style="width:200px;height:200px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.75);box-shadow:0 12px 32px rgba(69,118,171,.16),inset 0 1px 0 rgba(255,255,255,.9)">
+<button type="button" aria-label="Рассказать голосом, что потерялось" onClick="{{ startVoiceCase }}" style="all:unset;cursor:pointer;width:152px;height:152px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(160deg,#4AAEFF 0%,#0B86EA 55%,#005CFC 100%);box-shadow:0 16px 36px rgba(11,134,234,.38);transition:transform 140ms cubic-bezier(.2,.8,.2,1)" style-active="transform:scale(.96)" style-focus="outline:3px solid #58AEFF;outline-offset:4px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="mic" size="{{ i56 }}" color="#fff" stroke-width="{{ i2 }}" hint-size="56px,56px"></x-import>
+</button>
+</div>
+</div>
+<strong style="font-size:17px;line-height:24px;font-weight:650">Нажмите и расскажите, что ищете</strong>
+<span style="margin-top:6px;font-size:15px;line-height:22px;color:#587196;max-width:290px;text-wrap:pretty">Вещь, фото или файл — вспомним, как всё было, и проверим места и источники по шагам.</span>
+<div style="margin-top:14px"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="ghost" size="sm" icon="pencil" on-click="{{ toNewText }}" hint-size="180px,44px">Написать вручную</x-import></div>
+</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i8 }}" hint-size="100%,140px">
+<div style="display:grid;gap:4px">
+<sc-if value="{{ hasActive }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" icon="{{ activeIcon }}" title="{{ activeTitle }}" subtitle="{{ activeSub }}" chevron="{{ true }}" on-click="{{ openActive }}" hint-size="100%,64px"></x-import>
+<div style="height:1px;background:rgba(88,113,150,.14);margin:0 12px"></div>
+</sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" icon="folder" title="Все дела" subtitle="{{ listSub }}" chevron="{{ true }}" on-click="{{ toList }}" hint-size="100%,64px"></x-import>
+</div>
+</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ vNew }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;padding-bottom:28px">
+<div><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.IconButton" icon="arrow-left" label="Назад" on-click="{{ toMain }}" hint-size="44px,44px"></x-import></div>
+<div style="display:grid;gap:8px;margin-top:8px">
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#0B86EA">Шаг 1 из 2</span>
+<h1 style="margin:0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:-0.02em">Что потерялось?</h1>
+</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i16 }}" hint-size="100%,150px">
+<div style="display:grid;gap:12px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Что ищем" options="{{ kindOpts }}" value="{{ fKind }}" on-change="{{ setKind }}" columns="{{ i2 }}" hint-size="100%,84px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" placeholder="{{ V.titleHint }}" rows="{{ i1 }}" value="{{ fTitle }}" on-change="{{ setTitle }}" hint-size="100%,56px"></x-import>
+<sc-if value="{{ hasSpeech }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" size="sm" icon="{{ micIconTitle }}" block="{{ true }}" on-click="{{ dictTitle }}" hint-size="100%,44px">{{ micTitle }}</x-import></sc-if>
+</div>
+</x-import>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<div style="display:grid;gap:8px;margin-top:8px">
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196">Шаг 2 из 2 · с чего начать</span>
+</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" variant="interactive" padding="{{ i16 }}" on-click="{{ createRec }}" hint-size="100%,96px">
+<div style="display:flex;gap:14px;align-items:center;text-align:left">
+<div style="width:48px;height:48px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;background:#E3F1FF;color:#0B86EA"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="waypoints" size="{{ i24 }}" hint-size="24px,24px"></x-import></div>
+<div style="flex:1;display:grid;gap:3px"><strong style="font-size:17px;line-height:22px;font-weight:650">Восстановить события</strong><span style="font-size:14px;line-height:20px;color:#587196">Рассказ, подтверждённые сведения, временная линия</span></div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="chevron-right" size="{{ i20 }}" color="#587196" hint-size="20px,20px"></x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" variant="interactive" padding="{{ i16 }}" on-click="{{ createSearch }}" hint-size="100%,96px">
+<div style="display:flex;gap:14px;align-items:center;text-align:left">
+<div style="width:48px;height:48px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;background:#DDF3F6;color:#0A6E80"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="search" size="{{ i24 }}" hint-size="24px,24px"></x-import></div>
+<div style="flex:1;display:grid;gap:3px"><strong style="font-size:17px;line-height:22px;font-weight:650">Сразу к поиску</strong><span style="font-size:14px;line-height:20px;color:#587196">Места или источники и журнал проверок</span></div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="chevron-right" size="{{ i20 }}" color="#587196" hint-size="20px,20px"></x-import>
+</div>
+</x-import>
+<div style="flex:1"></div>
+<span style="font-size:13px;line-height:18px;color:#587196;text-align:center">Режим можно сменить позже. Переход к поиску — только по вашему действию.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{ vSettings }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;gap:16px;align-content:start;padding-bottom:32px">
+<div><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.IconButton" icon="arrow-left" label="Назад" on-click="{{ toMain }}" hint-size="44px,44px"></x-import></div>
+<h1 style="margin:0;font-size:34px;line-height:38px;font-weight:700;letter-spacing:-0.02em">Настройки</h1>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="privacy" title="Дела хранятся на этом устройстве" hint-size="100%,100px">Облачной копии по умолчанию нет; очистка данных сайта может удалить дела. Для важных дел используйте экспорт.</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="privacy" title="Приложение не открывает ваши файлы" hint-size="100%,100px">Mind Detective не просматривает галерею, файлы и облака. Источники проверяете вы сами — в деле хранятся только их названия и результаты проверок.</x-import>
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196;margin-top:6px">Резервная копия</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i8 }}" hint-size="100%,140px">
+<div style="display:grid;gap:4px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" icon="download" title="Экспортировать текущее дело" subtitle="{{ exportSub }}" chevron="{{ true }}" on-click="{{ exportCurrent }}" hint-size="100%,64px"></x-import>
+<div style="height:1px;background:rgba(88,113,150,.14);margin:0 12px"></div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" icon="upload" title="Импортировать дело" subtitle="JSON-файл с этого устройства" chevron="{{ true }}" on-click="{{ pickFile }}" hint-size="100%,64px"></x-import>
+<input type="file" accept="application/json,.json" ref="{{ fileRef }}" onChange="{{ onFile }}" style="display:none">
+</div>
+</x-import>
+<sc-if value="{{ hasImportOk }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="info" title="Импорт завершён. Дело сохранено локально." compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" hint-size="100%,72px"></x-import></sc-if>
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196;margin-top:6px">Сервер ассистента (n8n)</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" hint-size="100%,260px">
+<div style="display:grid;gap:12px">
+<span style="font-size:15px;line-height:22px;color:#587196">{{ serverModeText }}</span>
+<label class="md-field"><span class="md-field__label">Адрес n8n</span><input class="md-textarea" type="url" autocomplete="off" placeholder="https://n8n.example.com" value="{{ serverUrl }}" onInput="{{ setServerUrl }}"></label>
+<label class="md-field"><span class="md-field__label">Токен доступа к webhook</span><input class="md-textarea" type="password" autocomplete="off" placeholder="Header Auth из n8n" value="{{ serverToken }}" onInput="{{ setServerToken }}"></label>
+</div>
+</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="privacy" title="Куда уходят данные" hint-size="100%,150px">На ваш сервер n8n уходит только запрос ассистента с минимальным контекстом (без свободного рассказа и гипотез) и запись голоса. Ключи моделей и распознавания хранятся в n8n, не в браузере. Без адреса ассистент использует локальный контрольный список, а речь распознаёт браузер.</x-import>
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196;margin-top:6px">Онлайн-ассистент</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="research" title="Только исследование" hint-size="100%,130px">Ассистент предлагает один следующий шаг и не становится источником фактов. Ответ проходит проверку в приложении; если сервер недоступен или ответ не прошёл проверку, используется локальный контрольный список.</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="{{ assistVariant }}" block="{{ true }}" icon="sparkles" on-click="{{ toggleAssist }}" hint-size="100%,44px">{{ assistBtn }}</x-import>
+<span style="font-size:12px;line-height:16px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196;margin-top:6px">Данные</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="danger" block="{{ true }}" on-click="{{ askReset }}" hint-size="100%,44px">Удалить все локальные дела</x-import>
+</div>
+</sc-if>
+
+<sc-if value="{{ vMain }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column">
+
+<sc-if value="{{ tCases }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.IconButton" icon="arrow-left" label="Главный экран" on-click="{{ toMain }}" hint-size="44px,44px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.IconButton" icon="settings" label="Настройки" on-click="{{ toSettings }}" hint-size="44px,44px"></x-import>
+</div>
+<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:20px 0 16px">
+<div style="display:grid;gap:4px"><h1 style="margin:0;font-size:40px;line-height:44px;font-weight:700;letter-spacing:-0.02em">Дела</h1>
+<span style="font-size:15px;line-height:22px;color:#587196;font-variant-numeric:tabular-nums">{{ listSub }}</span></div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" icon="plus" on-click="{{ toNew }}" hint-size="120px,44px">Новое</x-import>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:16px">
+<sc-for list="{{ caseStats }}" as="st" hint-placeholder-count="3">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i14 }}" radius="{{ i18 }}" hint-size="100%,84px">
+<div style="display:grid;gap:4px"><span style="font-size:28px;line-height:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ st.n }}</span><span style="font-size:13px;line-height:18px;color:#587196;font-weight:500">{{ st.label }}</span></div>
+</x-import>
+</sc-for>
+</div>
+<div style="display:grid;gap:12px;align-content:start;padding-bottom:120px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.FilterChips" options="{{ filterOpts }}" value="{{ filter }}" on-change="{{ setFilter }}" label="Фильтр дел" hint-size="100%,44px"></x-import>
+<sc-for list="{{ cards }}" as="k" hint-placeholder-count="2">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.CaseCard" title="{{ k.title }}" case-id="{{ k.caseId }}" status="{{ k.status }}" place="{{ k.place }}" updated="{{ k.updated }}" counts="{{ k.counts }}" icon="{{ k.icon }}" on-click="{{ k.open }}" hint-size="100%,150px"></x-import>
+</sc-for>
+<sc-if value="{{ noCards }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.EmptyState" icon="folder" title="Пока нет дел" body="Создайте первое дело, чтобы начать систематический поиск." hint-size="100%,180px"></x-import></sc-if>
+<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding-top:6px;color:#587196;font-size:13px;line-height:18px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="shield-check" size="{{ i16 }}" hint-size="16px,16px"></x-import>
+<span>Канонические данные дела хранятся на этом устройстве.</span>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ noCaseTab }}" hint-placeholder-val="{{ false }}">
+<div style="padding:40px 0 120px"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.EmptyState" icon="folder" title="Дело не выбрано" body="Откройте дело в списке или создайте новое." hint-size="100%,180px"></x-import>
+<div style="margin-top:12px"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" on-click="{{ toCases }}" hint-size="100%,56px">К списку дел</x-import></div></div>
+</sc-if>
+
+<sc-if value="{{ inCase }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;gap:14px;align-content:start;padding-bottom:120px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.CaseHeader" case-id="{{ caseId }}" title="{{ cTitle }}" mode="{{ cMode }}" status="{{ cStatus }}" meta="{{ cMeta }}" show-stepper="{{ true }}" on-back="{{ toCases }}" on-menu="{{ openMenu }}" hint-size="100%,170px"></x-import>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<sc-if value="{{ isClosed }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="info" title="{{ outcomeTitle }}" hint-size="100%,88px">История остаётся локально в этом браузере, пока вы сами не удалите дело или данные сайта.</x-import></sc-if>
+
+<sc-if value="{{ tRec }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<sc-for list="{{ recStats }}" as="st" hint-placeholder-count="3">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" variant="{{ st.variant }}" padding="{{ i14 }}" radius="{{ i18 }}" hint-size="100%,92px">
+<div style="display:grid;gap:6px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="{{ st.icon }}" size="{{ i20 }}" color="{{ st.color }}" hint-size="20px,20px"></x-import>
+<span style="font-size:26px;line-height:30px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ st.n }}</span>
+<span style="font-size:12px;line-height:16px;color:var(--text-primary);font-weight:500">{{ st.label }}</span>
+</div>
+</x-import>
+</sc-for>
+</div>
+<span style="font-size:13px;line-height:18px;color:#587196">Режим структурирует только ваш рассказ и подтверждённые сведения — он не устанавливает, где вещь на самом деле.</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.SectionHeader" icon="notebook-pen" title="Свободный рассказ" hint-size="100%,32px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" placeholder="Расскажите последовательность событий своими словами…" hint="Текст сохраняется дословно" rows="{{ i5 }}" value="{{ faValue }}" on-change="{{ setFa }}" hint-size="100%,150px"></x-import>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:{{ btnCols }};gap:10px">
+<sc-if value="{{ hasSpeech }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" icon="{{ micIconFa }}" block="{{ true }}" on-click="{{ dictFa }}" hint-size="100%,44px">{{ micFa }}</x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" icon="save" block="{{ true }}" disabled="{{ faClean }}" on-click="{{ saveFa }}" hint-size="100%,44px">Сохранить</x-import></div></sc-if>
+
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.SectionHeader" icon="circle-check" title="Подтверждённые вами сведения" meta="{{ stmtMeta }}" hint-size="100%,32px"></x-import>
+<sc-for list="{{ stmts }}" as="s" hint-placeholder-count="2">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" variant="{{ s.variant }}" padding="{{ i14 }}" hint-size="100%,88px">
+<div style="display:grid;gap:8px"><span style="font-size:16px;line-height:22px;font-weight:600">{{ s.text }}</span><span style="font-size:14px;line-height:20px;color:#587196">{{ s.sub }}</span>
+<div><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatusChip" status="{{ s.chip }}" size="sm" hint-size="120px,24px"></x-import></div></div>
+</x-import>
+</sc-for>
+<sc-if value="{{ noStmts }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:#587196">Пока нет отдельно подтверждённых сведений.</span></sc-if>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" icon="plus" block="{{ true }}" on-click="{{ openStmt }}" hint-size="100%,44px">Добавить сведение</x-import></sc-if>
+
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.SectionHeader" icon="waypoints" title="Временная последовательность" meta="{{ tlMeta }}" hint-size="100%,32px"></x-import>
+<ol style="display:grid;gap:12px;padding:0;margin:0;list-style:none">
+<sc-for list="{{ tlItems }}" as="e" hint-placeholder-count="2">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TimelineEvent" time="{{ e.time }}" title="{{ e.title }}" detail="{{ e.detail }}" status="{{ e.status }}" connector="{{ e.connector }}" icon="map-pin" source="Введено вами" hint-size="100%,96px"></x-import>
+</sc-for>
+</ol>
+<sc-if value="{{ noTl }}" hint-placeholder-val="{{ false }}"><span style="font-size:15px;color:#587196">Событий пока нет. Неизвестное — допустимое состояние.</span></sc-if>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" icon="plus" block="{{ true }}" on-click="{{ openEvent }}" hint-size="100%,44px">Добавить событие</x-import></sc-if>
+
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatePanel" tone="unknown" title="Что остаётся неизвестным" count="{{ unknownN }}" hint-size="100%,88px">Неизвестное — допустимое состояние. Интервал можно оставить неизвестным.</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatePanel" tone="contradiction" title="Противоречия в указанных данных" count="{{ contraN }}" hint-size="100%,88px">
+<sc-for list="{{ contras }}" as="x" hint-placeholder-count="0"><div style="font-size:14px;line-height:20px">{{ x }}</div></sc-for>
+Приложение не выбирает версию за вас.
+</x-import>
+<sc-if value="{{ hasQuestion }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatePanel" tone="hypothesis" title="Уточняющий вопрос" hint-size="100%,100px">{{ question }} Ответ станет сведением только после вашего подтверждения.</x-import>
+</sc-if>
+<sc-if value="{{ inRec }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" hint-size="100%,150px">
+<div style="display:grid;gap:12px"><strong style="font-size:18px;font-weight:650">Готовы перейти к проверкам?</strong><span style="font-size:15px;line-height:22px;color:#587196">Переход явный: сведения останутся в деле, а следующий экран будет про проверки.</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" icon-right="arrow-right" on-click="{{ goSearch }}" hint-size="100%,56px">{{ V.goSearch }}</x-import></div>
+</x-import>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ tSearch }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ notInSearch }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.EmptyState" icon="search" title="Поиск ещё не начат" body="Проверки начинаются только по вашему явному действию." hint-size="100%,180px"></x-import>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" icon-right="arrow-right" on-click="{{ goSearchHere }}" hint-size="100%,56px">{{ V.goSearch }}</x-import></sc-if>
+</sc-if>
+<sc-if value="{{ inSearch }}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{ hasZones }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i20 }}" hint-size="100%,240px">
+<div style="display:grid;gap:16px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.WorkflowProgress" done="{{ prog.done }}" total="{{ prog.total }}" unit="мест" label="Прогресс поиска" variant="segments" mode="search" hint-size="100%,40px"></x-import>
+<sc-if value="{{ hasNext }}" hint-placeholder-val="{{ false }}">
+<div style="height:1px;background:rgba(88,113,150,.14)"></div>
+<div style="display:flex;gap:14px;align-items:center">
+<div style="width:48px;height:48px;border-radius:16px;flex:none;display:flex;align-items:center;justify-content:center;background:#DDF3F6;color:#0A6E80"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="map-pin" size="{{ i24 }}" hint-size="24px,24px"></x-import></div>
+<div style="flex:1;display:grid;gap:2px"><span style="font-size:13px;line-height:18px;color:#587196">{{ V.next }}</span><strong style="font-size:19px;line-height:24px;font-weight:700">{{ nextName }}</strong></div>
+</div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" icon="search" on-click="{{ checkNext }}" hint-size="100%,56px">Проверить сейчас</x-import>
+</sc-if>
+</div>
+</x-import>
+</sc-if>
+<sc-if value="{{ noNext }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="info" title="{{ noNextTitle }}" hint-size="100%,72px"></x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.SectionHeader" icon="map-pin" title="{{ V.places }}" meta="{{ zoneMeta }}" hint-size="100%,32px"></x-import>
+<sc-for list="{{ zones }}" as="z" hint-placeholder-count="3">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" lead="{{ z.n }}" title="{{ z.name }}" subtitle="{{ z.label }}" icon="{{ z.icon }}" chevron="{{ true }}" on-click="{{ z.open }}" hint-size="100%,68px"></x-import>
+</sc-for>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" icon="plus" block="{{ true }}" on-click="{{ openZone }}" hint-size="100%,44px">{{ V.addPlace }}</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" icon="circle-check" block="{{ true }}" on-click="{{ openFound }}" hint-size="100%,44px">Нашёл</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="ghost" block="{{ true }}" on-click="{{ openClose }}" hint-size="100%,44px">Завершить без результата</x-import>
+</sc-if>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ showAssist }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" variant="research" hint-size="100%,220px">
+<div style="display:grid;gap:12px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong style="font-size:18px;font-weight:650">Ассистент</strong><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatusChip" status="research" size="sm" hint-size="150px,24px"></x-import></div>
+<sc-if value="{{ noProp }}" hint-placeholder-val="{{ true }}"><span style="font-size:15px;line-height:22px;color:#587196">{{ assistHint }}</span></sc-if>
+<sc-if value="{{ hasProp }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;gap:8px">
+<span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#587196;font-weight:650">{{ prop.kindLabel }} · {{ prop.sourceLabel }}</span>
+<strong style="font-size:18px;line-height:25px;font-weight:650">{{ prop.text }}</strong>
+<sc-if value="{{ prop.note }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;line-height:20px;color:#587196">{{ prop.note }}</span></sc-if>
+<span style="font-size:14px;line-height:20px;color:#587196">Предложение не становится фактом автоматически.</span>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" block="{{ true }}" on-click="{{ acceptProp }}" hint-size="100%,44px">{{ prop.acceptLabel }}</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="ghost" block="{{ true }}" on-click="{{ dismissProp }}" hint-size="100%,44px">Отклонить</x-import>
+</div>
+</sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" block="{{ true }}" icon="sparkles" disabled="{{ busy }}" on-click="{{ askAssistant }}" hint-size="100%,44px">{{ askLabel }}</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ tJournal }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:4px">
+<h2 style="margin:0;font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.02em">Журнал проверок</h2>
+<span style="font-size:15px;color:#587196;font-variant-numeric:tabular-nums;padding-bottom:4px">{{ jMeta }}</span>
+</div>
+<sc-if value="{{ hasChecks }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+<sc-for list="{{ jStats }}" as="st" hint-placeholder-count="3">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i14 }}" radius="{{ i18 }}" hint-size="100%,84px">
+<div style="display:grid;gap:4px"><span style="font-size:26px;line-height:30px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">{{ st.n }}</span><span style="font-size:12px;line-height:16px;color:#587196;font-weight:500">{{ st.label }}</span></div>
+</x-import>
+</sc-for>
+</div>
+</sc-if>
+<sc-for list="{{ checkCards }}" as="k" hint-placeholder-count="2">
+<sc-if value="{{ k.physical }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.SearchCheckCard" place="{{ k.place }}" method="{{ k.method }}" time="{{ k.time }}" result="{{ k.result }}" note="{{ k.note }}" repeat="{{ k.repeat }}" hint-size="100%,110px"></x-import></sc-if>
+<sc-if value="{{ k.digital }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i8 }}" hint-size="100%,76px"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ListRow" icon="{{ k.rIcon }}" title="{{ k.place }}" subtitle="{{ k.sub }}" hint-size="100%,60px"></x-import></x-import></sc-if>
+</sc-for>
+<sc-if value="{{ noChecks }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.EmptyState" icon="list-checks" title="Проверок пока нет" body="Здесь появятся физические проверки с местом и способом." hint-size="100%,180px"></x-import></sc-if>
+</sc-if>
+</div>
+</sc-if>
+
+<div style="position:sticky;bottom:0;padding:8px 0 18px;margin:0 -6px;margin-top:auto">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomNav" active="{{ tab }}" on-change="{{ setTab }}" hint-size="100%,76px"></x-import>
+</div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{ sStmt }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="Добавить сведение" subtitle="Подтверждено пользователем" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Тип сведения" options="{{ stmtTypes }}" value="{{ fType }}" on-change="{{ setType }}" hint-size="100%,120px"></x-import>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" label="Что вы сами помните или наблюдали?" rows="{{ i3 }}" value="{{ fText }}" on-change="{{ setText }}" hint-size="100%,120px"></x-import>
+<sc-if value="{{ hasSpeech }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" size="sm" icon="{{ micIconText }}" block="{{ true }}" on-click="{{ dictText }}" hint-size="100%,44px">{{ micText }}</x-import></sc-if>
+<label class="md-field"><span class="md-field__label">Время события, если известно</span><input class="md-textarea" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" placeholder="ЧЧ:ММ" value="{{ fTime }}" onInput="{{ setTimeEv }}" style="font-variant-numeric:tabular-nums"></label>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" label="Ограничение или неопределённость" rows="{{ i1 }}" value="{{ fLim }}" on-change="{{ setLim }}" hint-size="100%,90px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" disabled="{{ textEmpty }}" on-click="{{ submitStmt }}" hint-size="100%,56px">Подтвердить и добавить</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sEvent }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="Добавить событие" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" label="Название события" placeholder="Например, кафе" rows="{{ i1 }}" value="{{ fTitle }}" on-change="{{ setTitle }}" hint-size="100%,90px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Точность времени" options="{{ precOpts }}" value="{{ fPrec }}" on-change="{{ setPrec }}" columns="{{ i3 }}" hint-size="100%,80px"></x-import>
+<sc-if value="{{ needTime }}" hint-placeholder-val="{{ true }}"><label class="md-field"><span class="md-field__label">Время</span><input class="md-textarea" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" placeholder="ЧЧ:ММ" value="{{ fTime }}" onInput="{{ setTimeEv }}" style="font-variant-numeric:tabular-nums"></label></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" disabled="{{ titleEmpty }}" on-click="{{ submitEvent }}" hint-size="100%,56px">Добавить событие</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sZone }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="{{ V.addPlace }}" subtitle="{{ V.addPlaceSub }}" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" placeholder="{{ V.placeHint }}" rows="{{ i1 }}" value="{{ fTitle }}" on-change="{{ setTitle }}" hint-size="100%,90px"></x-import>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" disabled="{{ titleEmpty }}" on-click="{{ submitZone }}" hint-size="100%,56px">Добавить в список</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sCheck }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="{{ V.check }}" subtitle="{{ fPlace }}" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Способ проверки" options="{{ methodOpts }}" value="{{ fMethod }}" on-change="{{ setMethod }}" hint-size="100%,190px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Результат" options="{{ resultOpts }}" value="{{ fResult }}" on-change="{{ setResult }}" columns="{{ i1 }}" hint-size="100%,170px"></x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.TextArea" label="Заметка" rows="{{ i2 }}" value="{{ fNote }}" on-change="{{ setNote }}" hint-size="100%,100px"></x-import>
+<sc-if value="{{ hasSpeech }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" size="sm" icon="{{ micIconNote }}" block="{{ true }}" on-click="{{ dictNote }}" hint-size="100%,44px">{{ micNote }}</x-import></sc-if>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="error" title="{{ err }}" compact="{{ true }}" hint-size="100%,56px"></x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" on-click="{{ submitCheck }}" hint-size="100%,56px">Сохранить проверку</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sClose }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="Чем закончился поиск?" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" options="{{ outcomeOpts }}" value="{{ fOutcome }}" on-change="{{ setOutcome }}" columns="{{ i1 }}" hint-size="100%,130px"></x-import>
+<sc-if value="{{ outcomeFound }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.ChoiceGroup" label="Где относительно плана?" options="{{ whereOpts }}" value="{{ fWhere }}" on-change="{{ setWhere }}" columns="{{ i1 }}" hint-size="100%,230px"></x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" size="lg" block="{{ true }}" on-click="{{ submitClose }}" hint-size="100%,56px">Завершить дело</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="ghost" block="{{ true }}" on-click="{{ closeSheet }}" hint-size="100%,44px">Продолжить поиск</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sMenu }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="{{ cTitle }}" on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:10px">
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" block="{{ true }}" icon="pause" on-click="{{ doPause }}" hint-size="100%,44px">{{ pauseLabel }}</x-import></sc-if>
+<sc-if value="{{ isOpen }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" block="{{ true }}" icon="flag" on-click="{{ openClose }}" hint-size="100%,44px">Закрыть дело</x-import></sc-if>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="secondary" block="{{ true }}" icon="download" on-click="{{ exportCurrent }}" hint-size="100%,44px">Экспортировать JSON</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="danger" block="{{ true }}" icon="trash-2" on-click="{{ askDelete }}" hint-size="100%,44px">Удалить локальное дело</x-import>
+</div>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ sConfirm }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.BottomSheet" open="{{ true }}" fixed="{{ true }}" title="{{ confirmTitle }}" subtitle="Восстановить можно будет только из ранее экспортированного JSON." on-close="{{ closeSheet }}" hint-size="100%,100%">
+<div style="display:grid;gap:10px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="danger" size="lg" block="{{ true }}" on-click="{{ doConfirm }}" hint-size="100%,56px">Да, удалить</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Button" variant="ghost" block="{{ true }}" on-click="{{ closeSheet }}" hint-size="100%,44px">Отмена</x-import>
+</div>
+</x-import>
+</sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;demoData&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Данные&quot;}}">
+class Component extends DCLogic {
+  state = { ready: false, step: 'splash', tab: 'cases', cases: [], cid: null, sheet: null, form: {}, filter: 'all', err: null, importOk: false, assistantOn: false, server: { url: '', token: '' }, transcribing: null, listening: null, prop: null, propFor: null, busy: false };
+  rec = null;
+  append = (field, text) => {
+    const c = this.cur(), F = this.state.form;
+    const base = (F[field] ?? (field === 'fa' ? c.freeAccount : '')) || '';
+    this.f(field)(base + (base && !/\s$/.test(base) ? ' ' : '') + text);
+  };
+  recordStt = async field => {
+    if (!navigator.mediaDevices || !window.MediaRecorder) return this.setState({ err: 'Запись звука не поддерживается в этом браузере.' });
+    let stream;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { return this.setState({ err: 'Нет доступа к микрофону.' }); }
+    const chunks = [], mr = new MediaRecorder(stream);
+    mr.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop()); this.rec = null;
+      if (mr.discard) return this.setState({ listening: null });
+      this.setState({ listening: null, transcribing: field });
+      try { this.append(field, await this.D.transcribe(this.D.serverStt(this.state.server), new Blob(chunks, { type: mr.mimeType }))); this.setState({ transcribing: null }); }
+      catch (e) { this.setState({ transcribing: null, err: this.ERR[e.message] || 'Не удалось распознать речь.' }); }
+    };
+    this.rec = mr; this.setState({ listening: field, err: null }); mr.start();
+  };
+  dictate = field => () => {
+    if (this.state.transcribing) return;
+    if (this.rec) { this.rec.stop(); return; }
+    if (this.D.serverReady(this.state.server)) return this.recordStt(field);
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return this.setState({ err: 'Голосовой ввод не поддерживается в этом браузере.' });
+    const c = this.cur(), F = this.state.form;
+    const base = (F[field] ?? (field === 'fa' ? c.freeAccount : '')) || '';
+    const r = new SR(); r.lang = 'ru-RU'; r.interimResults = true; r.continuous = true;
+    let fin = '';
+    r.onresult = e => {
+      let tmp = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) fin += t; else tmp += t; }
+      const sep = base && !/\s$/.test(base) ? ' ' : '';
+      this.f(field)(base + sep + fin + tmp);
+    };
+    r.onerror = e => { this.rec = null; this.setState({ listening: null, err: e.error === 'not-allowed' ? 'Нет доступа к микрофону.' : 'Не удалось распознать речь.' }); };
+    r.onend = () => { this.rec = null; this.setState({ listening: null }); };
+    this.rec = r; this.setState({ listening: field, err: null });
+    try { r.start(); } catch (e) { this.rec = null; this.setState({ listening: null }); }
+  };
+  ask = async () => {
+    const c = this.cur(), D = this.D; if (!c || c.outcome) return;
+    this.setState({ busy: true, prop: null, err: null });
+    const s = this.state, complete = !s.assistantOn ? null : D.serverReady(s.server) ? D.serverComplete(s.server) : (window.claude && window.claude.complete ? x => window.claude.complete(x) : null);
+    const p = complete ? await D.proposalFlow(c, complete) : { ...D.fallbackProposal(c), source: 'checklist' };
+    this.setState({ busy: false, prop: p, propFor: c.id });
+  };
+  accept = () => {
+    const p = this.state.prop; if (!p) return;
+    if (p.kind === 'check') this.upd(x => this.D.addZone(x, p.place), { prop: null, tab: 'search' });
+    else this.setState({ prop: null, sheet: 'stmt', form: { type: 'recollection' } });
+  };
+  toggleAssist = () => { const on = !this.state.assistantOn; try { localStorage.setItem('md.proto.assistant', on ? '1' : '0'); } catch (e) {} this.setState({ assistantOn: on, prop: null }); };
+  KEY = 'md.proto.cases.v1';
+  fileRef = React.createRef();
+  ERR = { server_unavailable: 'Сервер ассистента недоступен.', server_config_invalid: 'Адрес сервера не подходит: нужен https или localhost.', stt_empty: 'Речь не распознана. Попробуйте ещё раз.', stt_unavailable: 'Сервис распознавания недоступен. Проверьте адрес, ключ и CORS.', stt_config_invalid: 'Адрес распознавания не подходит: нужен https или localhost.', title_required: 'Введите название.', text_required: 'Введите текст.', time_invalid: 'Укажите время в формате ЧЧ:ММ.', zone_exists: 'Такое место уже есть в списке.', case_closed: 'Дело завершено и не изменяется.', import_invalid: 'Не удалось импортировать дело: файл или версия схемы не поддерживается.', not_in_search: 'Сначала перейдите к физическому поиску.', place_required: 'Укажите место.' };
+  async componentDidMount() {
+    this.D = await import('./domain.js');
+    let cases = null;
+    try { cases = JSON.parse(localStorage.getItem(this.KEY)); } catch (e) {}
+    if (!Array.isArray(cases)) cases = (this.props.demoData ?? true) ? [this.D.demoDigitalCase(), this.D.demoCase()] : [];
+    const on = localStorage.getItem('md.proto.onboarded') === '1';
+    // QA hook for visual regression (Playwright/screenshots): setState only, never persists
+    window.mdQA = { D: this.D, state: () => this.state, set: patch => this.setState(patch) };
+    this.setState({ ready: true, cases, step: on ? 'home' : 'splash', assistantOn: localStorage.getItem('md.proto.assistant') === '1', server: (() => { try { return { url: '', token: '', ...JSON.parse(localStorage.getItem('md.proto.server')) }; } catch (e) { return { url: '', token: '' }; } })() });
+  }
+  commit(cases, extra = {}) { try { localStorage.setItem(this.KEY, JSON.stringify(cases)); } catch (e) {} this.setState({ cases, err: null, ...extra }); }
+  fail(e) { this.setState({ err: this.ERR[e.message] || 'Не удалось сохранить.' }); return false; }
+  cur() { return this.state.cases.find(c => c.id === this.state.cid); }
+  upd(fn, extra = {}) {
+    try { this.commit(this.state.cases.map(c => c.id === this.state.cid ? fn(c) : c), extra); return true; } catch (e) { return this.fail(e); }
+  }
+  f = k => v => this.setState(s => ({ form: { ...s.form, [k]: v } }));
+  go = (step, extra = {}) => { if (this.rec) { this.rec.discard = true; this.rec.stop(); } this.setState({ step, err: null, importOk: false, ...extra }); };
+  sheet = (name, form = {}) => () => this.setState({ sheet: name, form, err: null });
+  setServer = k => e => { const server = { ...this.state.server, [k]: e.target.value }; try { localStorage.setItem('md.proto.server', JSON.stringify(server)); } catch (er) {} this.setState({ server }); };
+  close = () => { if (this.rec) { this.rec.discard = true; this.rec.stop(); } this.setState({ sheet: null, form: {}, err: null }); };
+  create(mode) {
+    try {
+      const c = this.D.createCase(this.state.cases, this.state.form.title, mode, Date.now(), this.state.form.kind || 'physical');
+      this.commit([c, ...this.state.cases], { cid: c.id, step: 'main', tab: mode === 'search' ? 'search' : 'reconstruction', form: {} });
+    } catch (e) { this.fail(e); }
+  }
+  download(name, text) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  }
+  plural(n, a, b, c) { const m = n % 100, k = n % 10; return n + ' ' + (m > 10 && m < 20 ? c : k === 1 ? a : k > 1 && k < 5 ? b : c); }
+  fmt(ts) {
+    const d = new Date(ts), n = new Date(), p = x => String(x).padStart(2, '0');
+    const t = p(d.getHours()) + ':' + p(d.getMinutes());
+    return d.toDateString() === n.toDateString() ? 'Сегодня, ' + t : p(d.getDate()) + '.' + p(d.getMonth() + 1) + ', ' + t;
+  }
+  renderVals() {
+    const s = this.state, D = this.D;
+    if (!s.ready) return {};
+    const c = this.cur(), F = s.form, main = s.step === 'main';
+    const V = D.vocab(s.step === 'new' || !c ? { kind: F.kind } : c);
+    const v = {
+      V, fKind: F.kind || 'physical', setKind: this.f('kind'), kindOpts: [{ value: 'physical', label: 'Вещь' }, { value: 'digital', label: 'Фото или файл' }],
+      vSplash: s.step === 'splash', vOnb: s.step === 'onb', vNew: s.step === 'new', vSettings: s.step === 'settings', vMain: main,
+      i1: 1, i2: 2, i3: 3, i5: 5, i14: 14, i24: 24,
+      err: s.err, hasErr: !!s.err, hasImportOk: s.importOk, tab: s.tab, fileRef: this.fileRef,
+      toOnb: () => this.go('onb'),
+      finishOnb: () => { try { localStorage.setItem('md.proto.onboarded', '1'); } catch (e) {} this.go('home'); },
+      onbItems: [
+        { icon: 'notebook-pen', title: 'Рассказ дословно', body: 'Ваш рассказ сохраняется как есть и не становится фактом автоматически.' },
+        { icon: 'waypoints', title: 'Подтверждённое и неизвестное', body: 'Неизвестные интервалы и противоречия остаются на виду.' },
+        { icon: 'search', title: 'Проверки по шагам', body: 'Вещь, фото или файл: журнал хранит место или источник, способ и результат каждой проверки.' },
+      ],
+      toMain: () => this.go('home', { form: {} }), toNew: () => this.go('new', { form: {} }), toNewText: () => this.go('new', { form: {} }),
+      vHome: s.step === 'home', i64: 64, i56: 56, i8: 8, i16: 16, i18: 18, i20: 20,
+      toList: () => this.go('main', { tab: 'cases' }),
+      startVoiceCase: () => this.setState({ step: 'new', form: {}, err: null }, () => { const stt = D.serverReady(s.server) ? !!(window.MediaRecorder && navigator.mediaDevices) : !!(window.SpeechRecognition || window.webkitSpeechRecognition); if (stt) this.dictate('title')(); }), toSettings: () => this.go('settings'),
+      fTitle: F.title || '', setTitle: this.f('title'), titleEmpty: !(F.title || '').trim(),
+      createRec: () => this.create('reconstruction'), createSearch: () => this.create('search'),
+      tCases: main && s.tab === 'cases',
+      setTab: k => this.setState({ tab: k, err: null }),
+      toCases: () => this.setState({ tab: 'cases' }),
+    };
+    const f = s.filter, st = x => D.caseStatus(x);
+    const flt = { all: () => true, active: x => !x.outcome && !x.paused, paused: x => x.paused && !x.outcome, done: x => !!x.outcome };
+    v.filter = f; v.setFilter = k => this.setState({ filter: k });
+    v.filterOpts = [['all', 'Все'], ['active', 'Активные'], ['paused', 'Пауза'], ['done', 'Завершённые']].map(([value, label]) => ({ value, label, count: s.cases.filter(flt[value]).length }));
+    v.cards = s.cases.filter(flt[f]).map(x => {
+      const tl = D.deriveTimeline(x), p = D.progress(x), last = tl.items.filter(e => e.status !== 'unknown').pop();
+      const counts = [];
+      if (x.zones.length) counts.push(p.done + ' из ' + p.total + ' зон');
+      if (x.checks.length) counts.push(this.plural(x.checks.length, 'проверка', 'проверки', 'проверок'));
+      if (tl.unknowns.length) counts.push(this.plural(tl.unknowns.length, 'неизвестный интервал', 'неизвестных интервала', 'неизвестных интервалов'));
+      return { key: x.id, icon: D.vocab(x).icon, title: x.title, caseId: '#' + String(x.num).padStart(3, '0'), status: st(x), place: last ? last.title : undefined, updated: this.fmt(x.updated), counts, open: () => this.setState({ cid: x.id, tab: x.mode === 'search' ? 'search' : 'reconstruction', err: null }) };
+    });
+    v.noCards = v.cards.length === 0;
+    v.caseStats = [['В поиске', x => !x.outcome && !x.paused && x.mode === 'search'], ['Восстановление', x => !x.outcome && !x.paused && x.mode === 'reconstruction'], ['Завершено', x => !!x.outcome]].map(([label, fn]) => ({ label, n: s.cases.filter(fn).length }));
+    v.noCaseTab = main && s.tab !== 'cases' && !c;
+    const act = s.cases.filter(x => !x.outcome).sort((a, b) => b.updated - a.updated)[0];
+    Object.assign(v, { hasActive: !!act, activeLead: act ? String(act.num) : '', activeTitle: act ? act.title : '', activeIcon: act && act.mode === 'search' ? 'search' : 'waypoints', activeSub: act ? 'Продолжить · ' + (act.paused ? 'приостановлено' : act.mode === 'search' ? 'физический поиск' : 'восстановление') : '', listSub: this.plural(s.cases.length, 'дело', 'дела', 'дел') + ' · ' + s.cases.filter(x => !x.outcome).length + ' открыто', openActive: () => act && this.setState({ step: 'main', cid: act.id, tab: act.mode === 'search' ? 'search' : 'reconstruction', err: null }), listLabel: 'Все дела · ' + s.cases.length });
+    v.noCase = !c; v.exportSub = c ? c.title + ' · JSON' : 'Сначала откройте дело';
+    v.exportCurrent = () => { const x = this.cur(); if (x) this.download('mind-detective-' + x.num + '.json', D.exportCase(x)); };
+    v.pickFile = () => this.fileRef.current && this.fileRef.current.click();
+    v.onFile = e => {
+      const file = e.target.files[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = () => { try { const x = D.parseImport(String(r.result), this.state.cases); this.commit([x, ...this.state.cases], { importOk: true }); } catch (er) { this.fail(er); } };
+      r.readAsText(file); e.target.value = '';
+    };
+    v.askReset = () => this.setState({ sheet: 'confirm', form: { kind: 'reset' } });
+    v.inCase = main && s.tab !== 'cases' && !!c;
+    if (c) {
+      const tl = D.deriveTimeline(c), p = D.progress(c), nz = D.nextZone(c), out = c.outcome, dm = Object.keys(D.methodsFor(D.kindOf(c)))[0];
+      Object.assign(v, {
+        caseId: '#' + String(c.num).padStart(3, '0'), cTitle: c.title, cMode: out ? 'closed' : c.mode, cStatus: st(c),
+        cMeta: [this.plural(c.events.length, 'событие', 'события', 'событий'), this.plural(c.checks.length, 'проверка', 'проверки', 'проверок')].join(' · '),
+        openMenu: this.sheet('menu'), isOpen: !out, isClosed: !!out,
+        outcomeTitle: out ? (out.kind === 'found' ? c.title + ' — найдено' : 'Поиск завершён без результата') : '',
+        tRec: s.tab === 'reconstruction', tSearch: s.tab === 'search', tJournal: s.tab === 'journal',
+        inRec: !out && c.mode === 'reconstruction', inSearch: c.mode === 'search', notInSearch: c.mode !== 'search',
+        goSearch: () => this.upd(x => D.setMode(x, 'search'), { tab: 'search' }),
+        goSearchHere: () => this.upd(x => D.setMode(x, 'search')),
+        faValue: F.fa ?? c.freeAccount, setFa: this.f('fa'), faClean: F.fa === undefined || F.fa === c.freeAccount,
+        saveFa: () => this.upd(x => D.setFreeAccount(x, F.fa), { form: { ...F, fa: undefined } }),
+        stmts: c.statements.map(x => ({ key: x.id, text: x.text, variant: x.type === 'hypothesis' ? 'default' : 'confirmed', chip: x.type === 'hypothesis' ? 'hypothesis' : 'confirmed', sub: [D.STATEMENT_TYPES[x.type], x.time, x.limitation].filter(Boolean).join(' · ') })),
+        noStmts: c.statements.length === 0, stmtMeta: c.statements.length ? String(c.statements.length) : '',
+        tlItems: tl.items.map((e, i) => ({ key: e.id, time: e.status === 'unknown' ? 'Время не указано' : e.time, title: e.title, detail: e.precision === 'approximate' ? 'Примерное время' : undefined, status: e.status, connector: i === tl.items.length - 1 ? 'none' : (tl.items[i + 1].status === 'unknown' ? 'unknown' : e.status) })),
+        noTl: tl.items.length === 0, tlMeta: tl.items.length ? this.plural(tl.items.length, 'событие', 'события', 'событий') : '',
+        unknownN: tl.unknowns.length, contraN: tl.contradictions.length,
+        recStats: [
+          { label: 'Подтверждено', n: c.statements.filter(x => x.type !== 'hypothesis').length, icon: 'circle-check', color: 'var(--confirmed-fg)', variant: 'confirmed' },
+          { label: 'Неизвестно', n: tl.unknowns.length, icon: 'circle-help', color: 'var(--unknown-fg)', variant: 'unknown' },
+          { label: 'Противоречия', n: tl.contradictions.length, icon: 'triangle-alert', color: 'var(--contradiction-fg)', variant: 'contradiction' },
+        ],
+        contras: tl.contradictions.map(x => x.time + ': ' + x.titles.join(' / ')),
+        hasQuestion: !out && tl.unknowns.length > 0, question: tl.unknowns.length ? 'Что вы помните о событии «' + tl.unknowns[0].title + '»?' : '',
+        openStmt: this.sheet('stmt', { type: 'recollection' }), openEvent: this.sheet('event', { prec: 'exact' }),
+        prog: p, hasNext: !!nz, nextName: nz ? nz.name : '', noNext: !nz && !out, noNextTitle: c.zones.length ? 'Все места из списка проверены' : 'Добавьте место, которое хотите проверить',
+        checkNext: () => nz && this.sheet('check', { place: nz.name, method: dm, result: 'not-found' })(),
+        zoneMeta: p.total ? p.done + ' из ' + p.total : '', hasZones: p.total > 0,
+        zones: c.zones.map((z, i) => { const zs = D.zoneState(c, z); return { key: z.id, n: String(i + 1), name: z.name, label: zs.label, icon: zs.done ? 'circle-check' : 'circle', open: out ? () => {} : this.sheet('check', { place: z.name, method: dm, result: 'not-found' }) }; }),
+        openZone: this.sheet('zone'),
+        openFound: this.sheet('check', { place: (D.nextZone(c) || c.zones[0] || {}).name || '', method: dm, result: 'found' }),
+        openClose: this.sheet('close', { outcome: 'closed', where: 'unknown' }),
+        checkCards: c.checks.slice().reverse().map(k => ({ key: k.id, physical: D.kindOf(c) === 'physical', digital: D.kindOf(c) === 'digital', rIcon: k.result === 'found' ? 'circle-check' : k.result === 'incomplete' ? 'circle-dashed' : 'circle-x', sub: [D.methodLabel(k.method), D.RESULTS[k.result].toLowerCase(), k.repeat ? 'повторно' : '', this.fmt(k.time)].filter(Boolean).join(' · '), place: k.place, method: k.method, time: this.fmt(k.time), result: k.repeat && k.result === 'not-found' ? 'repeat' : k.result, note: k.note, repeat: k.repeat })),
+        noChecks: c.checks.length === 0, hasChecks: c.checks.length > 0,
+        jStats: [['Всего', () => true], ['Повторные', k => k.repeat], ['Неполные', k => k.result === 'incomplete']].map(([label, fn]) => ({ label, n: c.checks.filter(fn).length })), jMeta: c.checks.length ? String(c.checks.length) : '',
+        pauseLabel: c.paused ? 'Продолжить' : 'Приостановить',
+        doPause: () => this.upd(x => D.togglePause(x), { sheet: null }),
+        askDelete: () => this.setState({ sheet: 'confirm', form: { kind: 'delete' } }),
+      });
+    }
+    const sh = s.sheet, L = s.listening, sttOn = D.serverReady(s.server), speech = sttOn ? !!(window.MediaRecorder && navigator.mediaDevices) : !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    Object.assign(v, { serverUrl: s.server.url, serverToken: s.server.token, setServerUrl: this.setServer('url'), setServerToken: this.setServer('token'),
+      serverModeText: sttOn ? 'Подключено: ассистент и распознавание речи идут через ваш n8n.' : s.server.url ? 'Адрес не подходит: нужен https или localhost.' : 'Не подключено. Укажите адрес своего n8n — ключи моделей останутся на сервере.' });
+    const mic = k => ({ ['mic' + k[0].toUpperCase() + k.slice(1)]: L === k ? 'Остановить' : s.transcribing === k ? 'Распознаю…' : 'Надиктовать', ['micIcon' + k[0].toUpperCase() + k.slice(1)]: L === k ? 'mic-off' : 'mic', ['dict' + k[0].toUpperCase() + k.slice(1)]: this.dictate(k) });
+    Object.assign(v, { hasSpeech: speech, btnCols: speech ? '1fr 1fr' : '1fr' }, mic('fa'), mic('text'), mic('note'), mic('title'));
+    const on = s.assistantOn, pr = s.prop && c && s.propFor === c.id ? s.prop : null;
+    Object.assign(v, {
+      assistBtn: on ? 'Отключить онлайн-ассистента' : 'Включить онлайн-ассистента', assistVariant: on ? 'secondary' : 'primary', toggleAssist: this.toggleAssist,
+      showAssist: !!c && !c.outcome && ((s.tab === 'reconstruction') || (s.tab === 'search' && c.mode === 'search')),
+      hasProp: !!pr, noProp: !pr, busy: s.busy, askAssistant: this.ask, acceptProp: this.accept, dismissProp: () => this.setState({ prop: null }),
+      askLabel: s.busy ? 'Думаю…' : pr ? 'Другое предложение' : 'Предложить следующий шаг',
+      assistHint: on && sttOn ? 'Запросите один следующий шаг. Ассистент предлагает, вы решаете.' : on ? 'Сервер n8n не подключён — предложение даст локальный контрольный список или тестовая модель.' : 'Локальный контрольный список предложит следующий шаг. Онлайн-ассистента можно включить в настройках.',
+      prop: pr && { ...pr, kindLabel: pr.kind === 'check' ? v.V.check : 'Уточняющий вопрос', sourceLabel: pr.source === 'assistant' ? 'Ассистент · только исследование' : 'Контрольный список',
+        note: pr.reason === 'rejected' ? 'Ответ ассистента не прошёл проверку — показан безопасный шаг из контрольного списка.' : pr.reason === 'unavailable' ? 'Ассистент недоступен — использован локальный контрольный список.' : '',
+        acceptLabel: pr.kind === 'check' ? 'Добавить в список проверки' : 'Ответить' },
+    });
+    Object.assign(v, {
+      sStmt: sh === 'stmt', sEvent: sh === 'event', sZone: sh === 'zone', sCheck: sh === 'check', sClose: sh === 'close', sMenu: sh === 'menu', sConfirm: sh === 'confirm',
+      closeSheet: this.close,
+      stmtTypes: Object.entries(D.STATEMENT_TYPES).map(([value, label]) => ({ value, label })),
+      fType: F.type, setType: this.f('type'), fText: F.text || '', setText: this.f('text'), textEmpty: !(F.text || '').trim(),
+      fTime: F.time || '', setTimeEv: e => { const d = e.target.value.replace(/\D/g, '').slice(0, 4); this.f('time')(d.length > 2 ? d.slice(0, 2) + ':' + d.slice(2) : d); },
+            submitStmt: () => this.upd(x => D.addStatement(x, { type: F.type, text: F.text, time: F.time || '', limitation: F.lim || '' }), { sheet: null, form: {} }),
+      precOpts: Object.entries(D.PRECISIONS).map(([value, label]) => ({ value, label })), fPrec: F.prec, setPrec: this.f('prec'), needTime: F.prec !== 'unknown',
+      submitEvent: () => this.upd(x => D.addEvent(x, { title: F.title, time: F.time || '', precision: F.prec }), { sheet: null, form: {} }),
+      submitZone: () => this.upd(x => D.addZone(x, F.title), { sheet: null, form: {} }),
+      fPlace: F.place || '', methodOpts: Object.entries(D.methodsFor(c ? D.kindOf(c) : 'physical')).map(([value, label]) => ({ value, label })), fMethod: F.method, setMethod: this.f('method'),
+      resultOpts: Object.entries(D.RESULTS).map(([value, label]) => ({ value, label })), fResult: F.result, setResult: this.f('result'), fNote: F.note || '', setNote: this.f('note'),
+      submitCheck: () => this.upd(x => D.addCheck(x, { place: F.place, method: F.method, result: F.result, note: F.note || '' }), { sheet: null, form: {}, tab: 'journal' }),
+      outcomeOpts: [{ value: 'found', label: v.V.found }, { value: 'closed', label: 'Завершить без результата' }], fOutcome: F.outcome, setOutcome: this.f('outcome'), outcomeFound: F.outcome === 'found',
+      whereOpts: [{ value: 'current', label: 'На текущем предложенном шаге' }, { value: 'elsewhere', label: v.V.elsewhere }, { value: 'previous', label: 'Там, где уже проверял раньше' }, { value: 'unknown', label: 'Не уверен / не хочу уточнять' }], fWhere: F.where, setWhere: this.f('where'),
+      submitClose: () => this.upd(x => D.closeCase(x, F.outcome, F.where), { sheet: null, form: {} }),
+      confirmTitle: F.kind === 'reset' ? 'Удалить все локальные дела?' : 'Удалить это дело?',
+      doConfirm: () => F.kind === 'reset'
+        ? this.commit([], { sheet: null, form: {}, cid: null, tab: 'cases' })
+        : this.commit(this.state.cases.filter(x => x.id !== this.state.cid), { sheet: null, form: {}, cid: null, tab: 'cases' }),
+    });
+    return v;
+  }
+}
+
+</script>
+</body>
+</html>

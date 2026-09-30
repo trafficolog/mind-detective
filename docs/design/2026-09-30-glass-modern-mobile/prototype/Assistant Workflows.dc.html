@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><script src="./ds-base.js"></script><style>body{margin:0}a{color:#0B86EA}a:hover{color:#0A6FC4}</style></helmet>
+<div style="min-height:100vh;background:radial-gradient(circle at 80% 4%,rgba(141,194,255,.34),transparent 30%),radial-gradient(circle at 10% 60%,rgba(198,223,255,.3),transparent 36%),linear-gradient(180deg,#F7FBFF 0%,#EAF5FF 100%);font-family:Inter,'SF Pro Text',system-ui,sans-serif;color:#0B1733">
+<div style="max-width:1240px;margin:0 auto;padding:40px 24px 80px;display:grid;gap:40px">
+
+<header style="display:grid;gap:12px;max-width:820px">
+<div style="display:flex;align-items:center;gap:10px"><img src="./assets/logo-mark.svg" alt="" style="width:36px;height:36px"><span style="font-size:15px;font-weight:600;color:#587196">Mind Detective · архитектура ассистента</span></div>
+<h1 style="margin:0;font-size:40px;line-height:44px;font-weight:700;letter-spacing:-0.02em;text-wrap:pretty">Workflow ассистента: Mastra и n8n</h1>
+<p style="margin:0;font-size:17px;line-height:26px;color:#587196;text-wrap:pretty">Схемы одного ассистента и группы агентов с оркестрацией по сценарию и состоянию дела. В обоих вариантах действуют одни правила: модель только предлагает, детерминированный guard проверяет, при сбое срабатывает локальный fallback, и фактом ответ становится только после подтверждения пользователя.</p>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="info" title="Выбрано: n8n" hint-size="100%,100px">Реализован вариант «04 · один ассистент» как тонкий прокси: webhook md-propose и md-transcribe, ключи моделей в n8n Credentials, guard и fallback — в приложении. Файл для импорта и инструкция: docs/n8n/.</x-import>
+</header>
+
+<section data-screen-label="Легенда" style="display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ legend }}" as="l" hint-placeholder-count="8">
+<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:{{ l.bg }};border:1px {{ l.bs }} {{ l.bc }};font-size:13px;font-weight:600;color:{{ l.ink }}">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="{{ l.icon }}" size="{{ i16 }}" hint-size="16px,16px"></x-import>{{ l.label }}</div>
+</sc-for>
+</section>
+
+<section data-screen-label="01 Сценарии" style="display:grid;gap:16px">
+<div style="display:grid;gap:6px"><span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#0B86EA">01 · Сценарии и состояния</span>
+<h2 style="margin:0;font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.02em">Когда и какой агент включается</h2></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+<sc-for list="{{ scenarios }}" as="s" hint-placeholder-count="6">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i16 }}" hint-size="100%,260px">
+<div style="display:grid;gap:10px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:#587196;font-variant-numeric:tabular-nums">{{ s.id }}</span><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.StatusChip" status="{{ s.chip }}" label="{{ s.state }}" size="sm" hint-size="140px,24px"></x-import></div>
+<strong style="font-size:17px;line-height:23px;font-weight:650">{{ s.title }}</strong>
+<span style="font-size:14px;line-height:20px;color:#587196"><b style="color:#0B1733;font-weight:600">Триггер:</b> {{ s.trigger }}</span>
+<div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ s.agents }}" as="a" hint-placeholder-count="2"><span style="padding:3px 10px;border-radius:999px;background:var(--research-bg);border:1px dashed var(--research-line);color:var(--research-ink);font-size:12px;font-weight:600">{{ a }}</span></sc-for></div>
+<span style="font-size:14px;line-height:20px;color:#587196"><b style="color:#0B1733;font-weight:600">Выход:</b> {{ s.out }}</span>
+<span style="font-size:14px;line-height:20px;color:var(--hypothesis-ink)"><b style="font-weight:600">Граница:</b> {{ s.gate }}</span>
+</div>
+</x-import>
+</sc-for>
+</div>
+</section>
+
+<sc-for list="{{ flows }}" as="f" hint-placeholder-count="2">
+<section data-screen-label="{{ f.label }}" style="display:grid;gap:16px">
+<div style="display:grid;gap:6px"><span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:{{ f.accent }}">{{ f.num }} · {{ f.tech }}</span>
+<h2 style="margin:0;font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.02em">{{ f.title }}</h2>
+<p style="margin:0;font-size:16px;line-height:24px;color:#587196;max-width:820px;text-wrap:pretty">{{ f.lede }}</p></div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:start">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i20 }}" hint-size="100%,520px">
+<div style="display:grid;gap:0">
+<sc-for list="{{ f.steps }}" as="st" hint-placeholder-count="5">
+<div style="display:grid;justify-items:stretch">
+<sc-if value="{{ st.notFirst }}" hint-placeholder-val="{{ true }}"><div style="width:2px;height:18px;background:rgba(88,113,150,.35);justify-self:center"></div></sc-if>
+<sc-if value="{{ st.isNode }}" hint-placeholder-val="{{ true }}">
+<div style="border-radius:14px;padding:10px 12px;background:{{ st.bg }};border:1px {{ st.bs }} {{ st.bc }};display:grid;gap:4px">
+<div style="display:flex;align-items:center;gap:6px;color:{{ st.ink }};font-size:11px;line-height:14px;font-weight:650;letter-spacing:.06em;text-transform:uppercase"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="{{ st.icon }}" size="{{ i14 }}" hint-size="14px,14px"></x-import>{{ st.kind }}</div>
+<strong style="font-size:15px;line-height:20px;font-weight:650">{{ st.title }}</strong>
+<sc-if value="{{ st.sub }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;line-height:18px;color:#587196">{{ st.sub }}</span></sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ st.isBranch }}" hint-placeholder-val="{{ false }}">
+<div style="border-radius:18px;padding:10px;border:1px dashed rgba(88,113,150,.35);display:grid;gap:8px">
+<span style="font-size:12px;font-weight:650;color:#587196;text-align:center">{{ st.title }}</span>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
+<sc-for list="{{ st.branches }}" as="b" hint-placeholder-count="2">
+<div style="display:grid;gap:6px;align-content:start">
+<span style="justify-self:center;padding:2px 10px;border-radius:999px;background:#FFFFFF;border:1px solid rgba(88,113,150,.25);font-size:12px;font-weight:600;color:#0B1733;text-align:center">{{ b.label }}</span>
+<sc-for list="{{ b.nodes }}" as="n" hint-placeholder-count="2">
+<div style="border-radius:12px;padding:8px 10px;background:{{ n.bg }};border:1px {{ n.bs }} {{ n.bc }};display:grid;gap:2px">
+<span style="display:flex;align-items:center;gap:5px;color:{{ n.ink }};font-size:10px;line-height:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase"><x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Icon" name="{{ n.icon }}" size="{{ i12 }}" hint-size="12px,12px"></x-import>{{ n.kind }}</span>
+<strong style="font-size:13px;line-height:18px;font-weight:650">{{ n.title }}</strong>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</x-import>
+<div style="display:grid;gap:14px">
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" tone="secondary" padding="{{ i16 }}" hint-size="100%,200px">
+<div style="display:grid;gap:10px"><strong style="font-size:15px;font-weight:650">Ключевые решения</strong>
+<sc-for list="{{ f.notes }}" as="nt" hint-placeholder-count="4"><div style="display:flex;gap:8px;font-size:14px;line-height:20px"><span style="color:{{ f.accent }};font-weight:700">·</span><span>{{ nt }}</span></div></sc-for>
+</div>
+</x-import>
+<pre style="margin:0;padding:16px;border-radius:18px;background:#0B1733;color:#DCE8F7;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;overflow:auto;white-space:pre">{{ f.code }}</pre>
+</div>
+</div>
+</section>
+</sc-for>
+
+<section data-screen-label="06 Сравнение" style="display:grid;gap:16px">
+<div style="display:grid;gap:6px"><span style="font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#0B86EA">06 · Выбор</span>
+<h2 style="margin:0;font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.02em">Mastra или n8n</h2></div>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.GlassCard" padding="{{ i8 }}" hint-size="100%,400px">
+<div style="display:grid">
+<div style="display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:12px;padding:12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:650;color:#587196"><span></span><span style="color:#0B86EA">Mastra</span><span style="color:#EA4B71">n8n</span></div>
+<sc-for list="{{ compare }}" as="r" hint-placeholder-count="6">
+<div style="display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr) minmax(0,1.2fr);gap:12px;padding:12px;border-top:1px solid rgba(88,113,150,.14);font-size:14px;line-height:20px">
+<strong style="font-weight:650">{{ r.k }}</strong><span>{{ r.m }}</span><span>{{ r.n }}</span>
+</div>
+</sc-for>
+</div>
+</x-import>
+<x-import component-from-global-scope="MINDDetectiveDesignSystem_90d64c.Notice" tone="research" title="Общие инварианты для обоих вариантов" hint-size="100%,180px">
+<div style="display:grid;gap:4px;margin-top:4px"><sc-for list="{{ invariants }}" as="iv" hint-placeholder-count="6"><span>· {{ iv }}</span></sc-for></div>
+</x-import>
+</section>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  K = {
+    trigger: ['Триггер', 'zap', '#E3F1FF', 'rgba(11,134,234,.35)', 'solid', '#0674D8'],
+    code: ['Детерминированно', 'code', 'rgba(255,255,255,.8)', 'rgba(88,113,150,.3)', 'solid', '#587196'],
+    agent: ['Агент · LLM', 'bot', 'var(--research-bg)', 'var(--research-line)', 'dashed', 'var(--research-ink)'],
+    tool: ['Инструмент', 'wrench', '#F1F5FA', 'rgba(88,113,150,.3)', 'solid', '#587196'],
+    stt: ['STT · Whisper', 'mic', '#DDF3F6', 'rgba(10,110,128,.3)', 'solid', '#0A6E80'],
+    guard: ['Guard', 'shield-check', 'var(--confirmed-bg)', 'var(--confirmed-line)', 'solid', 'var(--confirmed-ink)'],
+    fallback: ['Fallback', 'life-buoy', 'var(--unknown-bg)', 'var(--unknown-line)', 'solid', 'var(--unknown-ink)'],
+    gate: ['Подтверждение', 'user-check', 'var(--hypothesis-bg)', 'var(--hypothesis-line)', 'dashed', 'var(--hypothesis-ink)'],
+    store: ['Хранилище', 'database', '#FFFFFF', 'rgba(11,134,234,.3)', 'solid', '#0674D8'],
+  };
+  n = (k, title, sub) => { const [kind, icon, bg, bc, bs, ink] = this.K[k]; return { isNode: true, kind, icon, bg, bc, bs, ink, title, sub: sub || '' }; };
+  br = (title, branches) => ({ isBranch: true, title, branches: branches.map(([label, nodes]) => ({ label, nodes: nodes.map(a => this.n(...a)) })) });
+  flow = f => ({ ...f, label: f.num + ' ' + f.tech, steps: f.steps.map((s, i) => ({ ...s, notFirst: i > 0 })) });
+  renderVals() {
+    const n = this.n, br = this.br;
+    return {
+      i12: 12, i14: 14, i16: 16, i20: 20,
+      legend: Object.values(this.K).map(([label, icon, bg, bc, bs, ink]) => ({ label, icon, bg, bc, bs, ink })),
+      scenarios: [
+        { id: 'S1', chip: 'local', state: 'Нет дела', title: 'Новое дело голосом', trigger: 'кнопка микрофона на главном экране', agents: ['STT'], out: 'название вещи в поле ввода', gate: 'дело создаётся по кнопке пользователя' },
+        { id: 'S2', chip: 'reconstruction', state: 'Реконструкция', title: 'Рассказ голосом', trigger: '«Надиктовать» в свободном рассказе', agents: ['STT'], out: 'дословный текст в поле', gate: 'сохраняется по «Сохранить», без классификации' },
+        { id: 'S3', chip: 'unknown', state: 'Есть неизвестные', title: 'Уточняющий вопрос', trigger: '«Предложить следующий шаг», unknowns > 0', agents: ['Реконструктор'], out: 'один вопрос о пробеле', gate: 'ответ → форма сведения → «Подтвердить»' },
+        { id: 'S4', chip: 'contradiction', state: 'Противоречие', title: 'Вопрос-различитель', trigger: 'contradictions > 0', agents: ['Реконструктор'], out: 'вопрос, помогающий пользователю выбрать версию', gate: 'приложение не выбирает версию за вас' },
+        { id: 'S5', chip: 'active-search', state: 'Поиск', title: 'Следующая проверка', trigger: '«Предложить следующий шаг» в поиске', agents: ['Планировщик поиска'], out: 'одно новое место + способ проверки', gate: 'место попадает в список только по «Добавить»' },
+        { id: 'S6', chip: 'incomplete', state: 'Неполная проверка', title: 'Уточнение метода', trigger: 'повтор / «Проверка неполная»', agents: ['Планировщик поиска'], out: 'как проверить тщательнее (руками, с фонарём)', gate: 'новая SearchCheck — отдельная запись' },
+        { id: 'S7', chip: 'paused', state: 'Пауза > 24 ч', title: 'Сводка для возобновления', trigger: 'открытие приостановленного дела', agents: ['Сводчик'], out: 'что подтверждено, что осталось', gate: 'только чтение, дело не меняется' },
+        { id: 'S8', chip: 'offline', state: 'Офлайн / выкл.', title: 'Без ассистента', trigger: 'нет сети, таймаут, ассистент выключен', agents: ['—'], out: 'шаг из локального контрольного списка', gate: 'источник помечен «Контрольный список»' },
+      ],
+      flows: [
+        this.flow({ num: '02', tech: 'Mastra', accent: '#0B86EA', title: 'Один ассистент: workflow с guard и fallback',
+          lede: 'Один агент, шаги workflow типизированы. Детерминированные шаги до и после модели делают поведение предсказуемым; ветка fallback не зависит от LLM.',
+          steps: [
+            n('trigger', 'POST /api/assistant/propose', 'Case v2 из браузера'),
+            n('code', 'buildContext', 'минимизация: без рассказа и гипотез'),
+            br('.branch() по case.mode', [['reconstruction', [['agent', 'ReconstructionAgent · вопрос']]], ['search', [['agent', 'SearchPlannerAgent · место']]]]),
+            n('guard', 'guardProposal', 'Zod-схема + запрет вероятностей, повтор зон'),
+            br('результат guard', [['ok', [['code', 'source = assistant']]], ['rejected / timeout', [['fallback', 'fallbackProposal']]]]),
+            n('gate', 'Карточка предложения', '«Добавить» / «Ответить» / «Отклонить»'),
+            n('store', 'IndexedDB', 'запись только после действия пользователя'),
+          ],
+          notes: ['Агент получает structured output (Zod) — свободный текст не принимается.', 'Guard и fallback — обычные createStep без LLM; тестируются так же, как domain.js (T22–T31).', 'Таймаут 10 с на шаг агента; ошибка → ветка fallback, а не повтор запроса.', 'Memory у агента выключена: состояние дела — только в Case, не в истории чата.'],
+          code: "const propose = createWorkflow({ id: 'propose', inputSchema: CaseV2, outputSchema: Proposal })\n  .then(buildContext)\n  .branch([\n    [async ({ inputData }) => inputData.mode === 'reconstruction', askQuestion],\n    [async ({ inputData }) => inputData.mode === 'search', planCheck],\n  ])\n  .then(guardProposal)      // детерминированно, без LLM\n  .then(fallbackIfRejected) // контрольный список\n  .commit();\n\nconst planner = new Agent({\n  name: 'SearchPlannerAgent',\n  instructions: 'Одна физическая проверка. Без вероятностей.',\n  model: openai('gpt-4o-mini'),\n});",
+        }),
+        this.flow({ num: '03', tech: 'Mastra', accent: '#0B86EA', title: 'Группа агентов: оркестратор по сценарию и состоянию',
+          lede: 'Оркестратор — не LLM, а детерминированный роутер по состоянию дела (S1–S8). Каждый специализированный агент ограничен своими инструментами и схемой выхода.',
+          steps: [
+            n('trigger', 'Событие UI', 'propose · transcribe · resume'),
+            n('code', 'Router (state machine)', 'mode, unknowns, contradictions, paused, incomplete'),
+            br('маршрут по сценарию', [
+              ['S1–S2', [['stt', 'transcribeStep'], ['code', 'нормализация текста']]],
+              ['S3–S4', [['agent', 'ReconstructionAgent'], ['tool', 'readTimeline']]],
+              ['S5–S6', [['agent', 'SearchPlannerAgent'], ['tool', 'readZones · readChecks']]],
+              ['S7', [['agent', 'SummaryAgent'], ['tool', 'readCase (read-only)']]],
+            ]),
+            n('guard', 'Общий guard', 'единые правила для всех агентов'),
+            br('результат', [['ok', [['code', 'Proposal / Transcript']]], ['fail', [['fallback', 'контрольный список / Web Speech']]]]),
+            n('gate', 'Пользователь решает', 'подтверждение в UI'),
+          ],
+          notes: ['Роутинг детерминирован: одинаковое состояние → один и тот же агент; LLM не выбирает маршрут.', 'Инструменты агентов только на чтение; записывающих tools нет ни у одного агента.', 'SummaryAgent не создаёт сведений — сводка не сохраняется в дело.', 'Для S1–S2 модель не нужна: только STT, текст попадает в поле без интерпретации.'],
+          code: "const route = (c: CaseV2, ev: UiEvent) =>\n  ev.type === 'transcribe' ? 'stt'\n  : c.paused && ev.type === 'resume' ? 'summary'\n  : c.mode === 'search' ? 'planner'\n  : 'reconstruction';\n\nexport const orchestrate = createWorkflow({ id: 'orchestrate', ... })\n  .then(buildContext)\n  .branch([\n    [isStt, transcribeStep],\n    [isRecon, reconstructionAgentStep],\n    [isPlanner, plannerAgentStep],\n    [isSummary, summaryAgentStep],\n  ])\n  .then(sharedGuard)\n  .then(fallbackIfRejected)\n  .commit();",
+        }),
+        this.flow({ num: '04', tech: 'n8n', accent: '#EA4B71', title: 'Один ассистент: Webhook → AI Agent → guard',
+          lede: 'Тот же контракт, собранный из узлов n8n. Логика guard вынесена в узел Code, чтобы её можно было покрыть тестами вне n8n.',
+          steps: [
+            n('trigger', 'Webhook · POST /propose', 'Header Auth, Case v2'),
+            n('code', 'Code: minimizeContext', 'без рассказа и гипотез'),
+            br('Switch · mode', [['reconstruction', [['agent', 'AI Agent · вопрос']]], ['search', [['agent', 'AI Agent · место']]]]),
+            n('tool', 'Structured Output Parser', 'JSON-схема Proposal'),
+            n('guard', 'Code: guardProposal', 'тот же модуль, что domain.js'),
+            br('IF · valid', [['true', [['code', 'Set: source = assistant']]], ['false', [['fallback', 'Code: fallbackProposal']]]]),
+            n('trigger', 'Respond to Webhook', '200 + Proposal'),
+            n('gate', 'Карточка в PWA', 'решает пользователь'),
+          ],
+          notes: ['Error Trigger-workflow отвечает fallback-предложением, чтобы PWA никогда не ждала бесконечно.', 'Timeout узла AI Agent — 10 с; «Continue on fail» ведёт в ветку false.', 'Execution data с Case не хранится: Save execution progress и Save successful executions выключены.', 'Chat Memory у AI Agent не подключена.'],
+          code: "Webhook (POST /propose, Header Auth)\n  → Code  minimizeContext\n  → Switch  {{$json.mode}}\n      reconstruction → AI Agent (Chat Model, no memory)\n      search         → AI Agent (Chat Model, no memory)\n  → Structured Output Parser (Proposal schema)\n  → Code  guardProposal\n  → IF  {{$json.valid}}\n      true  → Set source=assistant\n      false → Code fallbackProposal\n  → Respond to Webhook\n\nError Trigger → Code fallbackProposal → Respond",
+        }),
+        this.flow({ num: '05', tech: 'n8n', accent: '#EA4B71', title: 'Группа агентов: главный workflow + sub-workflows',
+          lede: 'Главный workflow маршрутизирует по сценарию и вызывает отдельные sub-workflows через Execute Workflow. Каждый агент — свой workflow, свои креды и логи.',
+          steps: [
+            n('trigger', 'Webhook · /assistant', 'event: propose · transcribe · resume'),
+            n('code', 'Code: route(state, event)', 'детерминированный выбор сценария'),
+            br('Switch · scenario', [
+              ['S1–S2', [['stt', 'HTTP Request → Whisper'], ['code', 'text only']]],
+              ['S3–S4', [['tool', 'Execute Workflow'], ['agent', 'wf: reconstruction']]],
+              ['S5–S6', [['tool', 'Execute Workflow'], ['agent', 'wf: search-planner']]],
+              ['S7', [['tool', 'Execute Workflow'], ['agent', 'wf: summary']]],
+            ]),
+            n('code', 'Merge', 'единый формат ответа'),
+            n('guard', 'Code: sharedGuard', 'общие правила'),
+            br('IF · valid', [['true', [['trigger', 'Respond to Webhook']]], ['false', [['fallback', 'fallback / Web Speech']]]]),
+          ],
+          notes: ['Sub-workflow получает только нужный ему срез контекста — не весь Case.', 'Whisper вызывается HTTP-узлом: ключ хранится в n8n Credentials, не в браузере.', 'Для S1–S2 AI Agent не используется: транскрипт уходит без интерпретации.', 'Версии sub-workflows закрепляются тегами; изменения — через экспорт JSON в репозиторий.'],
+          code: "Webhook /assistant\n  → Code route()          // S1…S8\n  → Switch scenario\n      stt      → HTTP Request POST whisper /v1/audio/transcriptions\n      recon    → Execute Workflow «reconstruction»\n      planner  → Execute Workflow «search-planner»\n      summary  → Execute Workflow «summary»\n  → Merge (wait for 1)\n  → Code sharedGuard\n  → IF valid → Respond / fallback\n\nwf «search-planner»:\n  Execute Workflow Trigger → Code slice(zones, checks)\n  → AI Agent (tools: read-only) → Output Parser → return",
+        }),
+      ],
+      compare: [
+        { k: 'Где живёт логика', m: 'TypeScript в репозитории рядом с apps/web, общие типы Case v2', n: 'Визуальные workflow, код guard — в узлах Code' },
+        { k: 'Тестирование', m: 'Vitest на шаги и guard; eval-наборы Mastra', n: 'Guard тестируется как модуль; сами workflow — через тестовые webhook' },
+        { k: 'Оркестрация агентов', m: '.branch() / .parallel(), агенты как шаги', n: 'Switch + Execute Workflow, sub-workflow на агента' },
+        { k: 'STT', m: 'шаг с вызовом Whisper API или локального faster-whisper', n: 'HTTP Request, ключ в Credentials' },
+        { k: 'Приватность', m: 'без memory; трассировка без содержимого Case', n: 'выключить хранение execution data' },
+        { k: 'Когда выбрать', m: 'ассистент — часть продукта, нужен TDD и типобезопасность', n: 'быстрые эксперименты, операторы без кода, интеграции' },
+      ],
+      invariants: ['Модель только предлагает — записывающих инструментов нет', 'Guard и fallback детерминированы и не зависят от LLM', 'Выбор маршрута — по состоянию дела, не моделью', 'Без вероятностей и утверждений о местонахождении', 'Минимальный контекст: без свободного рассказа и гипотез', 'Факт появляется только после действия пользователя'],
+    };
+  }
+}
+
+</script>
+</body>
+</html>
