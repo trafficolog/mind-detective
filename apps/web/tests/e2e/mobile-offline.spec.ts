@@ -10,6 +10,7 @@ test('preloaded mobile PWA runs reconstruction and search while offline', async 
   await page.reload()
   await expect.poll(async () => await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true)
   await expect(page.getByTestId('screen-home')).toBeVisible()
+  await expect(page.locator('.mm-app')).toHaveAttribute('data-routes-ready', 'true')
 
   await context.setOffline(true)
   await page.getByTestId('home-write').click()
