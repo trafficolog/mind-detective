@@ -16,7 +16,8 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from collections.abc import Callable
+from typing import Any, Protocol
 
 MANIFEST = "_nuxt/builds/latest.json"
 
@@ -34,7 +35,10 @@ def local_build_id(root: Path) -> str:
 def _fetch_json(url: str) -> dict[str, Any]:
     request = urllib.request.Request(url, headers={"Cache-Control": "no-cache"})
     with urllib.request.urlopen(request, timeout=15) as response:  # noqa: S310 - https site URL from the workflow
-        return json.loads(response.read().decode("utf-8"))
+        payload = json.loads(response.read().decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("MD_PAGES_BUILD_MANIFEST")
+    return payload
 
 
 def wait_for_build(
@@ -44,7 +48,7 @@ def wait_for_build(
     timeout: float = 300,
     interval: float = 10,
     fetch: Callable[[str], dict[str, Any]] = _fetch_json,
-    clock: Clock = time,  # type: ignore[assignment]
+    clock: Clock = time,
 ) -> bool:
     url = site_url.rstrip("/") + "/" + MANIFEST
     deadline = clock.time() + timeout
