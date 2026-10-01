@@ -173,3 +173,13 @@ test('high-risk forgotten action is routed out before a mobile Case is created',
   await page.goto('/cases')
   await expect(page.getByTestId('case-card')).toHaveCount(0)
 })
+
+test('the last opened case survives a reload (settings export, bottom navigation)', async ({ page }) => {
+  await onboarded(page)
+  await createMobileCase(page, 'Паспорт', 'physical', 'reconstruction')
+  await page.goto('/settings')
+  await expect(page.getByTestId('settings-export')).toContainText('Паспорт · JSON')
+  await page.goto('/cases')
+  await page.locator('[data-nav="journal"]').click()
+  await expect(page.getByTestId('screen-case')).toContainText('Журнал проверок')
+})

@@ -12,7 +12,7 @@ Status: Accepted for `0.5.0` (Glass Modern mobile).
 
 1. Все новые правила Case реализуются в Python portable kernel и попадают в Web только через генератор `localExecution.ts` и conformance-корпус. Контракт `mind-detective-local-execution/v1` расширяется аддитивно: прежние команды и дела остаются валидными.
 2. Тип дела кодируется тегом `constraints: ["item_kind:digital"]`; отсутствие тега = `physical`. Отдельное поле `item_kind` откладывается до Case v2.1/v3 с отдельным ревью схемы.
-3. Способы проверки: физические `visual, hand, flashlight, opened, moved, asked` (+ прежние ключи), цифровые `name_search, date_filter, browsed, trash, shared, asked`. Способ чужого типа отклоняется `MD_SEARCH_METHOD_KIND`.
+3. Способы проверки: физические `visual, hand, flashlight, opened, moved, asked` (+ прежние ключи), цифровые `name_search, date_filter, browsed, trash, shared, asked`; нейтральный `reported_check` допустим для обоих типов (оболочка `/lab`). Способ чужого типа отклоняется `MD_SEARCH_METHOD_KIND`.
 4. Новые команды: `add_search_target` (явное место/источник, дубликат → `MD_SEARCH_TARGET_EXISTS`) и `revise_free_account` (append-only ревизия рассказа, дословно).
 5. `record_search_check` и `add_search_target` требуют режима поиска (`MD_SEARCH_MODE_REQUIRED`); `rebuild_timeline` и первичный рассказ разрешены и в режиме поиска.
 6. Время события: `ЧЧ:ММ` или ISO-timestamp; события без времени дают `unknown_intervals: event:<id>`; одинаковое точное время с разными названиями даёт `contradictions: MD_TIME_SAME_EXACT_TIME:<время>`.

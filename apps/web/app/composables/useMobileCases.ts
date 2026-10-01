@@ -4,12 +4,34 @@ import { errorCodeOf, errorMessage } from '~/lib/mobile/commands'
 import { caseNumbers, itemKind } from '~/lib/mobile/viewModel'
 import type { ItemKind } from '~/lib/mobile/vocab'
 
+const LAST_CASE_KEY = 'md.mobile.lastCase'
+
+function readLastCase(): string | null {
+  try {
+    return typeof window === 'undefined' ? null : window.localStorage.getItem(LAST_CASE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function writeLastCase(caseId: string | null): void {
+  try {
+    if (typeof window === 'undefined') return
+    if (caseId) window.localStorage.setItem(LAST_CASE_KEY, caseId)
+    else window.localStorage.removeItem(LAST_CASE_KEY)
+  } catch {
+    // Convenience only; canonical data never depends on it.
+  }
+}
+
 /** Mobile shell access to canonical cases. Every mutation goes through the generated local executor. */
 export function useMobileCases() {
   const repository = useCaseRepository()
   const localExecution = useLocalExecution()
-  const lastCaseId = useState<string | null>('md-mobile-last-case', () => null)
+  const lastCaseId = useState<string | null>('md-mobile-last-case', () => readLastCase())
   const loaded = useState<boolean>('md-mobile-cases-loaded', () => false)
+
+  if (import.meta.client) watch(lastCaseId, writeLastCase)
 
   const cases = computed(() => repository.cases.value as CaseV2[])
   const numbers = computed(() => caseNumbers(cases.value))

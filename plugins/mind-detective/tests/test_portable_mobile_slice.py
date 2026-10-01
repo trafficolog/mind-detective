@@ -252,7 +252,7 @@ class SearchTests(unittest.TestCase):
         physical.expect_error("MD_SEARCH_METHOD_KIND", "record_search_check", check("c-1", "A", "trash"))
         for method in ("visual", "hand", "flashlight", "opened", "moved", "asked", "tactile", "reported_check"):
             physical.run("record_search_check", check(f"c-{method}", "A", method))
-        for method in ("name_search", "date_filter", "browsed", "trash", "shared", "asked"):
+        for method in ("name_search", "date_filter", "browsed", "trash", "shared", "asked", "reported_check"):
             digital.run("record_search_check", check(f"d-{method}", "A", method))
 
     def test_t16_closed_case_is_immutable(self):

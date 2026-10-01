@@ -33,8 +33,9 @@ _PHYSICAL_SEARCH_METHODS = frozenset(
         "asked",
     }
 )
+# `reported_check` is kind-neutral: a user-reported check without a refined method.
 _DIGITAL_SEARCH_METHODS = frozenset(
-    {"name_search", "date_filter", "browsed", "trash", "shared", "asked"}
+    {"reported_check", "name_search", "date_filter", "browsed", "trash", "shared", "asked"}
 )
 _SEARCH_METHODS = frozenset(
     {
