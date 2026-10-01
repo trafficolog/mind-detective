@@ -5,6 +5,7 @@
 // prefers-reduced-motion. Falls back to the static splash-sphere.png without canvas.
 import splashSphere from '~/assets/brand/splash-sphere.png'
 import {
+  adaptRenderScale,
   createSplashScene,
   frameAt,
   SPLASH_PALETTE,
@@ -17,6 +18,7 @@ const host = ref<HTMLDivElement | null>(null)
 const canvas = ref<HTMLCanvasElement | null>(null)
 const fallback = ref(false)
 const motion = ref<'animated' | 'reduced'>('animated')
+const renderScale = ref(2)
 
 const SPRITE_PX = 96
 const scene = createSplashScene(20260930)
@@ -96,50 +98,77 @@ function spriteFor(tone: SplashTone, group: SplashGroup) {
   return s
 }
 
+// Gradients are pre-rendered once into small canvases and only scaled per frame:
+// full-canvas gradient fills every frame were the main cost on slow phones.
+const GRADIENT_PX = 128
+let gradients = new Map<string, HTMLCanvasElement>()
+
+function gradientSprite(key: string, paint: (g: CanvasRenderingContext2D, px: number) => void): HTMLCanvasElement {
+  let c = gradients.get(key)
+  if (!c) {
+    c = document.createElement('canvas')
+    c.width = c.height = GRADIENT_PX
+    paint(c.getContext('2d')!, GRADIENT_PX)
+    gradients.set(key, c)
+  }
+  return c
+}
+
+function radialSprite(key: string, cx: number, cy: number, r0: number, stops: Array<[number, string]>) {
+  return gradientSprite(key, (g, px) => {
+    const grad = g.createRadialGradient(cx * px, cy * px, r0 * px, px / 2, px / 2, px / 2)
+    for (const [at, color] of stops) grad.addColorStop(at, color)
+    g.fillStyle = grad
+    g.fillRect(0, 0, px, px)
+  })
+}
+
+const skySprite = () => radialSprite('sky', 0.5, 0.5, 0, [[0, rgba('sky', 0.5)], [1, rgba('sky', 0.12)]])
+const cloudSprite = () => radialSprite('cloud', 0.5, 0.5, 0, [
+  [0, 'rgba(255,255,255,1)'],
+  [0.55, 'rgba(226,240,255,0.45)'],
+  [1, 'rgba(206,230,255,0)'],
+])
+const floorSprite = () => radialSprite('floor', 0.5, 0.5, 0, [
+  [0, rgba('blue', 0.32)],
+  [0.5, rgba('sky', 0.18)],
+  [1, rgba('sky', 0)],
+])
+const bodySprite = () => radialSprite('body', 0.35, 0.325, 0.05, [
+  [0, 'rgba(255,255,255,0.5)'],
+  [0.62, 'rgba(236,248,255,0.22)'],
+  [0.92, rgba('blue', 0.28)],
+  [1, rgba('sky', 0)],
+])
+
 function drawBackdrop(g: CanvasRenderingContext2D, t: number) {
   const { width: w, height: hgt } = size
   const m = Math.min(w, hgt)
-  const sky = g.createRadialGradient(w / 2, hgt * 0.55, 0, w / 2, hgt * 0.55, Math.max(w, hgt) * 0.6)
-  sky.addColorStop(0, rgba('sky', 0.5))
-  sky.addColorStop(1, rgba('sky', 0.12))
-  g.fillStyle = sky
-  g.fillRect(0, 0, w, hgt)
-  for (const cloud of CLOUDS) {
-    const cx = ((cloud.x + t * cloud.speed) % 1.2 + 1.2) % 1.2 * w - 0.1 * w
-    const cy = cloud.y * hgt
-    const r = cloud.r * m
-    const grad = g.createRadialGradient(cx, cy, 0, cx, cy, r)
-    grad.addColorStop(0, `rgba(255,255,255,${cloud.a})`)
-    grad.addColorStop(0.55, `rgba(226,240,255,${cloud.a * 0.45})`)
-    grad.addColorStop(1, 'rgba(206,230,255,0)')
-    g.fillStyle = grad
-    g.fillRect(0, 0, w, hgt)
+  const reach = Math.max(w, hgt) * 0.6
+  // Sky: the radial field is centred slightly below the middle and fades towards the edges.
+  g.drawImage(skySprite(), w / 2 - reach, hgt * 0.55 - reach, reach * 2, reach * 2)
+  const cloud = cloudSprite()
+  for (const c of CLOUDS) {
+    const cx = ((c.x + t * c.speed) % 1.2 + 1.2) % 1.2 * w - 0.1 * w
+    const cy = c.y * hgt
+    const r = c.r * m
+    g.globalAlpha = c.a
+    g.drawImage(cloud, cx - r, cy - r, r * 2, r * 2)
   }
+  g.globalAlpha = 1
 }
 
 function drawGlassBody(g: CanvasRenderingContext2D, frame: SplashFrame) {
   const { x, y } = frame.center
   const r = frame.radius * frame.progress
   if (r < 1) return
-  // Reflection on the "floor" under the sphere.
-  g.save()
-  g.translate(x, y + frame.radius * 1.12)
-  g.scale(1, 0.22)
-  const floor = g.createRadialGradient(0, 0, 0, 0, 0, frame.radius * 1.1)
-  floor.addColorStop(0, rgba('blue', 0.32 * frame.progress))
-  floor.addColorStop(0.5, rgba('sky', 0.18 * frame.progress))
-  floor.addColorStop(1, rgba('sky', 0))
-  g.fillStyle = floor
-  g.beginPath(); g.arc(0, 0, frame.radius * 1.1, 0, Math.PI * 2); g.fill()
-  g.restore()
-
-  const body = g.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.1, x, y, r)
-  body.addColorStop(0, 'rgba(255,255,255,0.5)')
-  body.addColorStop(0.62, 'rgba(236,248,255,0.22)')
-  body.addColorStop(0.92, rgba('blue', 0.28))
-  body.addColorStop(1, rgba('sky', 0))
-  g.fillStyle = body
-  g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill()
+  // Reflection on the "floor" under the sphere (a flattened radial glow).
+  const fr = frame.radius * 1.1
+  const fy = y + frame.radius * 1.12
+  g.globalAlpha = frame.progress
+  g.drawImage(floorSprite(), x - fr, fy - fr * 0.22, fr * 2, fr * 0.44)
+  g.globalAlpha = 1
+  g.drawImage(bodySprite(), x - r, y - r, r * 2, r * 2)
 }
 
 function drawGlassHighlights(g: CanvasRenderingContext2D, frame: SplashFrame) {
@@ -179,14 +208,41 @@ function draw(now: number) {
   drawGlassHighlights(g, frame)
 }
 
+// Adaptive density: skip the first frames (load jitter), then sample frame intervals and
+// lower the canvas density on slow devices. Stops sampling once the scale settles.
+const WARMUP_FRAMES = 10
+let warmup = WARMUP_FRAMES
+let lastFrame = 0
+let samples: number[] = []
+let sampling = true
+
+function sampleFrame(now: number) {
+  if (!sampling) return
+  if (lastFrame && warmup-- <= 0) samples.push(now - lastFrame)
+  lastFrame = now
+  const next = adaptRenderScale(samples, renderScale.value)
+  if (samples.length < 30) return
+  samples = []
+  if (next === renderScale.value) {
+    sampling = false
+    return
+  }
+  renderScale.value = next
+  warmup = WARMUP_FRAMES
+  lastFrame = 0
+  resize()
+}
+
 function loop(now: number) {
   draw(now)
+  sampleFrame(now)
   raf = reduced || document.hidden ? 0 : requestAnimationFrame(loop)
 }
 
 function kick() {
   if (raf) cancelAnimationFrame(raf)
   raf = 0
+  lastFrame = 0
   if (reduced) draw(performance.now())
   else if (!document.hidden) raf = requestAnimationFrame(loop)
 }
@@ -195,7 +251,7 @@ function resize() {
   const el = canvas.value
   if (!el || !host.value) return
   const rect = host.value.getBoundingClientRect()
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const dpr = Math.min(window.devicePixelRatio || 1, renderScale.value)
   size = { width: rect.width, height: rect.height, dpr }
   el.width = Math.max(1, Math.round(rect.width * dpr))
   el.height = Math.max(1, Math.round(rect.height * dpr))
@@ -223,6 +279,7 @@ onMounted(() => {
   motion.value = reduced ? 'reduced' : 'animated'
   media?.addEventListener?.('change', onMotionChange)
   document.addEventListener('visibilitychange', onVisibility)
+  renderScale.value = Math.min(window.devicePixelRatio || 1, 2)
   start = performance.now()
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(resize)
@@ -238,12 +295,13 @@ onBeforeUnmount(() => {
   media?.removeEventListener?.('change', onMotionChange)
   document.removeEventListener('visibilitychange', onVisibility)
   sprites = new Map()
+  gradients = new Map()
   ctx = null
 })
 </script>
 
 <template>
-  <div ref="host" class="mm-splash-art" data-testid="splash-art" :data-motion="motion" aria-hidden="true">
+  <div ref="host" class="mm-splash-art" data-testid="splash-art" :data-motion="motion" :data-render-scale="renderScale" aria-hidden="true">
     <img v-if="fallback" :src="splashSphere" alt="" class="mm-splash-art__fallback">
     <canvas v-else ref="canvas" class="mm-splash-art__canvas" data-testid="splash-particles" />
   </div>

@@ -227,3 +227,22 @@ export function frameAt(
   sprites.sort((a, b) => a.z - b.z)
   return { sprites, center, radius, progress: progressSum / scene.particles.length }
 }
+
+export const SCALE_SAMPLE_FRAMES = 30
+const SLOW_FRAME_MS = 24
+const VERY_SLOW_FRAME_MS = 40
+
+/**
+ * Picks the canvas pixel density from measured frame intervals (ms). The art is soft, so a
+ * lower density is visually close while the drawing cost is fill-rate bound. Only ever
+ * lowers the scale: 2x → 1x when the median frame misses ~40 fps, 1x → 0.75x when it
+ * still misses ~25 fps.
+ */
+export function adaptRenderScale(intervals: readonly number[], scale: number): number {
+  if (intervals.length < SCALE_SAMPLE_FRAMES) return scale
+  const sorted = [...intervals].sort((a, b) => a - b)
+  const median = sorted[Math.floor(sorted.length / 2)]!
+  if (scale > 1 && median > SLOW_FRAME_MS) return 1
+  if (scale === 1 && median > VERY_SLOW_FRAME_MS) return 0.75
+  return scale
+}
