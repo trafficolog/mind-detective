@@ -60,7 +60,7 @@ async function changeTab(key: NavKey): Promise<void> {
           <div style="display:grid;gap:4px"><span class="mm-stat-n">{{ st.n }}</span><span style="font-size:13px;line-height:18px;color:#587196;font-weight:500">{{ st.label }}</span></div>
         </MdGlassCard>
       </div>
-      <div style="display:grid;gap:12px;align-content:start;padding-bottom:120px">
+      <div class="mm-case-grid" style="display:grid;gap:12px;align-content:start;padding-bottom:120px">
         <MdFilterChips v-model="filter" :options="filters" label="Фильтр дел" />
         <MdCaseCard
           v-for="k in cards"

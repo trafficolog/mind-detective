@@ -21,3 +21,10 @@ a { color: var(--action-primary); }
 .mm-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .md-sheet { max-width: 430px; margin: 0 auto; }
 .mm-time-input { font-variant-numeric: tabular-nums; }
+/* Narrow phones (<390px): long block-button labels wrap instead of widening the column. */
+.md-btn--block { white-space: normal; text-align: center; }
+.md-btn--block > span { min-width: 0; }
+.mm-case-grid { grid-template-columns: minmax(0, 1fr); }
+.mm-button-row { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+.mm-button-row--two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 359px) { .mm-button-row--two { grid-template-columns: minmax(0, 1fr); } }

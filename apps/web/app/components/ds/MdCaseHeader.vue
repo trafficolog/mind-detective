@@ -36,16 +36,21 @@ function bg(i: number, k: string): string {
         <span v-if="meta" style="font-size:14px;line-height:20px;color:var(--text-secondary)">{{ meta }}</span>
       </div>
     </div>
-    <ol v-if="showStepper" aria-label="Этапы дела" style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center">
+    <ol v-if="showStepper" aria-label="Этапы дела" style="list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);align-items:center">
       <template v-for="([k, ic, l], i) in STEPS" :key="k">
         <MdIcon v-if="i > 0" name="arrow-right" :size="20" color="var(--text-tertiary)" />
         <li :aria-current="i === idx ? 'step' : undefined" style="display:grid;justify-items:center;gap:4px">
           <span :style="{ width: '44px', height: '44px', borderRadius: '50%', display: 'grid', placeItems: 'center', background: bg(i, k), color: col(i, k), border: '1px solid var(--line-glass)' }">
             <MdIcon :name="ic" :size="20" />
           </span>
-          <span :style="{ fontSize: '13px', lineHeight: '16px', fontWeight: i === idx ? 650 : 500, color: col(i, k) }">{{ l }}</span>
+          <span class="md-step-label" :style="{ lineHeight: '16px', fontWeight: i === idx ? 650 : 500, color: col(i, k) }">{{ l }}</span>
         </li>
       </template>
     </ol>
   </header>
 </template>
+
+<style>
+/* 13px on the 390px baseline; shrinks only below ~383px so «Реконструкция» fits a 320px phone. */
+.md-step-label { font-size: clamp(11px, 3.4vw, 13px); white-space: nowrap; }
+</style>

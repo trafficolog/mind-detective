@@ -226,7 +226,7 @@ async function dictateFa(): Promise<void> {
       <div v-if="loaded" style="margin-top:12px"><MdButton size="lg" block @click="navigateTo('/cases')">К списку дел</MdButton></div>
     </div>
 
-    <div v-else style="display:grid;gap:14px;align-content:start;padding-bottom:120px">
+    <div v-else class="mm-case-grid" style="display:grid;gap:14px;align-content:start;padding-bottom:120px">
       <MdCaseHeader
         :case-id="number"
         :title="caseValue.item_label"
@@ -263,7 +263,7 @@ async function dictateFa(): Promise<void> {
           id="free-account"
           @update:model-value="v => { faDraft = v }"
         />
-        <div v-if="open" :style="{ display: 'grid', gridTemplateColumns: dictation.available.value ? '1fr 1fr' : '1fr', gap: '10px' }">
+        <div v-if="open" :class="['mm-button-row', dictation.available.value ? 'mm-button-row--two' : '']">
           <MdButton v-if="dictation.available.value" variant="secondary" :icon="dictation.icon('fa')" block @click="dictateFa">{{ dictation.label('fa') }}</MdButton>
           <MdButton variant="secondary" icon="save" block :disabled="faClean || busy" data-testid="free-account-save" @click="saveFreeAccount">Сохранить</MdButton>
         </div>

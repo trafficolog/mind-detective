@@ -25,14 +25,14 @@ Prompt строит приложение (`assistantPrompt` в `apps/web/app/lib
 
 ## Проверено
 
-2026-10-01: workflow импортирован в **n8n 2.41.4** (`n8n import:workflow` → `publish:workflow`), модель и Whisper подменены локальным OpenAI-совместимым моком. Проверены:
+2026-10-01: workflow импортирован в **n8n 2.41.4** (`n8n import:workflow` → `publish:workflow`) и **n8n 1.123.83** (`import:workflow` → `update:workflow --active=true`), модель и Whisper подменены локальным OpenAI-совместимым моком. Проверены:
 
 - `md-propose` → `{ "text": … }` (200), неверный/отсутствующий токен → 403, сбой модели → 502 `llm_unavailable`;
 - `md-transcribe` (multipart, поле `file`) → `{ "text": … }` (200), сбой Whisper → 502 `stt_unavailable`;
 - CORS preflight с `Authorization` → 204 и `Access-Control-Allow-Origin`;
 - сквозной сценарий из браузера: `apps/web/tests/e2e/mobile-n8n-live.spec.ts` (ответ проходит guard; запись микрофона распознаётся и дописывается в поле).
 
-Особенность Webhook v2: файл из multipart-поля `file` попадает в binary-свойство `file0` (опция `binaryPropertyName: file` + индекс), поэтому узел Whisper читает `file0`. Узлы под 1.x-совместимые версии (Webhook v2, HTTP Request v4.2, Respond to Webhook v1.1); на n8n 1.x импорт не проверялся.
+Особенность Webhook v2: файл из multipart-поля `file` попадает в binary-свойство `file0` (опция `binaryPropertyName: file` + индекс), поэтому узел Whisper читает `file0`. Версии узлов (Webhook v2, HTTP Request v4.2, Respond to Webhook v1.1) работают в обеих линиях n8n.
 
 Проверить свой сервер: `./smoke-test.sh https://n8n.example.com <токен> [audio.webm]`; из браузера — `MD_E2E_N8N_URL=… MD_E2E_N8N_TOKEN=… pnpm --dir apps/web exec playwright test mobile-n8n-live --project=chromium`.
 
