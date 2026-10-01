@@ -11,6 +11,7 @@
 - research-only ассистент: локальный контрольный список без сервера и необязательный n8n (`md-propose`, `md-transcribe`) с guard и fallback (ADR 017); голосовой ввод через Web Speech API или n8n;
 - компоненты дизайн-системы на Vue, офлайн-иконки Lucide и шрифт Inter, новый логотип и PWA-иконки;
 - публикация PWA на GitHub Pages (`.github/workflows/pages.yml`) с проверкой, что сборка самодостаточна под подпутём (`scripts/check_pages_build.py`);
+- анимированная заставка: стеклянный шар из объёмных частиц с жёлтым и фиолетовым фрагментами (canvas, офлайн; неподвижна при `prefers-reduced-motion`);
 - Playwright-сценарии M1–M10, визуальная сверка с эталоном (`docs/design/2026-09-30-glass-modern-mobile/VISUAL_REVIEW.md`).
 
 ### Изменено

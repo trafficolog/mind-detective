@@ -28,3 +28,11 @@ a { color: var(--action-primary); }
 .mm-button-row { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
 .mm-button-row--two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 359px) { .mm-button-row--two { grid-template-columns: minmax(0, 1fr); } }
+
+/* Animated splash illustration (SplashParticles.vue): soft edges blend into the page field. */
+.mm-splash-art { position: relative; width: 100%; height: 300px; max-width: 360px; margin: 0 auto;
+  -webkit-mask-image: radial-gradient(closest-side, #000 72%, transparent 100%);
+          mask-image: radial-gradient(closest-side, #000 72%, transparent 100%); }
+.mm-splash-art__canvas { display: block; width: 100%; height: 100%; }
+.mm-splash-art__fallback { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (max-height: 700px) { .mm-splash-art { height: 240px; } }

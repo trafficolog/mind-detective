@@ -11,6 +11,7 @@
 - research-only assistant: local checklist without a server and optional n8n (`md-propose`, `md-transcribe`) with guard and fallback (ADR 017); voice input via Web Speech API or n8n;
 - Vue design-system components, offline Lucide icons and Inter, new logo and PWA icons;
 - GitHub Pages deployment of the PWA (`.github/workflows/pages.yml`) with a sub-path self-containment check (`scripts/check_pages_build.py`);
+- animated splash: a glass sphere of volumetric particles with yellow and violet fragments (canvas, offline; still under `prefers-reduced-motion`);
 - Playwright scenarios M1–M10 and a visual review against the handoff.
 
 ### Changed
