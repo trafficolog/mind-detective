@@ -24,6 +24,16 @@ pnpm --dir apps/web build                              # статическая 
 
 `.output/public` раздаётся любым статическим хостингом с HTTPS (для установки PWA на телефон и работы микрофона нужен HTTPS или `localhost`). Сервер API и модели не нужны: реконструкция, поиск, журнал, экспорт/импорт работают офлайн после первой загрузки; ассистент даёт шаг из локального контрольного списка, голос распознаёт браузер (Web Speech API).
 
+### Открыть на телефоне (GitHub Pages)
+
+Workflow `.github/workflows/pages.yml` собирает PWA с базовым путём репозитория и публикует её на `https://trafficolog.github.io/mind-detective/` при каждом push в `main` (или вручную: Actions → Deploy Web/PWA to GitHub Pages → Run workflow).
+
+1. Один раз: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Откройте адрес на телефоне → «Поделиться» / меню браузера → «На экран Домой» (iOS) или «Установить приложение» (Android).
+3. После первого открытия приложение работает офлайн; дела хранятся только на телефоне. Ассистент с n8n подключается в настройках так же, как локально (адрес n8n должен быть `https`).
+
+Сайт публичный: любой, у кого есть ссылка, может открыть приложение, но не видит чужих дел.
+
 ### Режим 2 — с агентом через n8n
 
 1. Импортируйте `integrations/n8n/mind-detective-assistant.workflow.json` в свой n8n и следуйте `integrations/n8n/README.md` (credentials, CORS, активация).

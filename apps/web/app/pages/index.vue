@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import logoMark from '~/assets/brand/logo-mark.svg'
+import splashSphere from '~/assets/brand/splash-sphere.png'
 import { homeSummary } from '~/lib/mobile/viewModel'
 
 const { settings, update } = useMobileSettings()
@@ -36,7 +38,7 @@ const activeIcon = computed(() => {
     <div style="margin-top:28px;font-size:56px;line-height:60px;font-weight:500;letter-spacing:-0.02em">Mind<br>Detective</div>
     <div style="font-size:18px;line-height:26px;color:#587196;max-width:300px">Превращаем фрагменты в проверяемый контекст.</div>
     <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:240px">
-      <img src="/brand/splash-sphere.png" alt="" style="max-width:100%;max-height:300px;object-fit:contain">
+      <img :src="splashSphere" alt="" style="max-width:100%;max-height:300px;object-fit:contain">
     </div>
     <div style="height:6px;border-radius:99px;background:linear-gradient(90deg,#4AEEFC,#0B86EA)" />
     <div style="font-size:15px;color:#587196">Готово к работе офлайн</div>
@@ -44,7 +46,7 @@ const activeIcon = computed(() => {
   </div>
 
   <div v-else-if="!settings.onboarded" class="mm-screen" data-testid="screen-onboarding" style="gap:16px;padding-bottom:28px">
-    <div style="margin-top:20px"><img src="/brand/logo-mark.svg" alt="" style="width:48px;height:48px"></div>
+    <div style="margin-top:20px"><img :src="logoMark" alt="" style="width:48px;height:48px"></div>
     <h1 style="margin:8px 0 0;font-size:36px;line-height:42px;font-weight:700;letter-spacing:-0.02em;text-wrap:pretty">Ищите потерянное по шагам, а не по кругу</h1>
     <div style="font-size:16px;line-height:24px;color:#587196;text-wrap:pretty">Зафиксируем, что уже известно и проверено, затем выберем один полезный следующий шаг.</div>
     <MdGlassCard :padding="8">
@@ -61,7 +63,7 @@ const activeIcon = computed(() => {
   </div>
 
   <div v-else class="mm-screen" data-testid="screen-home" style="padding-bottom:24px">
-    <MdAppHeader logo-src="/brand/logo-mark.svg" subtitle="Системный поиск потерянного" show-settings @settings="navigateTo('/settings')" />
+    <MdAppHeader :logo-src="logoMark" subtitle="Системный поиск потерянного" show-settings @settings="navigateTo('/settings')" />
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 16px;min-height:420px">
       <span class="mm-overline">Новое дело</span>
       <h1 style="margin:8px 0 0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:-0.02em">Что потерялось?</h1>

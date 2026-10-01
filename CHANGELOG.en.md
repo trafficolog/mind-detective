@@ -10,6 +10,7 @@
 - portable `add_search_target` and `revise_free_account` commands, HH:MM event times, unknown-time and same-exact-time contradiction derivation; new conformance vectors;
 - research-only assistant: local checklist without a server and optional n8n (`md-propose`, `md-transcribe`) with guard and fallback (ADR 017); voice input via Web Speech API or n8n;
 - Vue design-system components, offline Lucide icons and Inter, new logo and PWA icons;
+- GitHub Pages deployment of the PWA (`.github/workflows/pages.yml`) with a sub-path self-containment check (`scripts/check_pages_build.py`);
 - Playwright scenarios M1–M10 and a visual review against the handoff.
 
 ### Changed

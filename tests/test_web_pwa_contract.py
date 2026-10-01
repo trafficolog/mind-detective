@@ -60,8 +60,10 @@ class WebPwaContractTests(unittest.TestCase):
             (icon["src"], icon["sizes"], icon["type"], icon.get("purpose"))
             for icon in manifest["icons"]
         }
-        self.assertIn(("/icon-192.png", "192x192", "image/png", "any maskable"), icons)
-        self.assertIn(("/icon-512.png", "512x512", "image/png", "any maskable"), icons)
+        self.assertIn(("icon-192.png", "192x192", "image/png", "any maskable"), icons)
+        self.assertIn(("icon-512.png", "512x512", "image/png", "any maskable"), icons)
+        # Relative to the manifest URL so the PWA also installs from a sub-path (GitHub Pages).
+        self.assertEqual((manifest["start_url"], manifest["scope"]), ("./", "./"))
 
         self.assertEqual(png_dimensions(PUBLIC / "icon-192.png"), (192, 192))
         self.assertEqual(png_dimensions(PUBLIC / "icon-512.png"), (512, 512))

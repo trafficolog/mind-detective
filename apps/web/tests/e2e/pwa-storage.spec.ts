@@ -13,7 +13,8 @@ test('generated PWA precaches shell assets without API case or background-sync d
   }
 
   expect(manifest.display).toBe('standalone')
-  expect(manifest.start_url).toBe('/')
+  // Relative start_url resolves to the app root at '/' and under a GitHub Pages sub-path.
+  expect(manifest.start_url).toBe('./')
   expect(worker).toContain('url:"/"')
   expect(worker).toContain('createHandlerBoundToURL("/")')
   expect(worker).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync|backgroundSync/)

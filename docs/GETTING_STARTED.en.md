@@ -24,6 +24,16 @@ pnpm --dir apps/web build                              # static PWA in apps/web/
 
 Serve `.output/public` from any static HTTPS host (PWA install and microphone need HTTPS or `localhost`). No API or model is needed: reconstruction, search, journal and export/import work offline after the first load; the assistant uses the local checklist and speech uses the browser Web Speech API.
 
+### Open on a phone (GitHub Pages)
+
+`.github/workflows/pages.yml` builds the PWA with the repository base path and publishes it to `https://trafficolog.github.io/mind-detective/` on every push to `main` (or manually: Actions → Deploy Web/PWA to GitHub Pages → Run workflow).
+
+1. Once: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Open the URL on the phone and use "Add to Home Screen" (iOS) or "Install app" (Android).
+3. After the first visit the app works offline; cases stay on the phone. The n8n assistant is configured in settings as locally (the n8n URL must be `https`).
+
+The site is public: anyone with the link can open the app, but cases are never shared.
+
 ### Mode 2 — with an agent via n8n
 
 1. Import `integrations/n8n/mind-detective-assistant.workflow.json` into your n8n and follow `integrations/n8n/README.md`.
