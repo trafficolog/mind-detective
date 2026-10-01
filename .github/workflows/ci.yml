@@ -115,6 +115,18 @@ jobs:
         run: pnpm --dir apps/web exec playwright install --with-deps chromium webkit
       - name: Run Web browser tests
         run: pnpm --dir apps/web exec playwright test
+      - name: Smoke-test a GitHub Pages sub-path build (same suite as post-deploy)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NUXT_APP_BASE_URL=/mind-detective/ pnpm --dir apps/web build
+          python scripts/check_pages_build.py apps/web/.output/public /mind-detective/
+          site="$RUNNER_TEMP/pages-site"
+          mkdir -p "$site"
+          cp -r apps/web/.output/public "$site/mind-detective"
+          python -m http.server 3100 --bind 127.0.0.1 --directory "$site" >/dev/null 2>&1 &
+          for _ in $(seq 1 30); do curl -sf http://127.0.0.1:3100/mind-detective/ >/dev/null && break; sleep 1; done
+          SMOKE_BASE_URL=http://127.0.0.1:3100/mind-detective/ pnpm --dir apps/web exec playwright test -c playwright.smoke.config.ts
       - name: Upload Playwright failure traces
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

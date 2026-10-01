@@ -34,6 +34,12 @@ Serve `.output/public` from any static HTTPS host (PWA install and microphone ne
 
 The site is public: anyone with the link can open the app, but cases are never shared.
 
+**Smoke test of the published site.** After every deployment the `smoke` job waits for the CDN to serve the new build (`scripts/wait_for_pages_build.py`, comparing `_nuxt/builds/latest.json`) and opens the live URL as an Android phone (Chromium) and an iPhone (WebKit): splash, manifest and service worker under the sub-path, then offline — onboarding, a new case, the free account and an event are saved and reopened (in Chromium also after a full offline page reload; Playwright's WebKit offline emulation fails top-level navigations before the service worker, so the iPhone run checks in-app navigation). It only writes to the test browser's IndexedDB. CI runs the same suite on every PR against a local `/mind-detective/` build. Manually:
+
+```bash
+SMOKE_BASE_URL=https://trafficolog.github.io/mind-detective/ pnpm --dir apps/web exec playwright test -c playwright.smoke.config.ts
+```
+
 ### Mode 2 — with an agent via n8n
 
 1. Import `integrations/n8n/mind-detective-assistant.workflow.json` into your n8n and follow `integrations/n8n/README.md`.

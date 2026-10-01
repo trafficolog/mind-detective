@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import logoMark from '~/assets/brand/logo-mark.svg'
-import splashSphere from '~/assets/brand/splash-sphere.png'
 import { homeSummary } from '~/lib/mobile/viewModel'
 
 const { settings, update } = useMobileSettings()
@@ -38,7 +37,7 @@ const activeIcon = computed(() => {
     <div style="margin-top:28px;font-size:56px;line-height:60px;font-weight:500;letter-spacing:-0.02em">Mind<br>Detective</div>
     <div style="font-size:18px;line-height:26px;color:#587196;max-width:300px">Превращаем фрагменты в проверяемый контекст.</div>
     <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:240px">
-      <img :src="splashSphere" alt="" style="max-width:100%;max-height:300px;object-fit:contain">
+      <SplashParticles />
     </div>
     <div style="height:6px;border-radius:99px;background:linear-gradient(90deg,#4AEEFC,#0B86EA)" />
     <div style="font-size:15px;color:#587196">Готово к работе офлайн</div>
