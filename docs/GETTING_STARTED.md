@@ -34,6 +34,12 @@ Workflow `.github/workflows/pages.yml` собирает PWA с базовым п
 
 Сайт публичный: любой, у кого есть ссылка, может открыть приложение, но не видит чужих дел.
 
+**Смоук-тест опубликованного сайта.** После каждой публикации job `smoke` ждёт, пока CDN начнёт отдавать новую сборку (`scripts/wait_for_pages_build.py`, сверка `_nuxt/builds/latest.json`), и открывает живой адрес в эмуляции Android (Chromium) и iPhone (WebKit): заставка, манифест и service worker под подпутём, затем офлайн — онбординг, новое дело, рассказ и событие переживают перезагрузку. Тест пишет только в IndexedDB тестового браузера. Тот же набор в CI для каждого PR гоняется против локальной сборки под `/mind-detective/`. Вручную:
+
+```bash
+SMOKE_BASE_URL=https://trafficolog.github.io/mind-detective/ pnpm --dir apps/web exec playwright test -c playwright.smoke.config.ts
+```
+
 ### Режим 2 — с агентом через n8n
 
 1. Импортируйте `integrations/n8n/mind-detective-assistant.workflow.json` в свой n8n и следуйте `integrations/n8n/README.md` (credentials, CORS, активация).

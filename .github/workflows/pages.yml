@@ -21,6 +21,8 @@ jobs:
   build:
     name: Build static PWA
     runs-on: ubuntu-latest
+    outputs:
+      build_id: ${{ steps.build_id.outputs.id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: pages
@@ -46,6 +48,9 @@ jobs:
           NUXT_APP_BASE_URL="$base" pnpm --dir apps/web build
       - name: Verify the build is self-contained under the base path
         run: python scripts/check_pages_build.py apps/web/.output/public "$PAGES_BASE"
+      - id: build_id
+        name: Record the Nuxt build id for the post-deploy smoke test
+        run: echo "id=$(python scripts/wait_for_pages_build.py --local-id apps/web/.output/public)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: apps/web/.output/public
@@ -54,9 +59,51 @@ jobs:
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  smoke:
+    name: Smoke-test the published site
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 12.3.4
+          run_install: false
+      - name: Install Web dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm --dir apps/web exec playwright install --with-deps chromium webkit
+      - name: Wait until the CDN serves the new build
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+          BUILD_ID: ${{ needs.build.outputs.build_id }}
+        run: python scripts/wait_for_pages_build.py "$PAGE_URL" "$BUILD_ID" --timeout 600 --interval 15
+      - name: Smoke-test online and offline flows on Android Chromium and iPhone WebKit
+        env:
+          SMOKE_BASE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: pnpm --dir apps/web exec playwright test -c playwright.smoke.config.ts
+      - name: Upload smoke traces
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pages-smoke-results
+          path: apps/web/test-results
+          if-no-files-found: warn
+          retention-days: 7
