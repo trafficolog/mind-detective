@@ -136,7 +136,7 @@
             {
               "parameterType": "formBinaryData",
               "name": "file",
-              "inputDataFieldName": "file"
+              "inputDataFieldName": "file0"
             },
             {
               "name": "model",
