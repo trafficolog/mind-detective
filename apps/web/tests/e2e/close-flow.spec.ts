@@ -4,7 +4,7 @@ import { caseFixture, seedCase, storedCase } from './helpers'
 test('found elsewhere closes case with explicit research context', async ({ page }) => {
   const caseValue = caseFixture()
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await page.getByTestId('found-case').click()
   await expect(page.getByTestId('close-case-dialog')).toBeVisible()
@@ -20,7 +20,7 @@ test('found elsewhere closes case with explicit research context', async ({ page
 test('unresolved close is distinct from found', async ({ page }) => {
   const caseValue = caseFixture({ case_id: 'case-unresolved' })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await page.getByTestId('found-case').click()
   await page.getByTestId('close-unresolved').click()

@@ -10,6 +10,42 @@ Plugin persistence остаётся явным и case-local: сохранени
 
 `0.4.0` с deterministic Web Reconstruction Foundation уже опубликован. Любая следующая release publication остаётся отдельным human-authorized publisher gate после exact post-merge `main` CI.
 
+## Мобильная оболочка 0.5.0 (Glass Modern)
+
+Продуктовая оболочка Web/PWA — мобильный интерфейс из `docs/design/2026-09-30-glass-modern-mobile/` (спецификация: `docs/superpowers/specs/2026-09-30-mind-detective-0.5.0-glass-modern-mobile-design.md`). Прежняя оболочка 0.4.0 и evaluation-стенд доступны на `/lab` и `/evaluation`.
+
+### Режим 1 — без агента (полностью локально)
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --dir apps/web dev --host 0.0.0.0 --port 3000   # разработка, открыть с телефона по IP компьютера
+pnpm --dir apps/web build                              # статическая PWA в apps/web/.output/public
+```
+
+`.output/public` раздаётся любым статическим хостингом с HTTPS (для установки PWA на телефон и работы микрофона нужен HTTPS или `localhost`). Сервер API и модели не нужны: реконструкция, поиск, журнал, экспорт/импорт работают офлайн после первой загрузки; ассистент даёт шаг из локального контрольного списка, голос распознаёт браузер (Web Speech API).
+
+### Открыть на телефоне (GitHub Pages)
+
+Workflow `.github/workflows/pages.yml` собирает PWA с базовым путём репозитория и публикует её на `https://trafficolog.github.io/mind-detective/` при каждом push в `main` (или вручную: Actions → Deploy Web/PWA to GitHub Pages → Run workflow).
+
+1. Один раз: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Откройте адрес на телефоне → «Поделиться» / меню браузера → «На экран Домой» (iOS) или «Установить приложение» (Android).
+3. После первого открытия приложение работает офлайн; дела хранятся только на телефоне. Ассистент с n8n подключается в настройках так же, как локально (адрес n8n должен быть `https`).
+
+Сайт публичный: любой, у кого есть ссылка, может открыть приложение, но не видит чужих дел.
+
+### Режим 2 — с агентом через n8n
+
+1. Импортируйте `integrations/n8n/mind-detective-assistant.workflow.json` в свой n8n и следуйте `integrations/n8n/README.md` (credentials, CORS, активация).
+2. В приложении: **Настройки → Сервер ассистента (n8n)** — адрес (`https://…` или `http://localhost:5678`) и токен webhook; затем **Включить онлайн-ассистента**.
+3. «Предложить следующий шаг» идёт в `md-propose`, «Надиктовать» — в `md-transcribe`. Ответ модели проверяется guard в приложении; при сбое, таймауте 10 с или отказе guard используется локальный контрольный список. Предложение становится данными дела только по вашему нажатию.
+
+Ключи моделей хранятся только в n8n Credentials; в браузере — адрес и токен webhook (localStorage этого устройства).
+
+### Режим 3 — evaluation-стенд с LiteLLM
+
+Прежний B↔C стенд (`/lab`, `/evaluation`) по-прежнему использует FastAPI → LiteLLM (раздел «API» ниже, ADR 012).
+
 ## Установка зависимостей
 
 Из корня репозитория:

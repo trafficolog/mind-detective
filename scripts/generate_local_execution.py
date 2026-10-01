@@ -12,6 +12,8 @@ from scripts.local_execution_manifest import load_contract_constants
 
 _PUBLIC_EXPORTS = {
     "create_case",
+    "create_case_with_kind",
+    "item_kind_json",
     "apply_command",
     "build_checklist_proposal_json",
     "select_next_action_json",

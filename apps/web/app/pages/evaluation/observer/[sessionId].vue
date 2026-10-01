@@ -1,4 +1,5 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'lab' })
 import type { EvaluationEventV1, EvaluationSessionV1 } from '~/lib/eval/contracts'
 import { appendEvalEvent } from '~/lib/eval/log'
 import { getEvaluationSession, listEvaluationEvents } from '~/lib/eval/store'

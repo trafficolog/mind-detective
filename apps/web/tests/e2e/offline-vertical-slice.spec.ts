@@ -11,7 +11,7 @@ test('preloaded PWA completes the canonical search workflow with the browser off
     }
   })
 
-  await page.goto('/')
+  await page.goto('/lab')
   await page.evaluate(async () => {
     if (!('serviceWorker' in navigator)) throw new Error('MD_WEB_SERVICE_WORKER_UNAVAILABLE')
     await navigator.serviceWorker.ready

@@ -3,6 +3,8 @@ export type InteractionMode = 'unselected' | 'reconstruction' | 'search'
 export type JournalMode = 'reconstruction' | 'search' | 'system'
 export type JournalAuthor = 'user' | 'assistant' | 'system'
 export type SearchMethod = 'reported_check' | 'glance' | 'visual_systematic' | 'empty_and_check' | 'tactile' | 'inaccessible'
+  | 'visual' | 'hand' | 'flashlight' | 'opened' | 'moved' | 'asked'
+  | 'name_search' | 'date_filter' | 'browsed' | 'trash' | 'shared'
 export type SearchResult = 'found' | 'not_found' | 'partial' | 'inaccessible'
 export type CheckState = 'unchecked' | 'partial' | 'checked'
 export type ExperimentalArm = 'checklist' | 'assistant'
@@ -122,7 +124,7 @@ export interface CaseV2 {
 export interface CommandEnvelope {
   command_id: string
   expected_updated_at: string
-  command_type: 'set_mode' | 'add_statement' | 'record_free_account' | 'rebuild_timeline' | 'record_search_check' | 'refine_search_check' | 'reject_next_action' | 'pause' | 'resume' | 'close_found' | 'close_unresolved'
+  command_type: 'set_mode' | 'add_statement' | 'record_free_account' | 'rebuild_timeline' | 'record_search_check' | 'refine_search_check' | 'reject_next_action' | 'pause' | 'resume' | 'close_found' | 'close_unresolved' | 'add_search_target' | 'revise_free_account'
   now: string
   payload: Record<string, unknown>
 }

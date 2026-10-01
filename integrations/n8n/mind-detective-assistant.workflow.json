@@ -1,0 +1,264 @@
+{
+  "name": "Mind Detective — assistant proxy",
+  "nodes": [
+    {
+      "id": "w1",
+      "name": "Webhook · propose",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "md-propose",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "md-propose",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "MD webhook token"
+        }
+      }
+    },
+    {
+      "id": "h1",
+      "name": "LLM · chat completion",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-4o-mini\", temperature: 0.2, response_format: { type: \"json_object\" }, messages: [{ role: \"user\", content: $json.body.prompt }] }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "r1",
+      "name": "Respond · proposal",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        -80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { text: $json.choices[0].message.content } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e1",
+      "name": "Respond · 502",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: \"llm_unavailable\" } }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    },
+    {
+      "id": "w2",
+      "name": "Webhook · transcribe",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        320
+      ],
+      "webhookId": "md-transcribe",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "md-transcribe",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "binaryPropertyName": "file"
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "",
+          "name": "MD webhook token"
+        }
+      }
+    },
+    {
+      "id": "h2",
+      "name": "STT · Whisper",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        260,
+        320
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openAiApi",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "file0"
+            },
+            {
+              "name": "model",
+              "value": "whisper-1"
+            },
+            {
+              "name": "language",
+              "value": "ru"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "id": "r2",
+      "name": "Respond · text",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        240
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { text: $json.text } }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "e2",
+      "name": "Respond · 502 stt",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        520,
+        400
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: \"stt_unavailable\" } }}",
+        "options": {
+          "responseCode": 502
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook · propose": {
+      "main": [
+        [
+          {
+            "node": "LLM · chat completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM · chat completion": {
+      "main": [
+        [
+          {
+            "node": "Respond · proposal",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond · 502",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook · transcribe": {
+      "main": [
+        [
+          {
+            "node": "STT · Whisper",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "STT · Whisper": {
+      "main": [
+        [
+          {
+            "node": "Respond · text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond · 502 stt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false,
+    "saveExecutionProgress": false
+  },
+  "pinData": {}
+}

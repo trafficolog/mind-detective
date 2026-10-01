@@ -21,7 +21,10 @@ class LocalExecutionCorpusTests(unittest.TestCase):
         ids = {vector["id"] for vector in vectors}
         operations = {vector["operation"] for vector in vectors}
 
-        self.assertEqual(operations, {"create_case", "command", "proposal", "planner"})
+        self.assertEqual(
+            operations,
+            {"create_case", "create_case_with_kind", "item_kind", "command", "proposal", "planner"},
+        )
         self.assertGreaterEqual(len(vectors), 50)
         self.assertEqual(manifest["seed"], 303001)
         self.assertEqual(manifest["vector_count"], len(vectors))
@@ -58,6 +61,13 @@ class LocalExecutionCorpusTests(unittest.TestCase):
             "planner-id-unicode",
             "planner-unsafe-excluded",
             "reconstruction_record_free_account",
+            "mobile_create_digital_case",
+            "mobile_add_search_target",
+            "mobile_add_search_target_duplicate",
+            "mobile_check_requires_search",
+            "mobile_digital_rejects_physical_method",
+            "mobile_revise_free_account",
+            "mobile_timeline_unknown_and_same_time_contradiction",
             "reconstruction_statement_requires_free_account",
             "reconstruction_rebuild_timeline_unknowns",
             "reconstruction_rebuild_timeline_contradiction",

@@ -1,0 +1,16 @@
+:root{
+--font-sans:Inter,"SF Pro Display","SF Pro Text",system-ui,-apple-system,sans-serif;
+--font-mono:ui-monospace,"SF Mono",Menlo,monospace;
+/* size / line-height / weight */
+--type-display-xl-size:40px;--type-display-xl-lh:44px;--type-display-xl-wt:700;
+--type-display-l-size:32px;--type-display-l-lh:38px;--type-display-l-wt:700;
+--type-title-l-size:28px;--type-title-l-lh:34px;--type-title-l-wt:700;
+--type-title-m-size:22px;--type-title-m-lh:28px;--type-title-m-wt:650;
+--type-title-s-size:18px;--type-title-s-lh:24px;--type-title-s-wt:650;
+--type-body-l-size:17px;--type-body-l-lh:25px;--type-body-l-wt:400;
+--type-body-m-size:15px;--type-body-m-lh:22px;--type-body-m-wt:400;
+--type-body-s-size:13px;--type-body-s-lh:18px;--type-body-s-wt:400;
+--type-label-size:12px;--type-label-lh:16px;--type-label-wt:600;
+--type-micro-size:11px;--type-micro-lh:14px;--type-micro-wt:500;
+--tracking-display:-0.02em;--tracking-title:-0.01em;--tracking-label:0.01em;
+}

@@ -15,7 +15,7 @@ async function startStagedCase(page: Page, slot: number, label: string): Promise
 }
 
 test('ordinary Case creation does not create evaluation assignment or session events', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/lab')
   await expect(page.getByTestId('offline-route-ready')).toBeVisible()
   await page.getByTestId('item-label').fill('обычные ключи')
   await page.getByTestId('start-search').click()
@@ -78,7 +78,7 @@ test('staged C assignment overrides checklist build arm and survives reload', as
 test('B session records linked useful-action instrumentation and finishes atomically', async ({ page }) => {
   const caseId = await startStagedCase(page, 1, 'instrumented keys')
   await seedCase(page, caseFixture({ case_id: caseId }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
 
   await page.getByTestId('mark-checked').click()
@@ -125,7 +125,7 @@ test('duplicate check is derived from canonical prior evidence', async ({ page }
     candidates: [candidate('candidate-1', 'карманы куртки', 'partial')],
     search_checks: [searchCheck('prior-check', 'candidate-1', 'карманы куртки', 'reported_check')],
   }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')
   await expect(page.getByTestId('check-quality-dialog')).toBeVisible()
   await page.getByRole('button', { name: 'Не сейчас' }).click()
@@ -147,7 +147,7 @@ test('C transport failure records fallback without changing assigned arm', async
   const caseId = await startStagedCase(page, 3, 'fallback keys')
   await seedCase(page, caseFixture({ case_id: caseId }))
   await page.route('**/api/v1/proposal/next', route => route.abort('failed'))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
 
   await expect(page.getByTestId('assistant-offline-fallback')).toBeVisible()
   await expect(page.getByTestId('next-action-target')).toHaveText('карманы куртки')

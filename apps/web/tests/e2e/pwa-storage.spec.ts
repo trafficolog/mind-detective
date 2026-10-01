@@ -13,7 +13,8 @@ test('generated PWA precaches shell assets without API case or background-sync d
   }
 
   expect(manifest.display).toBe('standalone')
-  expect(manifest.start_url).toBe('/')
+  // Relative start_url resolves to the app root at '/' and under a GitHub Pages sub-path.
+  expect(manifest.start_url).toBe('./')
   expect(worker).toContain('url:"/"')
   expect(worker).toContain('createHandlerBoundToURL("/")')
   expect(worker).not.toMatch(/BackgroundSyncPlugin|workbox-background-sync|backgroundSync/)
@@ -34,7 +35,7 @@ test('failed IndexedDB commit leaves canonical case unchanged and retry reuses t
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await page.evaluate(async ({ version, caseId }) => {
     await new Promise<void>((resolvePromise, reject) => {

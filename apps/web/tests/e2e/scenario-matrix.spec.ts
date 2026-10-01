@@ -20,7 +20,7 @@ test('journal provenance partial accessibility and persistent summary survive in
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('case-shell')).toBeVisible()
   await expect(page.getByTestId('progress-strip')).toBeVisible()
@@ -43,7 +43,7 @@ test('persistence capability states are disclosed without claiming guaranteed ba
   })
   const caseValue = caseFixture({ interaction_journal: [journalEntry('engaged', 'search', 'Проверил куртку.')] })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('storage-notice')).toContainText('постоянное хранилище')
   await expect(page.getByTestId('storage-notice')).toContainText('экспорт')
@@ -61,7 +61,7 @@ test('dark reduced-motion increased-contrast and responsive presentation contrac
   await page.setViewportSize({ width: 405, height: 820 })
   const caseValue = caseFixture()
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--md-bg').trim())).toBe('#0d1218')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
@@ -100,13 +100,13 @@ test.describe('assistant guard isolation', () => {
     })
 
     await seedCase(page, reconstruction)
-    await page.goto(`/cases/${reconstruction.case_id}`)
+    await page.goto(`/lab/cases/${reconstruction.case_id}`)
     await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
     await expect(page.getByTestId('provider-disclosure')).toHaveCount(0)
     expect(proposalCalls).toBe(0)
 
     await seedCase(page, search)
-    await page.goto(`/cases/${search.case_id}`)
+    await page.goto(`/lab/cases/${search.case_id}`)
     await expect(page.getByTestId('next-action-target')).toHaveText('сумка')
     await expect(page.getByTestId('guard-block')).toHaveCount(0)
     expect(proposalCalls).toBe(1)

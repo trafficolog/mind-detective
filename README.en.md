@@ -179,6 +179,8 @@ uvicorn mind_detective_api.app:app --app-dir apps/api --host 127.0.0.1 --port 80
 pnpm --dir apps/web dev --host 127.0.0.1 --port 3000
 ```
 
+Since 0.5.0 (in development) `/` opens the Glass Modern mobile shell: thing or photo/file cases, voice-first start, no-agent mode or your own n8n server (Settings → assistant server). The previous shell and the evaluation stand live at `/lab`. Phone build (after enabling GitHub Pages and merging to `main`): https://trafficolog.github.io/mind-detective/. Run modes: [Getting Started](docs/GETTING_STARTED.en.md#mobile-shell-050-glass-modern).
+
 Open `http://127.0.0.1:3000`. Deterministic Reconstruction works without provider credentials; the optional online assistant boundary is configured separately.
 
 ### Minimal repository verification

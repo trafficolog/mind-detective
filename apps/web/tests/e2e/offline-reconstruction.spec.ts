@@ -13,7 +13,7 @@ test('preloaded PWA continues reconstruction and Search deterministically while 
     }
   })
 
-  await page.goto('http://127.0.0.1:3002/')
+  await page.goto('http://127.0.0.1:3002/lab')
   await page.evaluate(async () => {
     if (!('serviceWorker' in navigator)) throw new Error('MD_WEB_SERVICE_WORKER_UNAVAILABLE')
     await navigator.serviceWorker.ready
@@ -42,7 +42,7 @@ test('preloaded PWA continues reconstruction and Search deterministically while 
     page.evaluate(() => window.location.reload()),
   ])
 
-  await expect(page).toHaveURL(new RegExp(`/cases/${caseId}$`))
+  await expect(page).toHaveURL(new RegExp(`/lab/cases/${caseId}$`))
   await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   await expect(page.getByTestId('free-account-saved')).toContainText(freeAccount)
 

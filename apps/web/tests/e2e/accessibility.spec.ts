@@ -5,7 +5,7 @@ test('active case does not steal keyboard focus and fits narrow mobile viewport'
   await page.setViewportSize({ width: 320, height: 720 })
   const caseValue = caseFixture()
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('case-shell')).toBeVisible()
   expect(await page.evaluate(() => document.activeElement?.tagName)).toBe('BODY')
@@ -22,7 +22,7 @@ test('active case does not steal keyboard focus and fits narrow mobile viewport'
 test('modal traps focus closes on Escape and restores trigger focus', async ({ page }) => {
   const caseValue = caseFixture()
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   const trigger = page.getByTestId('reject-action')
   await trigger.focus()

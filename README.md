@@ -181,6 +181,8 @@ pnpm --dir apps/web dev --host 127.0.0.1 --port 3000
 
 Откройте `http://127.0.0.1:3000`. Deterministic Reconstruction работает без provider credentials; optional online assistant boundary настраивается отдельно.
 
+С версии 0.5.0 (в разработке) по адресу `/` открывается мобильная оболочка Glass Modern: вещь или фото/файл, голосовой старт, работа без агента или с вашим сервером n8n (Настройки → Сервер ассистента). Прежняя оболочка и evaluation-стенд — на `/lab`. Опубликованная версия для телефона (после включения GitHub Pages и merge в `main`): https://trafficolog.github.io/mind-detective/. Режимы запуска: [Getting Started](docs/GETTING_STARTED.md#мобильная-оболочка-050-glass-modern).
+
 ### Минимальная проверка репозитория
 
 ```bash

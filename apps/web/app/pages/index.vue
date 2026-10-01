@@ -1,80 +1,91 @@
 <script setup lang="ts">
-import type { CaseV2 } from '~/lib/api/contracts'
-import { importCase } from '~/lib/storage/exportImport'
+import logoMark from '~/assets/brand/logo-mark.svg'
+import splashSphere from '~/assets/brand/splash-sphere.png'
+import { homeSummary } from '~/lib/mobile/viewModel'
 
-const repository = useCaseRepository()
-const loading = ref(true)
-const caseRouteReady = ref(false)
-const importPending = ref(false)
-const importMessage = ref<string | null>(null)
+const { settings, update } = useMobileSettings()
+const store = useMobileCases()
+const step = ref<'splash' | 'onb'>('splash')
 
-async function prepareCaseRoute(): Promise<void> {
-  await preloadRouteComponents('/cases/offline-preload')
-  caseRouteReady.value = true
+onMounted(() => { void store.ensureLoaded() })
+
+const summary = computed(() => homeSummary(store.cases.value))
+const onbItems = [
+  { icon: 'notebook-pen', title: 'Рассказ дословно', body: 'Ваш рассказ сохраняется как есть и не становится фактом автоматически.' },
+  { icon: 'waypoints', title: 'Подтверждённое и неизвестное', body: 'Неизвестные интервалы и противоречия остаются на виду.' },
+  { icon: 'search', title: 'Проверки по шагам', body: 'Вещь, фото или файл: журнал хранит место или источник, способ и результат каждой проверки.' },
+]
+
+function finishOnboarding(): void {
+  update({ onboarded: true })
 }
 
-onMounted(async () => {
-  try {
-    await Promise.all([
-      repository.refresh(),
-      prepareCaseRoute(),
-    ])
-  } finally {
-    loading.value = false
-  }
+async function openActive(): Promise<void> {
+  const active = summary.value.active
+  if (!active) return
+  store.lastCaseId.value = active.case_id
+  await navigateTo({ path: `/cases/${active.case_id}`, query: { tab: active.current_mode === 'search' ? 'search' : 'reconstruction' } })
+}
+
+const activeIcon = computed(() => {
+  const active = summary.value.active
+  return active ? (active.current_mode === 'search' ? 'search' : 'waypoints') : 'folder'
 })
-
-async function handleCreated(caseValue: CaseV2): Promise<void> {
-  if (!caseRouteReady.value) await prepareCaseRoute()
-  await navigateTo(`/cases/${caseValue.case_id}`)
-}
-
-async function handleImport(event: Event): Promise<void> {
-  const input = event.currentTarget as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
-  importPending.value = true
-  importMessage.value = null
-  try {
-    const imported = await importCase(file)
-    await repository.put(imported)
-    importMessage.value = 'Импорт завершён. Дело сохранено локально.'
-    if (!caseRouteReady.value) await prepareCaseRoute()
-    await navigateTo(`/cases/${imported.case_id}`)
-  } catch {
-    importMessage.value = 'Не удалось импортировать дело: файл или версия схемы не поддерживается.'
-  } finally {
-    importPending.value = false
-    input.value = ''
-  }
-}
 </script>
 
 <template>
-  <main class="home-screen" data-testid="home-screen">
-    <section class="hero-panel">
-      <p class="eyebrow">MIND Detective</p>
-      <h1>Ищите вещь системно, а не по кругу</h1>
-      <p class="lede">
-        Зафиксируем, что уже известно и проверено, затем выберем один полезный следующий шаг.
-      </p>
-      <div v-if="caseRouteReady" data-testid="offline-route-ready">
-        <CreateCaseForm @created="handleCreated" />
+  <div v-if="!settings.onboarded && step === 'splash'" class="mm-screen" data-testid="screen-splash" style="padding-bottom:28px;gap:20px">
+    <div style="margin-top:28px;font-size:56px;line-height:60px;font-weight:500;letter-spacing:-0.02em">Mind<br>Detective</div>
+    <div style="font-size:18px;line-height:26px;color:#587196;max-width:300px">Превращаем фрагменты в проверяемый контекст.</div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:240px">
+      <img :src="splashSphere" alt="" style="max-width:100%;max-height:300px;object-fit:contain">
+    </div>
+    <div style="height:6px;border-radius:99px;background:linear-gradient(90deg,#4AEEFC,#0B86EA)" />
+    <div style="font-size:15px;color:#587196">Готово к работе офлайн</div>
+    <MdButton size="lg" block icon-right="arrow-right" data-testid="splash-start" @click="step = 'onb'">Начать</MdButton>
+  </div>
+
+  <div v-else-if="!settings.onboarded" class="mm-screen" data-testid="screen-onboarding" style="gap:16px;padding-bottom:28px">
+    <div style="margin-top:20px"><img :src="logoMark" alt="" style="width:48px;height:48px"></div>
+    <h1 style="margin:8px 0 0;font-size:36px;line-height:42px;font-weight:700;letter-spacing:-0.02em;text-wrap:pretty">Ищите потерянное по шагам, а не по кругу</h1>
+    <div style="font-size:16px;line-height:24px;color:#587196;text-wrap:pretty">Зафиксируем, что уже известно и проверено, затем выберем один полезный следующий шаг.</div>
+    <MdGlassCard :padding="8">
+      <div style="display:grid">
+        <div v-for="o in onbItems" :key="o.title" style="display:flex;gap:14px;align-items:flex-start;padding:14px 12px">
+          <div class="mm-tile" style="width:40px;height:40px;border-radius:14px;background:#E3F1FF;color:#0B86EA"><MdIcon :name="o.icon" :size="20" /></div>
+          <div style="display:grid;gap:3px"><strong style="font-size:16px;line-height:22px;font-weight:650">{{ o.title }}</strong><span style="font-size:14px;line-height:20px;color:#587196">{{ o.body }}</span></div>
+        </div>
       </div>
-      <p v-else class="muted" aria-live="polite">Подготавливаем локальный поиск…</p>
-    </section>
+    </MdGlassCard>
+    <div style="flex:1" />
+    <div class="mm-privacy-line"><MdIcon name="shield-check" :size="16" /><span>Канонические данные дела хранятся на этом устройстве.</span></div>
+    <MdButton size="lg" block icon-right="arrow-right" data-testid="onboarding-finish" @click="finishOnboarding">Понятно, начать</MdButton>
+  </div>
 
-    <p v-if="loading" class="muted" aria-live="polite">Загружаем локальные дела…</p>
-    <CaseList v-else :cases="repository.cases.value" />
-
-    <aside class="privacy-note" data-testid="home-storage-actions">
-      <strong>Локальные данные</strong>
-      <p>Дела сохраняются в этом браузере. Облачной копии по умолчанию нет.</p>
-      <label class="secondary-action" for="case-import" :aria-busy="importPending">
-        {{ importPending ? 'Проверяем файл…' : 'Импортировать дело из JSON' }}
-      </label>
-      <input id="case-import" class="visually-hidden" data-testid="case-import" type="file" accept="application/json,.json" :disabled="importPending" @change="handleImport">
-      <p v-if="importMessage" role="status">{{ importMessage }}</p>
-    </aside>
-  </main>
+  <div v-else class="mm-screen" data-testid="screen-home" style="padding-bottom:24px">
+    <MdAppHeader :logo-src="logoMark" subtitle="Системный поиск потерянного" show-settings @settings="navigateTo('/settings')" />
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 16px;min-height:420px">
+      <span class="mm-overline">Новое дело</span>
+      <h1 style="margin:8px 0 0;font-size:34px;line-height:40px;font-weight:700;letter-spacing:-0.02em">Что потерялось?</h1>
+      <div class="mm-mic-ring">
+        <div class="mm-mic-glass">
+          <button type="button" class="mm-mic" aria-label="Рассказать голосом, что потерялось" data-testid="home-voice" @click="navigateTo({ path: '/new', query: { voice: '1' } })">
+            <MdIcon name="mic" :size="56" color="#fff" :stroke-width="2" />
+          </button>
+        </div>
+      </div>
+      <strong style="font-size:17px;line-height:24px;font-weight:650">Нажмите и расскажите, что ищете</strong>
+      <span style="margin-top:6px;font-size:15px;line-height:22px;color:#587196;max-width:290px;text-wrap:pretty">Вещь, фото или файл — вспомним, как всё было, и проверим места и источники по шагам.</span>
+      <div style="margin-top:14px"><MdButton variant="ghost" size="sm" icon="pencil" data-testid="home-write" @click="navigateTo('/new')">Написать вручную</MdButton></div>
+    </div>
+    <MdGlassCard :padding="8">
+      <div style="display:grid;gap:4px">
+        <template v-if="summary.active">
+          <MdListRow :icon="activeIcon" :title="summary.active.item_label" :subtitle="summary.activeSub" chevron data-testid="home-active-case" @click="openActive" />
+          <div style="height:1px;background:rgba(88,113,150,.14);margin:0 12px" />
+        </template>
+        <MdListRow icon="folder" title="Все дела" :subtitle="summary.listSub" chevron data-testid="home-all-cases" @click="navigateTo('/cases')" />
+      </div>
+    </MdGlassCard>
+  </div>
 </template>

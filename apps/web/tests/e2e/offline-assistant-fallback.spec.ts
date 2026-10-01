@@ -13,7 +13,7 @@ test('assistant transport failure falls back locally without reconnect replay', 
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('provider-disclosure')).toBeVisible()
   await expect(page.getByTestId('assistant-offline-fallback')).toBeVisible()
@@ -47,7 +47,7 @@ test('execution contract skew is surfaced while local deterministic mutation rem
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
   await page.getByTestId('switch-to-search').click()
 
   await expect(page.getByTestId('execution-contract-mismatch')).toBeVisible()

@@ -40,7 +40,7 @@ class WebPwaContractTests(unittest.TestCase):
             self.assertIn(f"'{key}'", en)
 
     def test_reconstruction_surface_wires_state_components_to_local_command_boundary(self):
-        page = (ROOT / "apps/web/app/pages/cases/[id].vue").read_text(encoding="utf-8")
+        page = (ROOT / "apps/web/app/pages/lab/cases/[id].vue").read_text(encoding="utf-8")
         panel = (ROOT / "apps/web/app/components/reconstruction/ReconstructionPanel.vue").read_text(encoding="utf-8")
         composable = (ROOT / "apps/web/app/composables/useReconstruction.ts").read_text(encoding="utf-8")
 
@@ -60,8 +60,10 @@ class WebPwaContractTests(unittest.TestCase):
             (icon["src"], icon["sizes"], icon["type"], icon.get("purpose"))
             for icon in manifest["icons"]
         }
-        self.assertIn(("/icon-192.png", "192x192", "image/png", "any maskable"), icons)
-        self.assertIn(("/icon-512.png", "512x512", "image/png", "any maskable"), icons)
+        self.assertIn(("icon-192.png", "192x192", "image/png", "any maskable"), icons)
+        self.assertIn(("icon-512.png", "512x512", "image/png", "any maskable"), icons)
+        # Relative to the manifest URL so the PWA also installs from a sub-path (GitHub Pages).
+        self.assertEqual((manifest["start_url"], manifest["scope"]), ("./", "./"))
 
         self.assertEqual(png_dimensions(PUBLIC / "icon-192.png"), (192, 192))
         self.assertEqual(png_dimensions(PUBLIC / "icon-512.png"), (512, 512))

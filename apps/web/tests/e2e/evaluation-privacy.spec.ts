@@ -18,7 +18,7 @@ async function startStagedCase(page: Page, slot: number, label: string): Promise
 test('post-case ratings store one bounded categorical event without free text', async ({ page }) => {
   const { caseId } = await startStagedCase(page, 1, 'rating privacy item')
   await seedCase(page, caseFixture({ case_id: caseId }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await page.getByTestId('found-case').click()
   await page.getByTestId('close-unresolved').click()
   await expect(page.getByTestId('case-outcome')).toBeVisible()
@@ -38,7 +38,7 @@ test('post-case ratings store one bounded categorical event without free text', 
 test('abandon ends only evaluation participation and reopening Case cannot append operational events', async ({ page }) => {
   const { caseId } = await startStagedCase(page, 1, 'abandon privacy item')
   await seedCase(page, caseFixture({ case_id: caseId }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('evaluation-abandon')).toBeVisible()
 
   await page.getByTestId('evaluation-abandon').click()
@@ -49,7 +49,7 @@ test('abandon ends only evaluation participation and reopening Case cannot appen
   expect((await storedEvaluationEvents(page)).filter(event => event.event === 'case_abandoned')).toHaveLength(1)
 
   const eventCount = (await storedEvaluationEvents(page)).length
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('case-page')).toBeVisible()
   await expect.poll(async () => (await storedEvaluationEvents(page)).length).toBe(eventCount)
 })
@@ -57,7 +57,7 @@ test('abandon ends only evaluation participation and reopening Case cannot appen
 test('staged observer stores exactly the fixed proposal safety booleans', async ({ page }) => {
   const { caseId, sessionId } = await startStagedCase(page, 1, 'observer privacy item')
   await seedCase(page, caseFixture({ case_id: caseId }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toBeVisible()
   expect((await storedEvaluationEvents(page)).some(event => event.event === 'next_action_shown')).toBe(true)
 
@@ -112,7 +112,7 @@ test('explicit JSON and CSV evaluation exports contain no Case content and issue
     candidates: [candidate('candidate-1', privateTarget)],
     interaction_journal: [journalEntry('private-journal', 'search', privateReason)],
   }))
-  await page.goto(`/cases/${caseId}`)
+  await page.goto(`/lab/cases/${caseId}`)
   await expect(page.getByTestId('next-action-target')).toHaveText(privateTarget)
   await page.goto('/evaluation')
   await expect(page.getByTestId('evaluation-export-actions')).toBeVisible()

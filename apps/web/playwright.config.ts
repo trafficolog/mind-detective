@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const assistantSpec = /(?:offline-assistant-fallback|assistant-proposal)\.spec\.ts/
-const offlinePwaSpec = /offline-vertical-slice\.spec\.ts/
+const offlinePwaSpec = /(?:offline-vertical-slice|mobile-offline)\.spec\.ts/
 const devSpecsToIgnore = [assistantSpec, offlinePwaSpec]
 
 export default defineConfig({
@@ -72,6 +72,7 @@ export default defineConfig({
       url: 'http://127.0.0.1:3000',
       env: {
         NUXT_PUBLIC_MIND_DETECTIVE_EVALUATION: '1',
+        NUXT_IGNORE_LOCK: '1',
       },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
@@ -82,6 +83,7 @@ export default defineConfig({
       url: 'http://127.0.0.1:3001',
       env: {
         NUXT_PUBLIC_MIND_DETECTIVE_ARM: 'assistant',
+        NUXT_IGNORE_LOCK: '1',
       },
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,

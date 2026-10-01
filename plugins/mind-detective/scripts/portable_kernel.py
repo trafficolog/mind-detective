@@ -18,9 +18,48 @@ _INTERACTION_MODES = frozenset({"unselected", "reconstruction", "search"})
 _STATEMENT_TYPES = frozenset(
     {"recollection", "habit", "observation", "hypothesis", "search_suggestion"}
 )
-_SEARCH_METHODS = frozenset(
-    {"reported_check", "glance", "visual_systematic", "empty_and_check", "tactile"}
+_PHYSICAL_SEARCH_METHODS = frozenset(
+    {
+        "reported_check",
+        "glance",
+        "visual_systematic",
+        "empty_and_check",
+        "tactile",
+        "visual",
+        "hand",
+        "flashlight",
+        "opened",
+        "moved",
+        "asked",
+    }
 )
+# `reported_check` is kind-neutral: a user-reported check without a refined method.
+_DIGITAL_SEARCH_METHODS = frozenset(
+    {"reported_check", "name_search", "date_filter", "browsed", "trash", "shared", "asked"}
+)
+_SEARCH_METHODS = frozenset(
+    {
+        "reported_check",
+        "glance",
+        "visual_systematic",
+        "empty_and_check",
+        "tactile",
+        "visual",
+        "hand",
+        "flashlight",
+        "opened",
+        "moved",
+        "asked",
+        "name_search",
+        "date_filter",
+        "browsed",
+        "trash",
+        "shared",
+    }
+)
+_ITEM_KINDS = frozenset({"physical", "digital"})
+_DIGITAL_KIND_TAG = "item_kind:digital"
+_EVENT_PRECISIONS = frozenset({"exact", "approximate", "unknown"})
 _SEARCH_RESULTS = frozenset({"found", "not_found", "partial", "inaccessible"})
 _FEEDBACK_REASONS = frozenset(
     {"already_checked", "impossible_now", "irrelevant", "unsafe_or_uncomfortable", "other"}
@@ -89,6 +128,8 @@ _ALLOWED_PAYLOAD_KEYS: dict[str, frozenset[str]] = {
         }
     ),
     "refine_search_check": frozenset({"check_id", "method", "inaccessible_parts"}),
+    "add_search_target": frozenset({"statement_id", "target"}),
+    "revise_free_account": frozenset({"entry_id", "text"}),
     "reject_next_action": frozenset({"feedback_id", "candidate_id", "reason"}),
     "pause": frozenset(),
     "resume": frozenset(),
@@ -122,6 +163,34 @@ def create_case(case_id: str, item_label: str, now: str) -> dict[str, object]:
         "interaction_journal": [],
         "action_feedback": [],
     }
+
+
+def _is_blank(value: str) -> bool:
+    return not split_python_whitespace(value)
+
+
+def create_case_with_kind(
+    case_id: str,
+    item_label: str,
+    now: str,
+    item_kind: str,
+) -> dict[str, object]:
+    if not isinstance(item_label, str) or _is_blank(item_label):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "item_label must be a non-blank string")
+    if item_kind not in _ITEM_KINDS:
+        portable_error("MD_CASE_ITEM_KIND_INVALID", "item_kind must be physical or digital")
+    case = create_case(case_id, item_label, now)
+    if item_kind == "digital":
+        constraints = _as_list(case["constraints"], "constraints")
+        constraints.append(_DIGITAL_KIND_TAG)
+    return case
+
+
+def item_kind_json(case: dict[str, object]) -> str:
+    for tag in _as_list(case.get("constraints", []), "constraints"):
+        if tag == _DIGITAL_KIND_TAG:
+            return "digital"
+    return "physical"
 
 
 def _required_str(data: dict[str, object], key: str) -> str:
@@ -282,8 +351,8 @@ def record_free_account_json(
     now: str,
 ) -> dict[str, object]:
     result = _primitive_copy(case, now)
-    if _required_str(case, "current_mode") != "reconstruction":
-        portable_error("MD_RECON_MODE_REQUIRED", "free account requires reconstruction mode")
+    if _required_str(case, "current_mode") not in {"reconstruction", "search"}:
+        portable_error("MD_RECON_MODE_REQUIRED", "free account requires a selected mode")
     if not isinstance(entry_id, str) or not entry_id:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "entry_id must be a non-empty string")
     if not isinstance(text, str) or not text:
@@ -297,6 +366,38 @@ def record_free_account_json(
             "author": "user",
             "mode": "reconstruction",
             "entry_type": "free_account",
+            "text": text,
+            "created_at": now,
+            "statement_ids": [],
+            "search_check_ids": [],
+        }
+    )
+    return result
+
+
+def revise_free_account_json(
+    case: dict[str, object],
+    entry_id: str,
+    text: str,
+    now: str,
+) -> dict[str, object]:
+    result = _primitive_copy(case, now)
+    if not has_free_account_json(case):
+        portable_error(
+            "MD_RECON_FREE_ACCOUNT_REQUIRED",
+            "record a free account before revising it",
+        )
+    if not isinstance(entry_id, str) or not entry_id:
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "entry_id must be a non-empty string")
+    if not isinstance(text, str) or _is_blank(text):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "text must be a non-blank string")
+    journal = _as_list(result["interaction_journal"], "interaction_journal")
+    journal.append(
+        {
+            "id": entry_id,
+            "author": "user",
+            "mode": "reconstruction",
+            "entry_type": "free_account_revision",
             "text": text,
             "created_at": now,
             "statement_ids": [],
@@ -568,6 +669,9 @@ def derive_timeline_json(
                 unknown_intervals.append(
                     f"statement:{_required_str(statement, 'id')}:{limitation}"
                 )
+    for normalized_event in normalized_events:
+        if normalized_event["time_precision"] == "unknown":
+            unknown_intervals.append(f"event:{normalized_event['id']}")
 
     contradictions: list[str] = []
     if (
@@ -598,6 +702,23 @@ def derive_timeline_json(
                 elif ordering > 0:
                     _append_unique(contradictions, "MD_TIME_ORDER_CONTRADICTION")
 
+    first_label_by_time: dict[str, str] = {}
+    conflicting_times: list[str] = []
+    for normalized_event in normalized_events:
+        if normalized_event["time_precision"] != "exact":
+            continue
+        exact_time = normalized_event["event_time"]
+        if not isinstance(exact_time, str):
+            continue
+        label_key = _normalize_candidate_target(_required_str(normalized_event, "label"))
+        known_label = first_label_by_time.get(exact_time)
+        if known_label is None:
+            first_label_by_time[exact_time] = label_key
+        elif known_label != label_key:
+            _append_unique(conflicting_times, exact_time)
+    for conflicting_time in conflicting_times:
+        _append_unique(contradictions, f"MD_TIME_SAME_EXACT_TIME:{conflicting_time}")
+
     return {
         "last_supported_interaction_id": last_supported_interaction_id,
         "first_noticed_missing_id": first_noticed_missing_id,
@@ -626,6 +747,33 @@ def set_timeline_json(
     return result
 
 
+def _is_clock_time(value: str) -> bool:
+    if value[2:3] != ":" or value[5:] != "":
+        return False
+    hours = _decimal_two(value[0:2])
+    minutes = _decimal_two(value[3:5])
+    if hours is None or minutes is None:
+        return False
+    return hours <= 23 and minutes <= 59
+
+
+def _validate_event_times(events: list[dict[str, object]]) -> None:
+    for raw_event in events:
+        timeline_event = _as_dict(raw_event, "timeline_event")
+        precision = timeline_event.get("time_precision")
+        event_time = timeline_event.get("event_time")
+        if not isinstance(precision, str) or precision not in _EVENT_PRECISIONS:
+            portable_error("MD_RECON_EVENT_TIME_INVALID", "invalid time_precision")
+        if precision == "unknown":
+            if event_time is not None:
+                portable_error("MD_RECON_EVENT_TIME_INVALID", "unknown time must be null")
+            continue
+        if not isinstance(event_time, str):
+            portable_error("MD_RECON_EVENT_TIME_INVALID", "event_time is required")
+        if not _is_clock_time(event_time) and _timestamp_parts(event_time) is None:
+            portable_error("MD_RECON_EVENT_TIME_INVALID", "event_time must be HH:MM or a timestamp")
+
+
 def rebuild_timeline_json(
     case: dict[str, object],
     events: list[dict[str, object]],
@@ -637,13 +785,14 @@ def rebuild_timeline_json(
     _ensure_mutable(case)
     if _required_str(case, "lifecycle") != "active":
         portable_error("MD_CASE_STATE", "timeline rebuild requires an active case")
-    if _required_str(case, "current_mode") != "reconstruction":
-        portable_error("MD_RECON_MODE_REQUIRED", "timeline rebuild requires reconstruction mode")
+    if _required_str(case, "current_mode") not in {"reconstruction", "search"}:
+        portable_error("MD_RECON_MODE_REQUIRED", "timeline rebuild requires a selected mode")
     if not has_free_account_json(case):
         portable_error(
             "MD_RECON_FREE_ACCOUNT_REQUIRED",
             "record a free account before rebuilding the reconstruction timeline",
         )
+    _validate_event_times(events)
     return set_timeline_json(
         case,
         events,
@@ -820,6 +969,8 @@ def _web_journal_entry(
 
 def _statement_from_payload(payload: dict[str, object], now: str) -> dict[str, object]:
     source = _required_str(payload, "source")
+    if _is_blank(_required_str(payload, "original_text")):
+        portable_error("MD_WEB_COMMAND_PAYLOAD", "original_text must be non-blank")
     if source != "user":
         portable_error("MD_WEB_STATEMENT_SOURCE", "Web statement commands must be user-originated")
     statement_type = _required_str(payload, "statement_type")
@@ -838,7 +989,11 @@ def _statement_from_payload(payload: dict[str, object], now: str) -> dict[str, o
     }
 
 
-def _check_from_payload(payload: dict[str, object], now: str) -> dict[str, object]:
+def _check_from_payload(
+    payload: dict[str, object],
+    now: str,
+    item_kind: str,
+) -> dict[str, object]:
     method = payload.get("method", "reported_check")
     if not isinstance(method, str):
         portable_error("MD_WEB_COMMAND_PAYLOAD", "method must be a string")
@@ -846,6 +1001,10 @@ def _check_from_payload(payload: dict[str, object], now: str) -> dict[str, objec
         portable_error("MD_SEARCH_METHOD_INVALID", "inaccessible is not a Web check method")
     if method not in _SEARCH_METHODS:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search method")
+    if item_kind == "digital" and method not in _DIGITAL_SEARCH_METHODS:
+        portable_error("MD_SEARCH_METHOD_KIND", "method is not available for digital cases")
+    if item_kind != "digital" and method not in _PHYSICAL_SEARCH_METHODS:
+        portable_error("MD_SEARCH_METHOD_KIND", "method is not available for physical cases")
     search_result = payload.get("result", "not_found")
     if not isinstance(search_result, str) or search_result not in _SEARCH_RESULTS:
         portable_error("MD_WEB_COMMAND_PAYLOAD", "invalid search result")
@@ -886,6 +1045,51 @@ def apply_command(
 
     if command_type == "set_mode":
         return set_mode_json(case, _required_str(payload, "mode"), now)
+    if command_type == "revise_free_account":
+        return revise_free_account_json(
+            case,
+            _required_str(payload, "entry_id"),
+            _required_str(payload, "text"),
+            now,
+        )
+    if command_type == "add_search_target":
+        _ensure_mutable(case)
+        if _required_str(case, "current_mode") != "search":
+            portable_error("MD_SEARCH_MODE_REQUIRED", "search targets require search mode")
+        target = " ".join(split_python_whitespace(_required_str(payload, "target")))
+        if not target:
+            portable_error("MD_WEB_COMMAND_PAYLOAD", "target must be non-blank")
+        normalized_target = _normalize_candidate_target(target)
+        for raw_candidate in _as_list(case["candidates"], "candidates"):
+            existing = _as_dict(raw_candidate, "candidate")
+            if _normalize_candidate_target(_required_str(existing, "target")) == normalized_target:
+                portable_error("MD_SEARCH_TARGET_EXISTS", "search target already exists")
+        statement_id = _required_str(payload, "statement_id")
+        target_statement: dict[str, object] = {
+            "id": statement_id,
+            "source": "user",
+            "statement_type": "search_suggestion",
+            "original_text": target,
+            "recorded_at": now,
+            "event_time": None,
+            "user_confirmation": True,
+            "supporting_evidence_ids": [],
+            "limitations": [],
+        }
+        result = add_statement_json(case, target_statement, now)
+        result = _append_search_candidate(result, statement_id=statement_id, target=target)
+        return append_journal_entry_json(
+            result,
+            _web_journal_entry(
+                command_id=command_id,
+                mode="search",
+                entry_type="search_target",
+                text=target,
+                now=now,
+                statement_ids=[statement_id],
+            ),
+            now,
+        )
     if command_type == "record_free_account":
         return record_free_account_json(
             case,
@@ -932,8 +1136,11 @@ def apply_command(
             now,
         )
     if command_type == "record_search_check":
+        _ensure_mutable(case)
         mode = _journal_mode(case)
-        check = _check_from_payload(payload, now)
+        if mode != "search":
+            portable_error("MD_SEARCH_MODE_REQUIRED", "search checks require search mode")
+        check = _check_from_payload(payload, now, item_kind_json(case))
         result = record_search_check_json(case, check, now)
         return append_journal_entry_json(
             result,
@@ -1134,8 +1341,10 @@ __all__ = [
     "close_found_json",
     "close_unresolved_json",
     "create_case",
+    "create_case_with_kind",
     "derive_timeline_json",
     "has_free_account_json",
+    "item_kind_json",
     "pause_json",
     "rebuild_timeline_json",
     "record_action_feedback_json",
@@ -1143,6 +1352,7 @@ __all__ = [
     "record_search_check_json",
     "refine_search_check_json",
     "resume_json",
+    "revise_free_account_json",
     "select_next_action_json",
     "set_mode_json",
     "set_timeline_json",

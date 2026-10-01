@@ -162,25 +162,16 @@ class PortableReconstructionTimelineTests(unittest.TestCase):
         )
         self.assertEqual(result["updated_at"], "2026-09-12T08:10:00+03:00")
 
-    def test_rebuild_requires_reconstruction_mode(self):
+    def test_rebuild_requires_selected_mode(self):
+        # 0.5.0 (ADR 016): rebuild is allowed in reconstruction and search modes.
         case = create_case("case-search", "ключи", "2026-09-12T08:00:00+03:00")
-        case = apply_command(
-            case,
-            command(
-                "set_mode",
-                command_id="cmd-search",
-                expected="2026-09-12T08:00:00+03:00",
-                now="2026-09-12T08:01:00+03:00",
-                payload={"mode": "search"},
-            ),
-        )
         with self.assertRaises(PortableKernelError) as ctx:
             apply_command(
                 case,
                 command(
                     "rebuild_timeline",
                     command_id="cmd-timeline",
-                    expected="2026-09-12T08:01:00+03:00",
+                    expected="2026-09-12T08:00:00+03:00",
                     now="2026-09-12T08:02:00+03:00",
                     payload={"events": []},
                 ),

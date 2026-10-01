@@ -1,31 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/web-manifest-combined.json",
-  "name": "MIND Detective",
-  "short_name": "MIND Detective",
-  "description": "Систематический помощник поиска потерянных вещей с локальным хранением дела.",
-  "start_url": "/",
-  "scope": "/",
+  "name": "Mind Detective",
+  "short_name": "Mind Detective",
+  "description": "Системный поиск потерянного: вещь, фото или файл. Дело хранится локально на устройстве.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#f4f6f8",
-  "theme_color": "#f4f6f8",
+  "background_color": "#EEF7FF",
+  "theme_color": "#EEF7FF",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "lang": "ru"
 }

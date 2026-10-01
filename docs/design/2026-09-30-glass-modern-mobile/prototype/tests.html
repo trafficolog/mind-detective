@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Domain tests</title>
+<style>body{font:14px/1.5 system-ui;margin:24px;color:#0B1733}.ok{color:#1a7f4b}.bad{color:#b3261e;font-weight:600}h1{font-size:20px}</style></head>
+<body><h1>domain.js — TDD-набор (см. docs/TEST_CASES.md)</h1><pre id="out"></pre>
+<script type="module">
+import * as D from './domain.js';
+const out=document.getElementById('out');let pass=0,fail=0;
+const eq=(a,b)=>{if(JSON.stringify(a)!==JSON.stringify(b))throw new Error(JSON.stringify(a)+' ≠ '+JSON.stringify(b))};
+const throws=(f,code)=>{try{f()}catch(e){if(e.message===code)return;throw new Error('ожидали '+code+', получили '+e.message)}throw new Error('ожидали ошибку '+code)};
+const t=(id,name,f)=>{try{f();pass++;out.innerHTML+=`<span class="ok">✓ ${id} ${name}</span>\n`}catch(e){fail++;out.innerHTML+=`<span class="bad">✗ ${id} ${name}: ${e.message}</span>\n`}};
+const base=()=>D.createCase([],'Ключи');
+const srch=()=>D.setMode(base(),'search');
+
+t('T01','пустое название отклоняется',()=>throws(()=>D.createCase([],'  '),'title_required'));
+t('T02','номер дела растёт',()=>eq(D.createCase([{num:4}],'Очки').num,5));
+t('T03','свободный рассказ хранится дословно',()=>eq(D.setFreeAccount(base(),'  ну…  вышел \n').freeAccount,'  ну…  вышел \n'));
+t('T04','сведение требует текст и тип',()=>{throws(()=>D.addStatement(base(),{type:'recollection',text:' '}),'text_required');throws(()=>D.addStatement(base(),{type:'x',text:'a'}),'type_invalid')});
+t('T05','неизвестное время допустимо',()=>eq(D.deriveTimeline(D.addEvent(base(),{title:'Дорога',precision:'unknown'})).unknowns.length,1));
+t('T06','точное время должно быть валидным',()=>throws(()=>D.addEvent(base(),{title:'A',time:'25:99',precision:'exact'}),'time_invalid'));
+t('T07','timeline сортируется, неизвестные в конце',()=>{let c=base();c=D.addEvent(c,{title:'B',precision:'unknown'});c=D.addEvent(c,{title:'C',time:'9:30',precision:'exact'});c=D.addEvent(c,{title:'A',time:'08:00',precision:'exact'});eq(D.deriveTimeline(c).items.map(e=>e.title),['A','C','B'])});
+t('T08','противоречие: одно точное время, разные места',()=>{let c=base();c=D.addEvent(c,{title:'Офис',time:'08:00',precision:'exact'});c=D.addEvent(c,{title:'Кафе',time:'08:00',precision:'exact'});const d=D.deriveTimeline(c);eq(d.contradictions.length,1);eq(d.items.every(i=>i.status==='contradiction'),true)});
+t('T09','приблизительное время не даёт противоречий',()=>{let c=base();c=D.addEvent(c,{title:'Офис',time:'08:00',precision:'approximate'});c=D.addEvent(c,{title:'Кафе',time:'08:00',precision:'approximate'});eq(D.deriveTimeline(c).contradictions.length,0)});
+t('T10','проверка невозможна до явного перехода в поиск',()=>throws(()=>D.addCheck(base(),{place:'A',method:'hand',result:'not-found'}),'not_in_search'));
+t('T11','проверка сохраняет метод и добавляет зону',()=>{const c=D.addCheck(srch(),{place:'Рюкзак',method:'visual',result:'not-found'});eq(c.zones.length,1);eq(c.checks[0].method,'visual')});
+t('T12','повторная проверка помечается repeat',()=>{let c=D.addCheck(srch(),{place:'Рюкзак',method:'visual',result:'not-found'});c=D.addCheck(c,{place:'рюкзак',method:'hand',result:'not-found'});eq(c.checks.map(k=>k.repeat),[false,true])});
+t('T13','неполная проверка не засчитывается в прогресс',()=>{const c=D.addCheck(srch(),{place:'A',method:'hand',result:'incomplete'});eq(D.progress(c),{done:0,total:1})});
+t('T14','следующая зона — первая непроверенная',()=>{let c=D.addZone(D.addZone(srch(),'A'),'B');c=D.addCheck(c,{place:'A',method:'hand',result:'not-found'});eq(D.nextZone(c).name,'B')});
+t('T15','результат «нашёл» закрывает дело',()=>{const c=D.addCheck(srch(),{place:'A',method:'hand',result:'found'});eq(D.caseStatus(c),'found')});
+t('T16','закрытое дело неизменяемо',()=>throws(()=>D.addZone(D.closeCase(srch(),'closed'),'X'),'case_closed'));
+t('T17','дубликат зоны отклоняется',()=>throws(()=>D.addZone(D.addZone(srch(),'A'),'a'),'zone_exists'));
+t('T18','пауза переключается, статус paused',()=>eq(D.caseStatus(D.togglePause(base())),'paused'));
+t('T19','экспорт → импорт без потерь',()=>{const c=D.demoCase();const r=D.parseImport(D.exportCase(c),[c]);eq(r.checks,c.checks);eq(r.title,c.title);eq(r.id===c.id,false)});
+t('T20','неверный JSON и схема отклоняются',()=>{throws(()=>D.parseImport('{',[]),'import_invalid');throws(()=>D.parseImport('{"schema":"x"}',[]),'import_invalid')});
+t('T21','исходный объект не мутируется',()=>{const c=base();Object.freeze(c);D.setFreeAccount(c,'a');D.addEvent(c,{title:'A',precision:'unknown'})});
+const ta=async(id,name,f)=>{try{await f();pass++;out.innerHTML+=`<span class="ok">✓ ${id} ${name}</span>\n`}catch(e){fail++;out.innerHTML+=`<span class="bad">✗ ${id} ${name}: ${e.message}</span>\n`}};
+const sc=()=>{let c=D.setFreeAccount(srch(),'секретный рассказ');c=D.addStatement(c,{type:'recollection',text:'Ключи в руке'});c=D.addStatement(c,{type:'hypothesis',text:'Может, в машине'});return D.addZone(D.addZone(c,'A'),'B')};
+t('T22','контекст ассистента минимизирован: без рассказа и гипотез',()=>{const x=D.assistantContext(sc());eq(JSON.stringify(x).includes('секретный'),false);eq(x.confirmed,['Ключи в руке'])});
+t('T23','guard принимает JSON внутри текста',()=>eq(D.guardProposal('Вот: ```json {"kind":"check","text":"Проверьте карман пальто","place":"Карман пальто"} ```',sc()).place,'Карман пальто'));
+t('T24','guard отклоняет вероятности и проценты',()=>{throws(()=>D.guardProposal('{"kind":"check","text":"Вероятнее всего в машине","place":"Машина"}',sc()),'proposal_rejected');throws(()=>D.guardProposal('{"kind":"question","text":"С точностью 92% это дома?"}',sc()),'proposal_rejected')});
+t('T25','guard отклоняет повтор уже проверенной зоны и check вне поиска',()=>{const c=D.addCheck(sc(),{place:'A',method:'hand',result:'not-found'});throws(()=>D.guardProposal('{"kind":"check","text":"Проверьте A ещё раз","place":"A"}',c),'proposal_rejected');throws(()=>D.guardProposal('{"kind":"check","text":"Проверьте шкаф","place":"Шкаф"}',base()),'proposal_rejected')});
+t('T26','fallback в поиске — первая непроверенная зона',()=>eq(D.fallbackProposal(sc()).place,'A'));
+t('T27','fallback в реконструкции спрашивает про неизвестное',()=>eq(D.fallbackProposal(D.addEvent(base(),{title:'Дорога',precision:'unknown'})).text.includes('Дорога'),true));
+await ta('T28','ошибка сети → fallback, source=fallback',async()=>{const p=await D.proposalFlow(sc(),async()=>{throw new Error('net')});eq([p.source,p.reason],['fallback','unavailable'])});
+await ta('T29','плохой ответ модели → fallback rejected',async()=>{const p=await D.proposalFlow(sc(),async()=>'{"kind":"check","text":"Скорее всего в кармане","place":"Карман"}');eq([p.source,p.reason],['fallback','rejected'])});
+await ta('T30','валидный ответ → source=assistant',async()=>{const p=await D.proposalFlow(sc(),async()=>'{"kind":"check","text":"Проверьте карман пальто","place":"Карман пальто"}');eq(p.source,'assistant')});
+await ta('T31','таймаут → fallback',async()=>{const p=await D.proposalFlow(sc(),()=>new Promise(()=>{}),20);eq(p.source,'fallback')});
+const fakeRes=(ok,body)=>({ok,json:async()=>body});
+const blob=()=>new Blob(['x'],{type:'audio/webm'});
+const rej=async(f,code)=>{try{await f()}catch(e){eq(e.message,code);return}throw new Error('нет ошибки')};
+t('T32','STT-конфиг: https или localhost, иначе отклоняется',()=>{eq(D.validateSttConfig({url:'https://a.b/v1/audio/transcriptions'}).model,'whisper-1');eq(D.sttReady({url:'http://localhost:8000/x'}),true);eq(D.sttReady({url:'http://evil.com/x'}),false);eq(D.sttReady({url:''}),false)});
+await ta('T33','transcribe: multipart с моделью, языком и ключом',async()=>{let seen;const txt=await D.transcribe({url:'https://a.b/t',key:'k'},blob(),async(u,i)=>{seen=i;return fakeRes(true,{text:' привет  '})});eq(txt,'привет');eq(seen.headers.Authorization,'Bearer k');eq([seen.body.get('model'),seen.body.get('language')],['whisper-1','ru'])});
+await ta('T34','сеть / HTTP-ошибка → stt_unavailable',async()=>{await rej(()=>D.transcribe({url:'https://a.b/t'},blob(),async()=>{throw new Error('x')}),'stt_unavailable');await rej(()=>D.transcribe({url:'https://a.b/t'},blob(),async()=>fakeRes(false,{})),'stt_unavailable')});
+await ta('T35','пустой ответ или запись → stt_empty',async()=>{await rej(()=>D.transcribe({url:'https://a.b/t'},blob(),async()=>fakeRes(true,{text:' '})),'stt_empty');await rej(()=>D.transcribe({url:'https://a.b/t'},new Blob([]),async()=>fakeRes(true,{text:'a'})),'stt_empty')});
+const dig=()=>D.setMode(D.createCase([],'Фото','reconstruction',Date.now(),'digital'),'search');
+t('T36','тип дела по умолчанию — физический; неверный тип отклоняется',()=>{eq(D.kindOf(base()),'physical');throws(()=>D.createCase([],'A','search',0,'x'),'kind_invalid')});
+t('T37','способы проверки зависят от типа дела',()=>{eq(D.addCheck(dig(),{place:'Корзина',method:'trash',result:'not-found'}).checks[0].method,'trash');throws(()=>D.addCheck(dig(),{place:'A',method:'flashlight',result:'not-found'}),'method_invalid');throws(()=>D.addCheck(srch(),{place:'A',method:'trash',result:'not-found'}),'method_invalid')});
+t('T38','словарь по типу: место / источник',()=>{eq(D.vocab(base()).place,'место');eq(D.vocab(dig()).place,'источник')});
+t('T39','импорт старого дела без kind → physical',()=>{const c={...base()};delete c.kind;eq(D.parseImport(D.exportCase(c),[]).kind,'physical')});
+t('T40','цифровое дело: fallback и промпт про источники, без доступа к файлам',()=>{eq(D.fallbackProposal(dig()).text.includes('устройство'),true);eq(D.assistantPrompt(dig()).includes('Не проси доступ к файлам'),true)});
+t('T41','демо цифрового дела валидно, прогресс 1 из 3',()=>{const c=D.demoDigitalCase();eq(D.kindOf(c),'digital');eq(D.progress(c),{done:1,total:3})});
+t('T42','toCaseV2: ровно ключи схемы v2, schema const',()=>{const v=D.toCaseV2(D.demoCase());eq(Object.keys(v).sort(),[...D.CASE_V2_KEYS].sort());eq(v.schema,'mind-detective-case/v2')});
+t('T43','toCaseV2: lifecycle из статуса дела',()=>{eq(D.toCaseV2(base()).lifecycle,'active');eq(D.toCaseV2(D.togglePause(base())).lifecycle,'paused');eq(D.toCaseV2(D.closeCase(srch(),'found','current')).lifecycle,'closed_found');eq(D.toCaseV2(D.closeCase(srch(),'closed')).lifecycle,'closed_unresolved')});
+t('T44','toCaseV2: рассказ дословно в interaction_journal, тип цифрового дела в constraints',()=>{const v=D.toCaseV2(D.demoDigitalCase());eq(v.interaction_journal[0].entry_type,'free_account');eq(v.interaction_journal[0].text,D.demoDigitalCase().freeAccount);eq(v.constraints,['item_kind:digital'])});
+t('T45','n8n: эндпоинты из базового адреса, только https/localhost',()=>{const e=D.serverEndpoints({url:'https://n8n.example.com/',token:'t'});eq([e.propose,e.transcribe,e.token],['https://n8n.example.com/webhook/md-propose','https://n8n.example.com/webhook/md-transcribe','t']);eq(D.serverReady({url:'http://x.com'}),false)});
+await ta('T46','n8n propose: отправляет только prompt, возвращает text',async()=>{let seen;const f=D.serverComplete({url:'https://n8n.example.com',token:'t'},async(u,i)=>{seen={u,i};return fakeRes(true,{text:'{"kind":"question","text":"Что было дальше?"}'})});const r=await f('P');eq(JSON.parse(seen.i.body),{prompt:'P'});eq(seen.i.headers.Authorization,'Bearer t');eq(JSON.parse(r).kind,'question')});
+await ta('T47','n8n недоступен → proposalFlow уходит в fallback',async()=>{const p=await D.proposalFlow(D.addZone(srch(),'A'),D.serverComplete({url:'https://n8n.example.com'},async()=>fakeRes(false,{})));eq(p.source,'fallback')});
+out.innerHTML+=`\n<b>${pass} passed, ${fail} failed</b>`;
+</script></body></html>

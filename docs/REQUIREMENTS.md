@@ -69,6 +69,17 @@ Web/PWA реализует физический Search/checklist surface. Пол
 - `MD-WEB-REQ-RECONSTRUCT-09` — RU/EN reconstruction copy имеет exact key parity и эквивалентную safety/privacy semantics. **Status: active.**
 - `MD-WEB-REQ-RECONSTRUCT-10` — Case v2 export/import сохраняет reconstruction state без server validation dependency. **Status: active.**
 
+## Glass Modern mobile 0.5.0
+
+Спецификация: `docs/superpowers/specs/2026-09-30-mind-detective-0.5.0-glass-modern-mobile-design.md`.
+
+- `MD-WEB-REQ-MOBILE-01` — мобильная оболочка проводит дело рассказ → сведения → timeline → явный поиск → проверки → закрытие только через portable-команды; закрытое дело неизменяемо. **Status: active.**
+- `MD-WEB-REQ-MOBILE-02` — тип дела (`item_kind:digital`) и способы проверки по типу обеспечиваются portable kernel. **Status: active.**
+- `MD-WEB-REQ-MOBILE-03` — цифровое дело использует словарь источников и не даёт приложению доступа к файлам пользователя. **Status: active.**
+- `MD-WEB-REQ-MOBILE-04` — ассистент получает минимальный контекст без свободного рассказа и гипотез; предложение не мутирует Case. **Status: active.**
+- `MD-WEB-REQ-MOBILE-05` — сбой, таймаут или отказ guard n8n-ассистента приводит к локальному контрольному списку. **Status: active.**
+- `MD-WEB-REQ-MOBILE-06` — экспорт/импорт Case v2 из мобильной оболочки без серверной зависимости. **Status: active.**
+
 ## Offline deterministic execution 0.3.0
 
 - `MD-OFFLINE-REQ-KERNEL-01` — portable kernel имеет exact versioned contract и JSON-compatible observable surface. **Status: active.**

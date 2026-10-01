@@ -10,6 +10,40 @@ Plugin persistence remains explicit and case-local at `.mind-detective/cases/<ca
 
 `0.4.0` with the deterministic Web Reconstruction Foundation is already published. Any later release publication remains a separate human-authorized publisher gate after exact post-merge `main` CI.
 
+## Mobile shell 0.5.0 (Glass Modern)
+
+The product Web/PWA shell is the mobile interface from `docs/design/2026-09-30-glass-modern-mobile/` (spec: `docs/superpowers/specs/2026-09-30-mind-detective-0.5.0-glass-modern-mobile-design.md`). The previous 0.4.0 shell and the evaluation stand live at `/lab` and `/evaluation`.
+
+### Mode 1 — no agent (fully local)
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --dir apps/web dev --host 0.0.0.0 --port 3000   # development; open from a phone via the computer IP
+pnpm --dir apps/web build                              # static PWA in apps/web/.output/public
+```
+
+Serve `.output/public` from any static HTTPS host (PWA install and microphone need HTTPS or `localhost`). No API or model is needed: reconstruction, search, journal and export/import work offline after the first load; the assistant uses the local checklist and speech uses the browser Web Speech API.
+
+### Open on a phone (GitHub Pages)
+
+`.github/workflows/pages.yml` builds the PWA with the repository base path and publishes it to `https://trafficolog.github.io/mind-detective/` on every push to `main` (or manually: Actions → Deploy Web/PWA to GitHub Pages → Run workflow).
+
+1. Once: Settings → Pages → Build and deployment → Source: **GitHub Actions**.
+2. Open the URL on the phone and use "Add to Home Screen" (iOS) or "Install app" (Android).
+3. After the first visit the app works offline; cases stay on the phone. The n8n assistant is configured in settings as locally (the n8n URL must be `https`).
+
+The site is public: anyone with the link can open the app, but cases are never shared.
+
+### Mode 2 — with an agent via n8n
+
+1. Import `integrations/n8n/mind-detective-assistant.workflow.json` into your n8n and follow `integrations/n8n/README.md`.
+2. In the app: **Настройки → Сервер ассистента (n8n)** — base URL and webhook token, then enable the online assistant.
+3. Proposals go to `md-propose`, dictation to `md-transcribe`. The model answer passes the in-app guard; any failure, 10 s timeout or guard rejection falls back to the local checklist. A proposal becomes Case data only after an explicit user action.
+
+### Mode 3 — evaluation stand with LiteLLM
+
+The previous B↔C stand (`/lab`, `/evaluation`) keeps using FastAPI → LiteLLM (see "API", ADR 012).
+
 ## Install dependencies
 
 From the repository root:

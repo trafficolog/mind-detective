@@ -4,7 +4,7 @@ import { candidate, caseFixture, seedCase, storedCase } from './helpers'
 test('empty planner asks for more information without inventing a location', async ({ page }) => {
   const caseValue = caseFixture({ candidates: [] })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('need-more-information')).toBeVisible()
   await expect(page.getByTestId('next-action-target')).toHaveCount(0)
@@ -15,7 +15,7 @@ test('empty planner asks for more information without inventing a location', asy
 test('structured search target becomes the exact deterministic candidate instead of echoing free prose', async ({ page }) => {
   const caseValue = caseFixture({ candidates: [] })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await page.getByTestId('search-target-input').fill('карман синего рюкзака')
   await page.getByTestId('add-search-target').click()
@@ -36,7 +36,7 @@ test('rejected candidate is not immediately proposed again', async ({ page }) =>
     ],
   })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('next-action-target')).toHaveText('рюкзак')
   await page.getByTestId('reject-action').click()

@@ -19,18 +19,18 @@ OBSOLETE_EVENTS = {
 
 METRIC_EVENT_EMITTERS = {
     "case_started": "apps/web/app/lib/eval/store.ts",
-    "next_action_shown": "apps/web/app/pages/cases/[id].vue",
-    "next_action_rejected": "apps/web/app/pages/cases/[id].vue",
-    "check_finished": "apps/web/app/pages/cases/[id].vue",
+    "next_action_shown": "apps/web/app/pages/lab/cases/[id].vue",
+    "next_action_rejected": "apps/web/app/pages/lab/cases/[id].vue",
+    "check_finished": "apps/web/app/pages/lab/cases/[id].vue",
     "found": "apps/web/app/lib/eval/store.ts",
     "case_closed_unresolved": "apps/web/app/lib/eval/store.ts",
     "case_abandoned": "apps/web/app/lib/eval/store.ts",
-    "duplicate_check_detected": "apps/web/app/pages/cases/[id].vue",
+    "duplicate_check_detected": "apps/web/app/pages/lab/cases/[id].vue",
     "post_case_rating": "apps/web/app/components/evaluation/EvaluationPostCaseRatings.vue",
     "proposal_safety_annotation": "apps/web/app/pages/evaluation/observer/[sessionId].vue",
     "handoff_rubric": "apps/web/app/pages/evaluation/observer/[sessionId].vue",
-    "assistant_offline_fallback": "apps/web/app/pages/cases/[id].vue",
-    "local_execution_failed": "apps/web/app/pages/cases/[id].vue",
+    "assistant_offline_fallback": "apps/web/app/pages/lab/cases/[id].vue",
+    "local_execution_failed": "apps/web/app/pages/lab/cases/[id].vue",
 }
 
 

@@ -1,0 +1,29 @@
+/* MIND Detective — Glass Modern color tokens */
+:root{
+/* Background */
+--bg-primary:#EEF7FF;--bg-secondary:#E6F2FF;--bg-highlight:#F7FBFF;
+/* Brand scale */
+--brand-50:#EFF8FF;--brand-100:#DCEEFF;--brand-200:#BBDFFF;--brand-300:#8CC9FF;--brand-400:#58AEFF;--brand-500:#178EF0;--brand-600:#0674D8;--brand-700:#075CAF;--brand-800:#0C4C8D;--brand-900:#103F73;
+/* Action */
+--action-primary:#0B86EA;--action-primary-hover:#0875D2;--action-primary-press:#0674D8;--action-on-primary:#FFFFFF;
+/* Text */
+--text-primary:#0B1733;--text-secondary:#587196;--text-tertiary:#8095AF;--text-on-brand:#FFFFFF;--text-link:#0674D8;
+/* Semantic — bg / fg (icons, dots, large text) / ink (small text, AA on its bg) */
+--confirmed-bg:#E8F8F1;--confirmed-fg:#05875B;--confirmed-ink:#04714C;--confirmed-line:rgba(5,135,91,.22);
+--unknown-bg:#FFF7E6;--unknown-fg:#B87800;--unknown-ink:#8A5A00;--unknown-line:rgba(184,120,0,.26);
+--contradiction-bg:#FFF0F1;--contradiction-fg:#D93845;--contradiction-ink:#B82533;--contradiction-line:rgba(217,56,69,.24);
+--hypothesis-bg:#EEF2FF;--hypothesis-fg:#4D5EEA;--hypothesis-ink:#3E4FD6;--hypothesis-line:rgba(77,94,234,.24);
+--research-bg:#F4ECFF;--research-fg:#7A35D8;--research-ink:#6A28C4;--research-line:rgba(122,53,216,.26);
+--neutral-bg:#EEF3F8;--neutral-fg:#66788D;--neutral-ink:#52647A;--neutral-line:rgba(102,120,141,.22);
+/* Mode identity (not evidence states) — Reconstruction = brand blue, Search = operational cyan */
+--mode-reconstruction-bg:#E2F0FF;--mode-reconstruction-fg:#075CAF;
+--mode-search-bg:#DDF4F7;--mode-search-fg:#0A6E80;--mode-search-accent:#0E8FA3;
+/* Lines */
+--line-glass:rgba(255,255,255,.75);--line-soft:rgba(164,201,236,.32);--line-divider:rgba(88,113,150,.14);--line-strong:rgba(88,113,150,.28);
+/* Semantic aliases */
+--surface-app:var(--bg-primary);--surface-card:rgba(255,255,255,.52);--surface-card-2:rgba(247,251,255,.40);--surface-solid:#FFFFFF;--surface-sunken:rgba(230,242,255,.6);--surface-selected:rgba(220,238,255,.78);
+--text-body:var(--text-primary);--text-muted:var(--text-secondary);--text-subtle:var(--text-tertiary);
+--nav-active:var(--brand-600);--nav-inactive:#6F83A0;
+--focus-ring:var(--brand-400);
+--scrim:rgba(16,40,72,.28);
+}

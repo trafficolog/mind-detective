@@ -9,7 +9,7 @@ test('experimental arms expose the same product shell and do not reveal arm iden
     ],
   })
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   const landmarks = [
     'case-shell',

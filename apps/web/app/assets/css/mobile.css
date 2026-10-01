@@ -1,0 +1,30 @@
+/* Glass Modern mobile shell (docs/design/2026-09-30-glass-modern-mobile/HANDOFF.md). */
+a { color: var(--action-primary); }
+.mm-app { min-height: 100vh; min-height: 100dvh; background: var(--bg-ambient); font-family: var(--font-sans); color: var(--text-primary); }
+.mm-column { max-width: 430px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; padding: max(20px, env(safe-area-inset-top)) 16px 0; box-sizing: border-box; }
+.mm-screen { flex: 1; display: flex; flex-direction: column; }
+.mm-overline { font-size: 12px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; font-weight: 650; color: var(--action-primary); }
+.mm-overline--muted { color: var(--text-secondary); }
+.mm-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.mm-stat-n { font-size: 28px; line-height: 32px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.mm-divider { height: 1px; background: rgba(88, 113, 150, .14); }
+.mm-tile { flex: none; display: flex; align-items: center; justify-content: center; }
+.mm-muted { color: var(--text-secondary); }
+.mm-privacy-line { display: flex; align-items: center; gap: 8px; justify-content: center; color: var(--text-secondary); font-size: 13px; line-height: 18px; }
+.mm-nav-dock { position: sticky; bottom: 0; padding: 8px 0 18px; margin: auto -6px 0; z-index: 10; }
+.mm-mic-ring { margin: 56px 0; width: 248px; height: 248px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(88,174,255,.16) 0%, rgba(88,174,255,.10) 55%, rgba(88,174,255,0) 72%); }
+.mm-mic-glass { width: 200px; height: 200px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.52); border: 1px solid rgba(255,255,255,.75); box-shadow: 0 12px 32px rgba(69,118,171,.16), inset 0 1px 0 rgba(255,255,255,.9); }
+.mm-mic { all: unset; cursor: pointer; width: 152px; height: 152px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(160deg, #4AAEFF 0%, #0B86EA 55%, #005CFC 100%); box-shadow: 0 16px 36px rgba(11,134,234,.38); transition: transform var(--dur-fast) var(--ease-standard); }
+.mm-mic:active { transform: scale(.96); }
+.mm-mic:focus-visible { outline: 3px solid #58AEFF; outline-offset: 4px; }
+.mm-input { min-height: 56px; }
+.mm-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.md-sheet { max-width: 430px; margin: 0 auto; }
+.mm-time-input { font-variant-numeric: tabular-nums; }
+/* Narrow phones (<390px): long block-button labels wrap instead of widening the column. */
+.md-btn--block { white-space: normal; text-align: center; }
+.md-btn--block > span { min-width: 0; }
+.mm-case-grid { grid-template-columns: minmax(0, 1fr); }
+.mm-button-row { display: grid; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+.mm-button-row--two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+@media (max-width: 359px) { .mm-button-row--two { grid-template-columns: minmax(0, 1fr); } }

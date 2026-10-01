@@ -36,7 +36,7 @@ test('guard block shows reviewed fallback and never exposes rejected raw proposa
   })
 
   await seedCase(page, caseValue)
-  await page.goto(`/cases/${caseValue.case_id}`)
+  await page.goto(`/lab/cases/${caseValue.case_id}`)
 
   await expect(page.getByTestId('guard-block')).toBeVisible()
   await expect(page.getByTestId('guard-block')).toContainText('не прошло проверку безопасности')
@@ -72,7 +72,7 @@ test.describe('English assistant locale contract', () => {
     })
 
     await seedCase(page, caseValue)
-    await page.goto(`/cases/${caseValue.case_id}`)
+    await page.goto(`/lab/cases/${caseValue.case_id}`)
     await expect.poll(() => requestLocale).toBe('en')
   })
 })
@@ -107,12 +107,12 @@ test('blocked reconstruction proposal is not carried into a newly loaded search-
   })
 
   await seedCase(page, reconstruction)
-  await page.goto(`/cases/${reconstruction.case_id}`)
+  await page.goto(`/lab/cases/${reconstruction.case_id}`)
   await expect(page.getByTestId('reconstruction-panel')).toBeVisible()
   expect(proposalCalls).toBe(0)
 
   await seedCase(page, search)
-  await page.goto(`/cases/${search.case_id}`)
+  await page.goto(`/lab/cases/${search.case_id}`)
   await expect(page.getByTestId('next-action-target')).toHaveText('сумка')
   await expect(page.getByTestId('guard-block')).toHaveCount(0)
   expect(proposalCalls).toBe(1)
