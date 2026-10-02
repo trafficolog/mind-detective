@@ -19,6 +19,8 @@ const canvas = ref<HTMLCanvasElement | null>(null)
 const fallback = ref(false)
 const motion = ref<'animated' | 'reduced'>('animated')
 const renderScale = ref(2)
+/** True once frame sampling has settled the density (exposed for tests and debugging). */
+const renderSettled = ref(false)
 
 const SPRITE_PX = 96
 const scene = createSplashScene(20260930)
@@ -225,6 +227,7 @@ function sampleFrame(now: number) {
   samples = []
   if (next === renderScale.value) {
     sampling = false
+    renderSettled.value = true
     return
   }
   renderScale.value = next
@@ -242,7 +245,9 @@ function loop(now: number) {
 function kick() {
   if (raf) cancelAnimationFrame(raf)
   raf = 0
+  // Frames right after a resume are often slow; don't sample them.
   lastFrame = 0
+  warmup = WARMUP_FRAMES
   if (reduced) draw(performance.now())
   else if (!document.hidden) raf = requestAnimationFrame(loop)
 }
@@ -301,7 +306,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="host" class="mm-splash-art" data-testid="splash-art" :data-motion="motion" :data-render-scale="renderScale" aria-hidden="true">
+  <div ref="host" class="mm-splash-art" data-testid="splash-art" :data-motion="motion" :data-render-scale="renderScale" :data-render-settled="renderSettled" aria-hidden="true">
     <img v-if="fallback" :src="splashSphere" alt="" class="mm-splash-art__fallback">
     <canvas v-else ref="canvas" class="mm-splash-art__canvas" data-testid="splash-particles" />
   </div>

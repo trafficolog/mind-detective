@@ -50,7 +50,12 @@ jobs:
         run: python scripts/check_pages_build.py apps/web/.output/public "$PAGES_BASE"
       - id: build_id
         name: Record the Nuxt build id for the post-deploy smoke test
-        run: echo "id=$(python scripts/wait_for_pages_build.py --local-id apps/web/.output/public)" >> "$GITHUB_OUTPUT"
+        shell: bash
+        run: |
+          set -euo pipefail
+          id="$(python scripts/wait_for_pages_build.py --local-id apps/web/.output/public)"
+          test -n "$id"
+          echo "id=$id" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: apps/web/.output/public

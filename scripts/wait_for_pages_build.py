@@ -11,6 +11,7 @@ Usage: python scripts/wait_for_pages_build.py <site-url> <build-id> [--timeout 3
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import sys
 import time
@@ -52,11 +53,14 @@ def wait_for_build(
 ) -> bool:
     url = site_url.rstrip("/") + "/" + MANIFEST
     deadline = clock.time() + timeout
+    attempt = 0
     while True:
+        attempt += 1
         try:
-            if str(fetch(url).get("id")) == build_id:
+            # A distinct query string per poll bypasses the CDN's cached copy (max-age=600).
+            if str(fetch(f"{url}?attempt={attempt}-{int(clock.time())}").get("id")) == build_id:
                 return True
-        except (OSError, ValueError):
+        except (OSError, ValueError, http.client.HTTPException):
             pass
         if clock.time() + interval > deadline:
             return False

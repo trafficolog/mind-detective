@@ -17,6 +17,9 @@ Branch: `feature/0.5.0-glass-modern-mobile`
 | 7 | Экраны 1–11 и шторки, legacy → `/lab` | Playwright M1–M10 (`apps/web/tests/e2e/mobile-*.spec.ts`) | `apps/web/app/pages/*`, `components/mobile/*` | готово |
 | 8 | n8n: workflow, инструкция, документация запуска | — | `integrations/n8n/`, `docs/GETTING_STARTED*.md` | готово |
 | 9 | VERIFY: полный набор, сборка PWA, визуальная сверка | все | — | готово |
+| 10 | Публикация на GitHub Pages под подпутём | `tests/test_pages_build_check.py` | `.github/workflows/pages.yml`, `scripts/check_pages_build.py`, `NUXT_APP_BASE_URL` | готово |
+| 11 | Анимированная заставка из частиц (запрос владельца продукта, отступление от DS в `VISUAL_REVIEW.md`); адаптивная плотность для медленных устройств | `apps/web/tests/unit/splashParticles.spec.ts`, `apps/web/tests/e2e/mobile-splash.spec.ts` | `components/mobile/SplashParticles.vue`, `lib/mobile/splashParticles.ts` | готово |
+| 12 | Смоук опубликованного сайта после деплоя (Android Chromium, iPhone WebKit; онлайн и офлайн) и тот же набор в CI для PR против сборки под подпутём | `tests/test_wait_for_pages_build.py`; проверено на живом сайте (pass), сборке с неверной базой (fail), верной сборке (pass) | `apps/web/tests/smoke/`, `playwright.smoke.config.ts`, `scripts/wait_for_pages_build.py`, job `smoke` | готово |
 
 ## Трассировка тестов прототипа T01–T47
 
@@ -62,3 +65,8 @@ Branch: `feature/0.5.0-glass-modern-mobile`
 ## Ручные / E2E сценарии M1–M10
 
 `apps/web/tests/e2e/mobile-flow.spec.ts`, `mobile-digital.spec.ts`, `mobile-assistant.spec.ts`, `mobile-storage.spec.ts`: M1 splash → онбординг → главный; M2 создание → реконструкция; M3 рассказ, сведение, 3 события → неизвестное и противоречие; M4 явный переход в поиск, места; M5 проверка → журнал, повтор; M6 «Нашёл» → закрыто, неизменяемо; M7 экспорт → удаление → импорт; M8 ассистент без сервера → контрольный список; M9 цифровое дело; M10 n8n (мок) → предложение ассистента, недоступен → fallback.
+
+## Известные ограничения проверок
+
+- Эмуляция офлайна в WebKit-драйвере Playwright обрывает загрузку страницы до service worker, поэтому полная перезагрузка без сети проверяется только в Chromium; на iPhone офлайн проверяется переходами внутри приложения.
+- Адаптивная плотность заставки реагирует на частоту кадров, поэтому режим энергосбережения (кадры ограничены ~30 в секунду) тоже снижает плотность до 1x; это сознательно: в этом режиме экономия важнее резкости декоративной картинки.

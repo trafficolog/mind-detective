@@ -50,8 +50,12 @@ test.describe('on a 2x screen', () => {
 
   test('splash keeps full density on a fast device and lowers it on a slow one', async ({ page, context, browserName }) => {
     test.skip(browserName !== 'chromium', 'CPU throttling is a Chromium DevTools feature')
+    // Two page loads in dev mode, one of them on an 8x throttled CPU, need more than the default 30 s.
+    test.setTimeout(90_000)
     await page.goto('/')
     const art = page.getByTestId('splash-art')
+    // The density only drops after sampling, so wait until sampling has settled before asserting.
+    await expect(art).toHaveAttribute('data-render-settled', 'true', { timeout: 15_000 })
     await expect(art).toHaveAttribute('data-render-scale', '2')
 
     const slow = await context.newPage()
