@@ -16,16 +16,14 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/trafficolog/mind-detective/releases/tag/0.4.0"><img alt="Release 0.4.0" src="https://img.shields.io/badge/release-0.4.0-1f6feb" /></a>
+  <a href="https://github.com/trafficolog/mind-detective/releases/tag/0.5.0"><img alt="Release 0.5.0" src="https://img.shields.io/badge/release-0.5.0-1f6feb" /></a>
   <a href="https://github.com/trafficolog/mind-detective/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/trafficolog/mind-detective/actions/workflows/ci.yml/badge.svg?branch=main" /></a>
   <img alt="Python 3.10 and 3.13" src="https://img.shields.io/badge/Python-3.10%20%7C%203.13-3776ab" />
   <img alt="Web PWA local first" src="https://img.shields.io/badge/Web%2FPWA-local--first-5eead4" />
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-2ea44f" /></a>
 </p>
 
-> **0.4.0 is published.** It is the Web Reconstruction Foundation: deterministic Reconstruction is available locally in the Web/PWA and does not require a live model for canonical memory evidence. The `0.4.1` research line is separate and **has not been released**.
->
-> **0.5.0 Glass Modern mobile is prepared for release:** the phone-first PWA shell from the design handoff, installable from GitHub Pages and working offline. Tags and GitHub Releases for `0.5.0` are created only by the repository publisher after green CI on the exact `main` SHA.
+> **0.5.0 is published.** It is Glass Modern mobile: the phone-first PWA shell from the design handoff, installable from https://trafficolog.github.io/mind-detective/ and working offline. It builds on the deterministic Web Reconstruction from `0.4.0`, which runs locally and does not require a live model for canonical memory evidence. The `0.4.1` research line is separate and **has not been released**.
 
 ## What it is and who it is for
 
@@ -133,7 +131,7 @@ Read more: [Privacy](docs/PRIVACY.md), [Methodology](docs/METHODOLOGY.en.md), [A
 
 | Layer | Status |
 | --- | --- |
-| `0.5.0` Glass Modern mobile | **Prepared for release**: repository `0.5.0` and plugin `mind-detective-v0.5.0`; phone site — https://trafficolog.github.io/mind-detective/ |
+| `0.5.0` Glass Modern mobile | **Published**: repository release `0.5.0` and plugin release `mind-detective-v0.5.0`; phone site — https://trafficolog.github.io/mind-detective/ |
 | `0.4.0` Web Reconstruction Foundation | **Published**: repository release `0.4.0` and plugin release `mind-detective-v0.4.0` |
 | Deterministic Web Reconstruction | **Production foundation**: free account, confirmed evidence, uncertainty-preserving timeline, explicit Search transition |
 | Phase 4 — R2 proposal guard | **Merged**: deterministic fail-closed guard for research proposals |

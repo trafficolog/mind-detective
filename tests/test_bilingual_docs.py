@@ -44,7 +44,7 @@ class BilingualDocsTests(unittest.TestCase):
             "быстрый старт",
             "структура репозитория",
             "документация",
-            "0.4.0 опубликован",
+            "0.5.0 опубликован",
             "execution preflight",
             "gate a не пройден",
             "human pilot не запускался",
@@ -62,7 +62,7 @@ class BilingualDocsTests(unittest.TestCase):
             "quick start",
             "repository structure",
             "documentation",
-            "0.4.0 is published",
+            "0.5.0 is published",
             "execution preflight",
             "gate a has not passed",
             "no human pilot has run",
@@ -73,11 +73,13 @@ class BilingualDocsTests(unittest.TestCase):
         for stale in (
             "теги и github releases для `0.4.0` создаются",
             "publication `0.4.0` будет",
+            "подготовлен к выпуску",
         ):
             self.assertNotIn(stale, ru)
         for stale in (
             "tags and github releases for `0.4.0` are created only",
             "publication of `0.4.0` will",
+            "prepared for release",
         ):
             self.assertNotIn(stale, en)
 
