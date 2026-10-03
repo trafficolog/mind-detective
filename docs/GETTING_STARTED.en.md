@@ -8,7 +8,7 @@ The canonical plugin id is `mind-detective`; the current release line is `0.5.0`
 
 Plugin persistence remains explicit and case-local at `.mind-detective/cases/<case-id>/case.json`. The Web/PWA has a separate browser-local persistence contract and writes a newly created Case to IndexedDB immediately.
 
-`0.4.0` with the deterministic Web Reconstruction Foundation is published. `0.5.0` (the Glass Modern mobile shell) is prepared for release; its tags and GitHub Releases are created only by the human-authorized publisher gate after exact post-merge `main` CI.
+`0.4.0` with the deterministic Web Reconstruction Foundation is published. `0.5.0` (the Glass Modern mobile shell) is published. Any later release publication remains a separate human-authorized publisher gate after exact post-merge `main` CI.
 
 ## Mobile shell 0.5.0 (Glass Modern)
 
