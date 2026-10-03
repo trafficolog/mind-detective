@@ -4,11 +4,11 @@
 
 ## Plugin surface
 
-Канонический plugin id — `mind-detective`; текущая release line — `0.4.0`. Пять production skills сохраняются: router, reconstruct, plan, resume и close. Plugin runtime использует Python standard library и не требует сетевых credentials.
+Канонический plugin id — `mind-detective`; текущая release line — `0.5.0`. Пять production skills сохраняются: router, reconstruct, plan, resume и close. Plugin runtime использует Python standard library и не требует сетевых credentials.
 
 Plugin persistence остаётся явным и case-local: сохранение идёт в `.mind-detective/cases/<case-id>/case.json` по explicit persistence action. Web/PWA имеет отдельный browser-local persistence contract и записывает новый Case в IndexedDB сразу.
 
-`0.4.0` с deterministic Web Reconstruction Foundation уже опубликован. Любая следующая release publication остаётся отдельным human-authorized publisher gate после exact post-merge `main` CI.
+`0.4.0` с deterministic Web Reconstruction Foundation опубликован. `0.5.0` (мобильная оболочка Glass Modern) подготовлен к выпуску; его теги и GitHub Releases создаёт только human-authorized publisher gate после exact post-merge `main` CI.
 
 ## Мобильная оболочка 0.5.0 (Glass Modern)
 

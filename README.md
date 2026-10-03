@@ -1,6 +1,6 @@
 # MIND Detective / Детектив памяти
 
-<!-- release-0.4.0 -->
+<!-- release-0.5.0 -->
 
 <p align="center">
   <img src="docs/assets/readme/root-hero.svg" alt="MIND Detective: от рассказа к timeline и систематическому поиску" width="100%" />
@@ -24,6 +24,8 @@
 </p>
 
 > **Release 0.4.0 опубликован.** Это Web Reconstruction Foundation: deterministic Reconstruction доступен в Web/PWA локально и не требует live model для canonical memory evidence. Исследовательская линия `0.4.1` развивается отдельно и **не выпущена**.
+>
+> **0.5.0 Glass Modern mobile подготовлен к выпуску:** мобильная PWA-оболочка по дизайну, установка на телефон с GitHub Pages и работа офлайн. Теги и GitHub Releases `0.5.0` создаёт только штатный publisher после зелёного CI на точном SHA `main`.
 
 ## Что это и кому подходит
 
@@ -131,6 +133,7 @@ flowchart TB
 
 | Слой | Статус |
 | --- | --- |
+| `0.5.0` Glass Modern mobile | **Подготовлен к выпуску**: repository `0.5.0` и plugin `mind-detective-v0.5.0`; сайт для телефона — https://trafficolog.github.io/mind-detective/ |
 | `0.4.0` Web Reconstruction Foundation | **Опубликован**: repository release `0.4.0` и plugin release `mind-detective-v0.4.0` |
 | Deterministic Web Reconstruction | **Production foundation**: free account, confirmed evidence, uncertainty-preserving timeline, explicit Search transition |
 | Phase 4 — R2 proposal guard | **Merged**: deterministic fail-closed guard для research proposals |
@@ -181,7 +184,7 @@ pnpm --dir apps/web dev --host 127.0.0.1 --port 3000
 
 Откройте `http://127.0.0.1:3000`. Deterministic Reconstruction работает без provider credentials; optional online assistant boundary настраивается отдельно.
 
-С версии 0.5.0 (в разработке) по адресу `/` открывается мобильная оболочка Glass Modern: вещь или фото/файл, голосовой старт, работа без агента или с вашим сервером n8n (Настройки → Сервер ассистента). Прежняя оболочка и evaluation-стенд — на `/lab`. Опубликованная версия для телефона (после включения GitHub Pages и merge в `main`): https://trafficolog.github.io/mind-detective/. Режимы запуска: [Getting Started](docs/GETTING_STARTED.md#мобильная-оболочка-050-glass-modern).
+В 0.5.0 по адресу `/` открывается мобильная оболочка Glass Modern: вещь или фото/файл, голосовой старт, работа без агента или с вашим сервером n8n (Настройки → Сервер ассистента). Прежняя оболочка и evaluation-стенд — на `/lab`. Версия для телефона публикуется с каждого `main` и проверяется смоук-тестом после деплоя: https://trafficolog.github.io/mind-detective/ — откройте и добавьте на экран «Домой». Режимы запуска: [Getting Started](docs/GETTING_STARTED.md#мобильная-оболочка-050-glass-modern).
 
 ### Минимальная проверка репозитория
 

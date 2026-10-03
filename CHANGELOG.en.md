@@ -2,7 +2,7 @@
 
 [Русский](CHANGELOG.md)
 
-## [Unreleased] — 0.5.0 Glass Modern mobile
+## [0.5.0] — 2026-10-03 — Glass Modern mobile
 
 ### Added
 - mobile PWA shell following the Claude Design handoff (Glass Modern): splash, onboarding, voice-first home, new case, cases list, reconstruction, search, journal, bottom sheets and settings;
@@ -17,11 +17,13 @@
 
 ### Changed
 - the 0.4.0 shell and the evaluation stand moved to `/lab`;
-- checks and explicit targets require Search mode; the free account and timeline can still be extended after the Search transition.
+- checks and explicit targets require Search mode; the free account and timeline can still be extended after the Search transition;
+- release intent updated to repository `0.5.0` and plugin `mind-detective-v0.5.0`.
 
 ### Unchanged
 - Case schema `mind-detective-case/v2`; Case semantics only in the Python portable kernel and generated executor;
-- no probabilities, cloud, accounts or access to user files.
+- no probabilities, cloud, accounts or access to user files;
+- the `0.4.1` research line (R2 guard, minimized provider context, screening harness, privacy governance, execution preflight) ships as research-only and is not activated: no real provider screening has run, Gate A has not passed, no human pilot has run.
 
 ## [0.4.0] — 2026-09-13
 

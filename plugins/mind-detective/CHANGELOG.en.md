@@ -2,6 +2,10 @@
 
 [Русский](CHANGELOG.md)
 
+## [0.5.0] — 2026-10-03
+
+Plugin `0.5.0` extends the canonical portable semantics for the mobile shell: `add_search_target` and `revise_free_account` commands (the free account stays verbatim; edits are append-only revisions), `HH:MM` event times, derivation of unknown-time events and of contradictions between labels at the same exact time, and the lost-item kind "thing / photo or file" (`constraints: item_kind:digital`) with check methods per kind. Checks and explicit targets require Search mode. Python remains the source of truth and is certified into the Web executor; the five production skills, `mind-detective-case/v2`, and the prohibition on calibrated location probabilities remain unchanged.
+
 ## [0.4.0] — 2026-09-13
 
 Plugin `0.4.0` extends the canonical portable semantics for Web Reconstruction with `record_free_account` and `rebuild_timeline`, a free-account-first gate, user-only provenance for structured evidence, and an uncertainty-preserving timeline with explicit unknowns/contradictions. These semantics remain the Python source of truth and are certified into the Web local executor. The five production skills, `mind-detective-case/v2`, safety/provenance/search invariants, and the prohibition on calibrated location probabilities remain unchanged.

@@ -1,6 +1,6 @@
 # MIND Detective
 
-<!-- release-0.4.0 -->
+<!-- release-0.5.0 -->
 
 <p align="center">
   <img src="docs/assets/readme/root-hero.svg" alt="MIND Detective: from a user account to a timeline and systematic physical search" width="100%" />
@@ -24,6 +24,8 @@
 </p>
 
 > **0.4.0 is published.** It is the Web Reconstruction Foundation: deterministic Reconstruction is available locally in the Web/PWA and does not require a live model for canonical memory evidence. The `0.4.1` research line is separate and **has not been released**.
+>
+> **0.5.0 Glass Modern mobile is prepared for release:** the phone-first PWA shell from the design handoff, installable from GitHub Pages and working offline. Tags and GitHub Releases for `0.5.0` are created only by the repository publisher after green CI on the exact `main` SHA.
 
 ## What it is and who it is for
 
@@ -131,6 +133,7 @@ Read more: [Privacy](docs/PRIVACY.md), [Methodology](docs/METHODOLOGY.en.md), [A
 
 | Layer | Status |
 | --- | --- |
+| `0.5.0` Glass Modern mobile | **Prepared for release**: repository `0.5.0` and plugin `mind-detective-v0.5.0`; phone site — https://trafficolog.github.io/mind-detective/ |
 | `0.4.0` Web Reconstruction Foundation | **Published**: repository release `0.4.0` and plugin release `mind-detective-v0.4.0` |
 | Deterministic Web Reconstruction | **Production foundation**: free account, confirmed evidence, uncertainty-preserving timeline, explicit Search transition |
 | Phase 4 — R2 proposal guard | **Merged**: deterministic fail-closed guard for research proposals |
@@ -179,7 +182,7 @@ uvicorn mind_detective_api.app:app --app-dir apps/api --host 127.0.0.1 --port 80
 pnpm --dir apps/web dev --host 127.0.0.1 --port 3000
 ```
 
-Since 0.5.0 (in development) `/` opens the Glass Modern mobile shell: thing or photo/file cases, voice-first start, no-agent mode or your own n8n server (Settings → assistant server). The previous shell and the evaluation stand live at `/lab`. Phone build (after enabling GitHub Pages and merging to `main`): https://trafficolog.github.io/mind-detective/. Run modes: [Getting Started](docs/GETTING_STARTED.en.md#mobile-shell-050-glass-modern).
+In 0.5.0 `/` opens the Glass Modern mobile shell: thing or photo/file cases, voice-first start, no-agent mode or your own n8n server (Settings → assistant server). The previous shell and the evaluation stand live at `/lab`. The phone build is published from every `main` and smoke-tested after each deployment: https://trafficolog.github.io/mind-detective/ — open it and add it to the home screen. Run modes: [Getting Started](docs/GETTING_STARTED.en.md#mobile-shell-050-glass-modern).
 
 Open `http://127.0.0.1:3000`. Deterministic Reconstruction works without provider credentials; the optional online assistant boundary is configured separately.
 
