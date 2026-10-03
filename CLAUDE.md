@@ -18,4 +18,4 @@ For investigative wording, distinguish reconstruction from search planning. Reco
 
 Search planning may propose concrete locations only as explicit proposals. Generic hosts do not provide a mandatory repository-controlled pre-send interception hook, so never overclaim guard coverage.
 
-Glass Modern mobile shell `0.5.0` (in development): design `docs/superpowers/specs/2026-09-30-mind-detective-0.5.0-glass-modern-mobile-design.md`, plan `docs/superpowers/plans/2026-09-30-mind-detective-0.5.0-glass-modern-mobile.md`, ADR 016/017. Case semantics still come only from the portable kernel; the 0.4.0 shell and evaluation stand live under `/lab`.
+Glass Modern mobile shell `0.5.0` (prepared for release; publication only via the publisher gate): design `docs/superpowers/specs/2026-09-30-mind-detective-0.5.0-glass-modern-mobile-design.md`, plan `docs/superpowers/plans/2026-09-30-mind-detective-0.5.0-glass-modern-mobile.md`, ADR 016/017. Case semantics still come only from the portable kernel; the 0.4.0 shell and evaluation stand live under `/lab`.

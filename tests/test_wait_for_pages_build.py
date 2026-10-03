@@ -1,3 +1,4 @@
+import http.client
 import json
 import tempfile
 import unittest
@@ -29,7 +30,7 @@ class WaitForPagesBuildTests(unittest.TestCase):
 
     def test_returns_as_soon_as_the_live_build_matches(self) -> None:
         clock = FakeClock()
-        answers = iter([{"id": "old"}, OSError("503"), {"id": "new"}])
+        answers = iter([{"id": "old"}, OSError("503"), http.client.IncompleteRead(b""), {"id": "new"}])
         seen: list[str] = []
 
         def fetch(url: str) -> dict:
@@ -41,8 +42,10 @@ class WaitForPagesBuildTests(unittest.TestCase):
 
         ok = wait_for_build("https://o.github.io/repo", "new", timeout=120, interval=10, fetch=fetch, clock=clock)
         self.assertTrue(ok)
-        self.assertEqual(seen[0], "https://o.github.io/repo/_nuxt/builds/latest.json")
-        self.assertEqual(clock.sleeps, [10, 10])
+        manifest = "https://o.github.io/repo/_nuxt/builds/latest.json"
+        self.assertTrue(all(url.startswith(manifest + "?attempt=") for url in seen))
+        self.assertEqual(len(set(seen)), len(seen), "each poll bypasses the CDN cache with a distinct URL")
+        self.assertEqual(clock.sleeps, [10, 10, 10])
 
     def test_gives_up_after_the_timeout(self) -> None:
         clock = FakeClock()

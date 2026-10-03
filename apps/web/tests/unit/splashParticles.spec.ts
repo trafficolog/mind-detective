@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   ASSEMBLE_MS,
   createSplashScene,
+  adaptRenderScale,
   frameAt,
   SPLASH_PALETTE,
 } from '../../app/lib/mobile/splashParticles'
@@ -67,5 +68,25 @@ describe('splash particle scene', () => {
     const still = frameAt(scene, 0, { width: 300, height: 300 }, { reducedMotion: true })
     const settled = frameAt(scene, ASSEMBLE_MS, { width: 300, height: 300 })
     expect(still.sprites.map(s => [s.x, s.y])).toEqual(settled.sprites.map(s => [s.x, s.y]))
+  })
+})
+
+describe('adaptive render scale', () => {
+  const frames = (ms: number, n = 40) => Array.from({ length: n }, () => ms)
+
+  it('waits for enough frames before deciding', () => {
+    expect(adaptRenderScale(frames(80, 10), 2)).toBe(2)
+  })
+
+  it('keeps full density when frames fit the budget', () => {
+    expect(adaptRenderScale(frames(16.7), 2)).toBe(2)
+    expect(adaptRenderScale([...frames(16.7, 35), ...frames(90, 5)], 2)).toBe(2)
+  })
+
+  it('drops to 1x on slow devices, then below 1x only when still far too slow', () => {
+    expect(adaptRenderScale(frames(50), 2)).toBe(1)
+    expect(adaptRenderScale(frames(30), 1)).toBe(1)
+    expect(adaptRenderScale(frames(50), 1)).toBe(0.75)
+    expect(adaptRenderScale(frames(120), 0.75)).toBe(0.75)
   })
 })

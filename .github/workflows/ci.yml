@@ -126,6 +126,7 @@ jobs:
           cp -r apps/web/.output/public "$site/mind-detective"
           python -m http.server 3100 --bind 127.0.0.1 --directory "$site" >/dev/null 2>&1 &
           for _ in $(seq 1 30); do curl -sf http://127.0.0.1:3100/mind-detective/ >/dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:3100/mind-detective/ >/dev/null
           SMOKE_BASE_URL=http://127.0.0.1:3100/mind-detective/ pnpm --dir apps/web exec playwright test -c playwright.smoke.config.ts
       - name: Upload Playwright failure traces
         if: failure()

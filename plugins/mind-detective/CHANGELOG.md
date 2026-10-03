@@ -2,6 +2,10 @@
 
 [English](CHANGELOG.en.md)
 
+## [0.5.0] — 2026-10-03
+
+Плагин `0.5.0` расширяет canonical portable semantics для мобильной оболочки: команды `add_search_target` и `revise_free_account` (рассказ остаётся дословным, правки — append-only ревизии), время событий `ЧЧ:ММ`, вывод событий с неизвестным временем и противоречий меток одного точного времени, тип потерянного «вещь / фото или файл» (`constraints: item_kind:digital`) со способами проверки по типу. Проверки и явные места требуют режима Search. Python остаётся source of truth и сертифицированно генерируется в Web executor; пять production skills, `mind-detective-case/v2` и запрет calibrated location probabilities не изменены.
+
 ## [0.4.0] — 2026-09-13
 
 Плагин `0.4.0` расширяет canonical portable semantics для Web Reconstruction: добавлены `record_free_account` и `rebuild_timeline`, free-account-first gate, user-only provenance для structured evidence и uncertainty-preserving timeline с unknowns/contradictions. Эти semantics остаются Python source of truth и сертифицированно генерируются в Web local executor. Пять production skills, `mind-detective-case/v2`, safety/provenance/search invariants и запрет calibrated location probabilities остаются неизменными.

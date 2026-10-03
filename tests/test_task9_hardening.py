@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "0.4.0"
+EXPECTED_VERSION = "0.5.0"
 EXPECTED_DOIS = {
     "10.1037/0021-9010.74.5.722",
     "10.1101/lm.94705",
